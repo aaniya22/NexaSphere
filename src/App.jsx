@@ -20,6 +20,7 @@ import AboutPage           from './pages/about/AboutPage';
 import TeamPage            from './pages/team/TeamPage';
 import ContactPage         from './pages/contact/ContactPage';
 import RecruitmentPage     from './pages/recruitment/RecruitmentPage';
+import MembershipPage      from './pages/membership/MembershipPage';
 
 import { activityPages }   from './data/activities/index';
 import nexasphereLogo      from './assets/images/logos/nexasphere-logo.png';
@@ -336,6 +337,10 @@ export default function App() {
     nav(()=>setPage({type:'apply'}));
   },[nav]);
 
+  const openJoin = useCallback(()=>{
+    nav(()=>setPage({type:'join'}));
+  },[nav]);
+
   const onBackHome=useCallback(()=>{
     nav(()=>{setPage(null);setActiveTab('Home');window.scrollTo({top:0});});
   },[nav]);
@@ -420,9 +425,14 @@ export default function App() {
             <RecruitmentPage onBack={onBackHome}/>
           </PageIn>
         )}
+        {page?.type==='join' && (
+          <PageIn k="pg-join">
+            <MembershipPage onBack={onBackHome}/>
+          </PageIn>
+        )}
         {!page&&(
           <PageIn k="main">
-            <HeroSection onTabChange={onTab} onApply={openApply} theme={theme}/>
+            <HeroSection onTabChange={onTab} onApply={openApply} onJoin={openJoin} theme={theme}/>
             <ActivitiesSection onNavigate={onNavigate}/>
             <EventsSection onEventClick={onKSSClick}/>
             <AboutSection/>

@@ -1,5 +1,8 @@
-# data/
-All site content lives here — edit these files to update the website without touching any component code.
+# 📊 src/data/
+
+All site content lives here. Edit these files to update the website **without touching any component code**.
+
+---
 
 ## Files
 
@@ -24,7 +27,7 @@ Open `eventsData.js` and add a new object to the `events` array:
   id: 4,                          // next sequential number
   name: 'Your Event Name',
   shortName: 'Short Name',
-  date: 'April 2025',
+  date: 'April 2026',
   description: 'One paragraph description.',
   status: 'upcoming',             // 'upcoming' | 'completed'
   icon: '🚀',
@@ -34,7 +37,7 @@ Open `eventsData.js` and add a new object to the `events` array:
 
 ---
 
-## How to add an upcoming Workshop event
+## How to add an upcoming Workshop
 
 Open `activities/workshop.js` → add to `upcomingEvents`:
 
@@ -43,7 +46,7 @@ Open `activities/workshop.js` → add to `upcomingEvents`:
   id: 'workshop-your-id',
   name: 'Workshop: Topic Name',
   shortName: 'Topic Name',
-  date: 'Coming Soon',            // or 'April 15, 2025'
+  date: 'Coming Soon',
   status: 'upcoming',
   description: 'What attendees will learn.',
   tags: ['Tag1', 'Tag2'],
@@ -58,7 +61,7 @@ Open `activities/insightSession.js` → add to `upcomingEvents`:
 
 ```js
 {
-  id: 'industry-insider-career',
+  id: 'insight-session-id',
   name: 'Session Title',
   shortName: 'Short Name',
   date: 'March 13',
@@ -72,9 +75,9 @@ When the session is conducted, move it to `conductedEvents` and fill in speakers
 
 ---
 
-## Current Events (as of March 2025)
+## Events log (April 2026)
 
 | Event | Status | File |
 |---|---|---|
 | KSS #153 — Impact of AI | ✅ Completed | `activities/insightSession.js` |
-| Workshop: Git & GitHub | 🔜 April 24 | `activities/workshop.js` + `eventsData.js` |
+| Workshop: Git & GitHub | ✅ Completed | `activities/workshop.js` + `eventsData.js` |

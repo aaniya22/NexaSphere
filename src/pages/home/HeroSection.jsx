@@ -2,7 +2,6 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import nexasphereLogo from '../../assets/images/logos/nexasphere-logo.png';
 import { IconArrowRight, IconSpark } from '../../shared/Icons';
 
-const JOIN_MEMBER_FORM = 'https://forms.gle/NWb49scknwD6PP769';
 
 /* ── Ripple Button ── */
 function RippleBtn({ cls, children, href, onClick }) {
@@ -151,7 +150,7 @@ function Atmosphere({ isLight }) {
   );
 }
 
-export default function HeroSection({ onTabChange, onApply, theme = 'dark' }) {
+export default function HeroSection({ onTabChange, onApply, onJoin, theme = 'dark' }) {
   const [ready, setReady]     = useState(false);
   const [statsVis, setStatsVis] = useState(false);
   const isLight = theme === 'light';
@@ -195,7 +194,7 @@ export default function HeroSection({ onTabChange, onApply, theme = 'dark' }) {
           flexDirection:'column',alignItems:'center',gap:'10px',
         }}>
           <div style={{display:'flex',gap:'12px',flexWrap:'wrap',justifyContent:'center'}}>
-            <RippleBtn cls="btn-primary" href={JOIN_MEMBER_FORM}>
+            <RippleBtn cls="btn-primary" onClick={() => onJoin ? onJoin() : onTabChange('Team')}>
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
                 Join as Member <IconArrowRight />
               </span>

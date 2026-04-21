@@ -2,6 +2,8 @@
 
 All static image assets used by the website.
 
+---
+
 ## Subfolders
 
 | Folder | Contents |
@@ -18,14 +20,13 @@ All static image assets used by the website.
 | `nexasphere-logo.png` | Navbar, Hero section, Splash screen, Footer |
 | `glbajaj-logo.png` | Navbar, Footer |
 
-**To replace a logo:** Upload the new PNG with the **same filename** — no code changes needed.
-Logos must have a **transparent background**.
+**To replace a logo:** Upload the new PNG with the **same filename** — no code changes needed. Logos must have a **transparent background**.
 
 ---
 
 ## team/
 
-Circular profile photos (300×300px, PNG with transparent background).
+Circular profile photos — **300×300px, PNG with transparent background**.
 
 | File | Member |
 |---|---|
@@ -44,9 +45,11 @@ Circular profile photos (300×300px, PNG with transparent background).
 | `placeholder.png` | Default — shown when no photo is set |
 
 **To add a new member photo:**
-1. Crop image to circle, 300×300px, transparent background
+
+1. Crop image to circle — 300×300px, transparent background
 2. Save as `membername.png` in this folder
 3. Import in `src/data/teamData.js`:
    ```js
    import membernameImg from '../assets/images/team/membername.png';
    ```
+4. Use `membernameImg` in the team member object's `photo` field
