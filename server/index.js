@@ -39,6 +39,10 @@ const defaultContent = {
   activityEvents: {},
 };
 
+const SUPABASE_URL = process.env.SUPABASE_URL || '';
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY || '';
+const HAS_SUPABASE = Boolean(SUPABASE_URL && SUPABASE_SERVICE_KEY);
+
 function requiredEnv(name) {
   const v = process.env[name];
   if (!v) throw new Error(`Missing environment variable: ${name}`);
@@ -68,6 +72,27 @@ async function readContent() {
 async function writeContent(content) {
   await ensureContentFile();
   await fs.writeFile(CONTENT_FILE, JSON.stringify(content, null, 2), 'utf8');
+}
+
+async function supabaseRequest(pathname, { method = 'GET', body } = {}) {
+  if (!HAS_SUPABASE) throw new Error('Supabase is not configured');
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${pathname}`, {
+    method,
+    headers: {
+      apikey: SUPABASE_SERVICE_KEY,
+      Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+      'Content-Type': 'application/json',
+      Prefer: method === 'GET' ? 'count=exact' : 'return=representation',
+    },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Supabase error (${res.status}): ${text}`);
+  }
+  const text = await res.text();
+  return text ? JSON.parse(text) : [];
 }
 
 function parseBearer(authHeader = '') {
@@ -123,17 +148,186 @@ function normalizePhone(value) {
   return String(value || '').replace(/[^\d]/g, '');
 }
 
-function canManageActivityEvent({ name, email, phone, password }) {
+async function canManageActivityEvent({ name, email, phone, password }) {
   const expectedPassword = process.env.ADMIN_EVENT_PASSWORD || 'Admin@123';
   if (String(password || '') !== expectedPassword) return false;
   const n = String(name || '').trim().toLowerCase();
   const e = String(email || '').trim().toLowerCase();
   const p = normalizePhone(phone);
+
+  if (HAS_SUPABASE) {
+    try {
+      const rows = await supabaseRequest(`core_team_members?name=eq.${encodeURIComponent(name)}&email=eq.${encodeURIComponent(email)}&phone=eq.${encodeURIComponent(p)}&select=name,email,phone`);
+      if (Array.isArray(rows) && rows.length > 0) return true;
+    } catch {
+      // fallback below
+    }
+  }
+
   return coreTeamMembers.some(m =>
     m.name.toLowerCase() === n &&
     m.email.toLowerCase() === e &&
     normalizePhone(m.phone) === p
   );
+}
+
+async function listEventsStore() {
+  if (HAS_SUPABASE) {
+    const rows = await supabaseRequest('events?select=*&order=created_at.desc');
+    return rows.map(r => ({
+      id: r.id,
+      name: r.name,
+      shortName: r.short_name || r.shortName || r.name,
+      date: r.date_text || r.date,
+      description: r.description,
+      status: r.status,
+      icon: r.icon || '📌',
+      tags: Array.isArray(r.tags) ? r.tags : [],
+      createdAt: r.created_at,
+      updatedAt: r.updated_at,
+    }));
+  }
+  const content = await readContent();
+  return content.events || [];
+}
+
+async function createEventStore(event) {
+  if (HAS_SUPABASE) {
+    const [row] = await supabaseRequest('events', {
+      method: 'POST',
+      body: [{
+        id: event.id,
+        name: event.name,
+        short_name: event.shortName,
+        date_text: event.date,
+        description: event.description,
+        status: event.status,
+        icon: event.icon,
+        tags: event.tags,
+      }],
+    });
+    return row;
+  }
+  const content = await readContent();
+  content.events.unshift({ ...event, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
+  await writeContent(content);
+  return content.events[0];
+}
+
+async function updateEventStore(id, patch) {
+  if (HAS_SUPABASE) {
+    const [row] = await supabaseRequest(`events?id=eq.${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      body: {
+        name: patch.name,
+        short_name: patch.shortName,
+        date_text: patch.date,
+        description: patch.description,
+        status: patch.status,
+        icon: patch.icon,
+        tags: patch.tags,
+        updated_at: new Date().toISOString(),
+      },
+    });
+    return row;
+  }
+  const content = await readContent();
+  const idx = content.events.findIndex(e => e.id === id);
+  if (idx < 0) return null;
+  content.events[idx] = { ...content.events[idx], ...patch, id, updatedAt: new Date().toISOString() };
+  await writeContent(content);
+  return content.events[idx];
+}
+
+async function deleteEventStore(id) {
+  if (HAS_SUPABASE) {
+    const rows = await supabaseRequest(`events?id=eq.${encodeURIComponent(id)}`, { method: 'DELETE' });
+    return Array.isArray(rows) && rows.length > 0;
+  }
+  const content = await readContent();
+  const before = content.events.length;
+  content.events = content.events.filter(e => e.id !== id);
+  if (content.events.length === before) return false;
+  await writeContent(content);
+  return true;
+}
+
+async function listActivityEventsStore(activityKey) {
+  if (HAS_SUPABASE) {
+    const rows = await supabaseRequest(`activity_events?activity_key=eq.${encodeURIComponent(activityKey)}&select=*&order=created_at.desc`);
+    return rows.map(r => ({
+      id: r.id,
+      name: r.name,
+      date: r.date_text || r.date,
+      tagline: r.tagline,
+      description: r.description,
+      status: r.status || 'completed',
+      createdAt: r.created_at,
+    }));
+  }
+  const content = await readContent();
+  return content.activityEvents?.[activityKey] || [];
+}
+
+async function createActivityEventStore(activityKey, event) {
+  if (HAS_SUPABASE) {
+    const [row] = await supabaseRequest('activity_events', {
+      method: 'POST',
+      body: [{
+        id: event.id,
+        activity_key: activityKey,
+        name: event.name,
+        date_text: event.date,
+        tagline: event.tagline,
+        description: event.description,
+        status: event.status,
+        created_by_name: event.createdBy?.name || '',
+        created_by_email: event.createdBy?.email || '',
+        created_by_phone: event.createdBy?.phone || '',
+      }],
+    });
+    return row;
+  }
+  const content = await readContent();
+  content.activityEvents = content.activityEvents || {};
+  content.activityEvents[activityKey] = content.activityEvents[activityKey] || [];
+  content.activityEvents[activityKey].unshift(event);
+  await writeContent(content);
+  return event;
+}
+
+async function deleteActivityEventStore(activityKey, eventId) {
+  if (HAS_SUPABASE) {
+    const rows = await supabaseRequest(`activity_events?activity_key=eq.${encodeURIComponent(activityKey)}&id=eq.${encodeURIComponent(eventId)}`, { method: 'DELETE' });
+    return Array.isArray(rows) && rows.length > 0;
+  }
+  const content = await readContent();
+  content.activityEvents = content.activityEvents || {};
+  const list = content.activityEvents[activityKey] || [];
+  const next = list.filter(e => e.id !== eventId);
+  if (next.length === list.length) return false;
+  content.activityEvents[activityKey] = next;
+  await writeContent(content);
+  return true;
+}
+
+async function appendToSupabaseForms(formType, payload) {
+  if (!HAS_SUPABASE) return false;
+  try {
+    await supabaseRequest('form_submissions', {
+      method: 'POST',
+      body: [{
+        form_type: formType,
+        full_name: toSafeString(payload.fullName, 140),
+        college_email: toSafeString(payload.collegeEmail, 140),
+        whatsapp: toSafeString(payload.whatsapp, 40),
+        payload,
+      }],
+    });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 async function appendFormToSheet(formType, payload) {
@@ -186,14 +380,13 @@ function isPhoneish(s) {
 }
 
 app.get('/healthz', async (req, res) => {
-  const content = await readContent();
-  res.json({ ok: true, events: content.events.length });
+  const events = await listEventsStore();
+  res.json({ ok: true, events: events.length, storage: HAS_SUPABASE ? 'supabase' : 'file' });
 });
 
 app.get('/api/content/events', async (req, res) => {
   try {
-    const content = await readContent();
-    return res.json({ events: content.events || [] });
+    return res.json({ events: await listEventsStore() });
   } catch (e) {
     return res.status(500).json({ error: e?.message || 'Failed to load events' });
   }
@@ -202,9 +395,7 @@ app.get('/api/content/events', async (req, res) => {
 app.get('/api/content/activity-events/:activityKey', async (req, res) => {
   try {
     const activityKey = toSafeString(req.params.activityKey, 80);
-    const content = await readContent();
-    const items = content.activityEvents?.[activityKey] || [];
-    return res.json({ events: items });
+    return res.json({ events: await listActivityEventsStore(activityKey) });
   } catch (e) {
     return res.status(500).json({ error: e?.message || 'Failed to load activity events' });
   }
@@ -214,13 +405,8 @@ app.post('/api/content/activity-events/:activityKey', async (req, res) => {
   try {
     const activityKey = toSafeString(req.params.activityKey, 80);
     const body = req.body || {};
-    const auth = {
-      name: body.name,
-      email: body.email,
-      phone: body.phone,
-      password: body.password,
-    };
-    if (!canManageActivityEvent(auth)) {
+    const auth = { name: body.name, email: body.email, phone: body.phone, password: body.password };
+    if (!(await canManageActivityEvent(auth))) {
       return res.status(401).json({ error: 'Unauthorized. Core team details or password did not match.' });
     }
 
@@ -242,11 +428,7 @@ app.post('/api/content/activity-events/:activityKey', async (req, res) => {
       return res.status(400).json({ error: 'Event name, date and description are required.' });
     }
 
-    const content = await readContent();
-    content.activityEvents = content.activityEvents || {};
-    content.activityEvents[activityKey] = content.activityEvents[activityKey] || [];
-    content.activityEvents[activityKey].unshift(event);
-    await writeContent(content);
+    await createActivityEventStore(activityKey, event);
     return res.status(201).json({ ok: true, event });
   } catch (e) {
     return res.status(500).json({ error: e?.message || 'Unable to add activity event' });
@@ -258,25 +440,13 @@ app.delete('/api/content/activity-events/:activityKey/:eventId', async (req, res
     const activityKey = toSafeString(req.params.activityKey, 80);
     const eventId = toSafeString(req.params.eventId, 120);
     const body = req.body || {};
-    const auth = {
-      name: body.name,
-      email: body.email,
-      phone: body.phone,
-      password: body.password,
-    };
-    if (!canManageActivityEvent(auth)) {
+    const auth = { name: body.name, email: body.email, phone: body.phone, password: body.password };
+    if (!(await canManageActivityEvent(auth))) {
       return res.status(401).json({ error: 'Unauthorized. Core team details or password did not match.' });
     }
 
-    const content = await readContent();
-    content.activityEvents = content.activityEvents || {};
-    const list = content.activityEvents[activityKey] || [];
-    const next = list.filter(e => e.id !== eventId);
-    if (next.length === list.length) {
-      return res.status(404).json({ error: 'Event not found in manual activity events.' });
-    }
-    content.activityEvents[activityKey] = next;
-    await writeContent(content);
+    const deleted = await deleteActivityEventStore(activityKey, eventId);
+    if (!deleted) return res.status(404).json({ error: 'Event not found in manual activity events.' });
     return res.json({ ok: true });
   } catch (e) {
     return res.status(500).json({ error: e?.message || 'Unable to delete activity event' });
@@ -289,18 +459,14 @@ app.post('/api/admin/login', (req, res) => {
   const u = String(req.body?.username || '').trim();
   const p = String(req.body?.password || '');
 
-  if (u !== username || p !== password) {
-    return res.status(401).json({ error: 'Invalid credentials' });
-  }
-
+  if (u !== username || p !== password) return res.status(401).json({ error: 'Invalid credentials' });
   const token = crypto.randomBytes(24).toString('hex');
   sessions.set(token, { username: u, createdAt: Date.now() });
   return res.json({ token, username: u });
 });
 
 app.get('/api/admin/events', adminAuth, async (req, res) => {
-  const content = await readContent();
-  return res.json({ events: content.events || [] });
+  return res.json({ events: await listEventsStore() });
 });
 
 app.post('/api/admin/events', adminAuth, async (req, res) => {
@@ -309,15 +475,8 @@ app.post('/api/admin/events', adminAuth, async (req, res) => {
     if (!event.name || !event.date || !event.description) {
       return res.status(400).json({ error: 'name, date and description are required' });
     }
-
-    const content = await readContent();
-    if (content.events.some(e => e.id === event.id)) {
-      event.id = `${event.id}-${Date.now()}`;
-    }
-    const now = new Date().toISOString();
-    content.events.unshift({ ...event, createdAt: now, updatedAt: now });
-    await writeContent(content);
-    return res.status(201).json({ ok: true, event: content.events[0] });
+    const saved = await createEventStore(event);
+    return res.status(201).json({ ok: true, event: saved });
   } catch (e) {
     return res.status(500).json({ error: e?.message || 'Unable to create event' });
   }
@@ -327,18 +486,9 @@ app.put('/api/admin/events/:id', adminAuth, async (req, res) => {
   try {
     const id = String(req.params.id || '').trim();
     const patch = sanitizeEvent({ ...req.body, id });
-    const content = await readContent();
-    const idx = content.events.findIndex(e => e.id === id);
-    if (idx < 0) return res.status(404).json({ error: 'Event not found' });
-
-    content.events[idx] = {
-      ...content.events[idx],
-      ...patch,
-      id,
-      updatedAt: new Date().toISOString(),
-    };
-    await writeContent(content);
-    return res.json({ ok: true, event: content.events[idx] });
+    const updated = await updateEventStore(id, patch);
+    if (!updated) return res.status(404).json({ error: 'Event not found' });
+    return res.json({ ok: true, event: updated });
   } catch (e) {
     return res.status(500).json({ error: e?.message || 'Unable to update event' });
   }
@@ -347,13 +497,8 @@ app.put('/api/admin/events/:id', adminAuth, async (req, res) => {
 app.delete('/api/admin/events/:id', adminAuth, async (req, res) => {
   try {
     const id = String(req.params.id || '').trim();
-    const content = await readContent();
-    const before = content.events.length;
-    content.events = content.events.filter(e => e.id !== id);
-    if (content.events.length === before) {
-      return res.status(404).json({ error: 'Event not found' });
-    }
-    await writeContent(content);
+    const deleted = await deleteEventStore(id);
+    if (!deleted) return res.status(404).json({ error: 'Event not found' });
     return res.json({ ok: true });
   } catch (e) {
     return res.status(500).json({ error: e?.message || 'Unable to delete event' });
@@ -367,7 +512,12 @@ async function handleForm(formType, req, res) {
     if (!isEmail(body.collegeEmail)) return res.status(400).json({ error: 'Invalid email address' });
     if (!isPhoneish(body.whatsapp)) return res.status(400).json({ error: 'Invalid contact number' });
 
-    await appendFormToSheet(formType, body);
+    const savedToSupabase = await appendToSupabaseForms(formType, body);
+    try {
+      await appendFormToSheet(formType, body);
+    } catch (sheetErr) {
+      if (!savedToSupabase) throw sheetErr;
+    }
     return res.json({ ok: true });
   } catch (e) {
     return res.status(500).json({ error: e?.message || 'Submission failed' });
