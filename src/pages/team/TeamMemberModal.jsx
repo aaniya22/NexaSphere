@@ -31,9 +31,9 @@ function CopyPopup({ value, onClose }) {
 
 function getWhatsappDisplay(raw) {
   if (!raw) return null;
-  
+
   if (raw.startsWith('http')) return raw;
-  
+
   return raw;
 }
 
@@ -52,6 +52,7 @@ function ModalContent({ member, onClose }) {
 
   const hasSocial = member.linkedin || member.whatsapp || member.instagram || member.email;
   const whatsappValue = getWhatsappDisplay(member.whatsapp);
+  const [imgError, setImgError] = useState(false);
 
   return (
     <div
@@ -59,17 +60,28 @@ function ModalContent({ member, onClose }) {
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div className="modal-box">
-        
+
         <button className="modal-close" onClick={onClose} aria-label="Close">✕</button>
 
-        
-        <img src={member.photo} alt={member.name} className="modal-photo" />
 
-        
+        <img
+          src={
+            imgError
+              ? 'https://api.dicebear.com/7.x/initials/svg?seed=' +
+              encodeURIComponent(member.name) +
+              '&backgroundColor=CC1111&textColor=ffffff'
+              : member.photo
+          }
+          alt={member.name}
+          className="modal-photo"
+          onError={() => setImgError(true)}
+        />
+
+
         <div className="modal-name">{member.name}</div>
         <div className="modal-role">{member.role}</div>
 
-        
+
         <div className="modal-info">
           <div className="modal-info-row">
             <span className="modal-info-label">[Edu] Year</span>
@@ -85,7 +97,7 @@ function ModalContent({ member, onClose }) {
           </div>
         </div>
 
-        
+
         {member.achievements && member.achievements.length > 0 && (
           <div className="modal-achievements">
             <div className="modal-achievements-title">[#1] Achievements</div>
@@ -97,7 +109,7 @@ function ModalContent({ member, onClose }) {
           </div>
         )}
 
-        
+
         {member.testimonials && member.testimonials.length > 0 && (
           <div className="modal-testimonials">
             <div className="modal-testimonials-title">[ ] Testimonials</div>
@@ -112,7 +124,7 @@ function ModalContent({ member, onClose }) {
           </div>
         )}
 
-        
+
         {hasSocial && (
           <div className="modal-social">
             {member.linkedin && (
