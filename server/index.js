@@ -1,25 +1,17 @@
 import 'dotenv/config';
 import express from 'express';
-import { EventEmitter } from 'events';
 import cors from 'cors';
-import { google } from 'googleapis';
-import { promises as fs } from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
 import { ZodError } from 'zod';
 
 import { adminAuthMiddleware } from './middleware/adminAuthMiddleware.js';
-import { normalizeFormSubmission } from './validators/formSchemas.js';
-import {
-  sanitizeActivityEventRecord,
-  sanitizeCoreTeamMemberRecord,
-  sanitizeEventRecord,
-} from './utils/sanitize.js';
-
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const CONTENT_FILE = path.join(__dirname, 'data', 'content.json');
+import * as eventsController from './controllers/eventsController.js';
+import * as activityEventsController from './controllers/activityEventsController.js';
+import * as coreTeamController from './controllers/coreTeamController.js';
+import * as formsController from './controllers/formsController.js';
+import { eventsService } from './services/eventsService.js';
+import { coreTeamService } from './services/coreTeamService.js';
+import { HAS_SUPABASE } from './storage/supabaseClient.js';
+import { ensureContentFile } from './storage/contentFileStore.js';
 
 const app = express();
 
@@ -53,140 +45,9 @@ function requestLogger(req, res, next) {
 app.use(requestLogger);
 
 const adminAuth = adminAuthMiddleware.requireAdmin;
-const adminEvents = new EventEmitter();
-adminEvents.on('CORE_TEAM_MEMBER_ADDED', (event) => console.log(`[EVENT] CORE_TEAM_MEMBER_ADDED:`, event));
-adminEvents.on('CORE_TEAM_MEMBER_REMOVED', (event) => console.log(`[EVENT] CORE_TEAM_MEMBER_REMOVED:`, event));
 
-const defaultContent = {
-  events: [
-    {
-      id: 'kss-153',
-      name: 'KSS #153 — Knowledge Sharing Session',
-      shortName: 'KSS #153',
-      date: 'March 14, 2025',
-      description: 'NexaSphere\'s inaugural Knowledge Sharing Session focused on the impact of AI.',
-      status: 'completed',
-      icon: 'Brain',
-      tags: ['AI', 'Learning', 'Community'],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-  ],
-  activityEvents: {},
-  coreTeam: [],
-};
-
-const SUPABASE_URL = process.env.SUPABASE_URL || '';
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY || '';
-const HAS_SUPABASE = Boolean(SUPABASE_URL && SUPABASE_SERVICE_KEY);
-
-function requiredEnv(name) {
-  const v = process.env[name];
-  if (!v) throw new Error(`Missing environment variable: ${name}`);
-  return v;
-}
-
-function normalizePrivateKey(k) {
-  return k.includes('\\n') ? k.replace(/\\n/g, '\n') : k;
-}
-
-async function ensureContentFile() {
-  const dir = path.dirname(CONTENT_FILE);
-  await fs.mkdir(dir, { recursive: true });
-  try {
-    await fs.access(CONTENT_FILE);
-  } catch {
-    await fs.writeFile(CONTENT_FILE, JSON.stringify(defaultContent, null, 2), 'utf8');
-  }
-}
-
-async function readContent() {
-  await ensureContentFile();
-  const raw = await fs.readFile(CONTENT_FILE, 'utf8');
-  return JSON.parse(raw);
-}
-
-async function writeContent(content) {
-  await ensureContentFile();
-  await fs.writeFile(CONTENT_FILE, JSON.stringify(content, null, 2), 'utf8');
-}
-
-async function supabaseRequest(pathname, { method = 'GET', body } = {}) {
-  if (!HAS_SUPABASE) throw new Error('Supabase is not configured');
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${pathname}`, {
-    method,
-    headers: {
-      apikey: SUPABASE_SERVICE_KEY,
-      Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
-      'Content-Type': 'application/json',
-      Prefer: method === 'GET' ? 'count=exact' : 'return=representation',
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  });
-
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Supabase error (${res.status}): ${text}`);
-  }
-  const text = await res.text();
-  return text ? JSON.parse(text) : [];
-}
-
-function toSafeString(value, max = 4000) {
-  return String(value ?? '').trim().slice(0, max);
-}
-
-function validateWhatsApp(str) {
-  const v = String(str || '').trim();
-  if (!/^\d{10}$/.test(v)) throw new Error('WhatsApp must be exactly 10 digits');
-  return v;
-}
-
-function validateSection(str) {
-  const v = String(str || '').trim().toUpperCase();
-  if (!/^[A-Z]$/.test(v)) throw new Error('Section must be a single letter (A-Z)');
-  return v;
-}
-
-function sanitizeEvent(input = {}) {
-  const status = input.status === 'upcoming' ? 'upcoming' : 'completed';
-  const tags = Array.isArray(input.tags)
-    ? input.tags.map(t => toSafeString(t, 40)).filter(Boolean).slice(0, 12)
-    : String(input.tags || '').split(',').map(t => t.trim()).filter(Boolean).slice(0, 12);
-
-  return {
-    id: toSafeString(input.id || input.shortName || input.name, 80)
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '') || `event-${Date.now()}`,
-    name: toSafeString(input.name, 120),
-    shortName: toSafeString(input.shortName || input.name, 60),
-    date: toSafeString(input.date, 80),
-    description: toSafeString(input.description, 1200),
-    status,
-    icon: toSafeString(input.icon || 'Pin', 32),
-    tags,
-  };
-}
-
-function normalizePhone(value) {
-  return String(value || '').replace(/[^\d]/g, '');
-}
-
-async function canManageActivityEvent({ name, email, phone, password }) {
-  const expectedPassword = process.env.ADMIN_EVENT_PASSWORD || 'Admin@123';
-  if (String(password || '') !== expectedPassword) return false;
-  const n = String(name || '').trim().toLowerCase();
-  const e = String(email || '').trim().toLowerCase();
-  const p = normalizePhone(phone);
-
-  const members = await listCoreTeamStore();
-  return members.some(m =>
-    m.name.toLowerCase() === n &&
-    m.email.toLowerCase() === e &&
-    normalizePhone(m.whatsapp) === p
-  );
-}
+app.on('CORE_TEAM_MEMBER_ADDED', (event) => console.log(`[EVENT] CORE_TEAM_MEMBER_ADDED:`, event));
+app.on('CORE_TEAM_MEMBER_REMOVED', (event) => console.log(`[EVENT] CORE_TEAM_MEMBER_REMOVED:`, event));
 
 async function listEventsStore() {
   if (HAS_SUPABASE) {
@@ -487,187 +348,36 @@ function isPhoneish(s) {
 }
 
 app.get('/healthz', async (req, res) => {
-  const events = await listEventsStore();
+  const events = await eventsService.listEvents();
   res.json({ ok: true, events: events.length, storage: HAS_SUPABASE ? 'supabase' : 'file' });
 });
 
-app.get('/api/content/events', async (req, res) => {
-  try {
-    return res.json({ events: await listEventsStore() });
-  } catch (e) {
-    return res.status(500).json({ error: e?.message || 'Failed to load events' });
-  }
-});
+app.get('/api/content/events', eventsController.listEvents);
 
-app.get('/api/content/activity-events/:activityKey', async (req, res) => {
-  try {
-    const activityKey = toSafeString(req.params.activityKey, 80);
-    return res.json({ events: await listActivityEventsStore(activityKey) });
-  } catch (e) {
-    return res.status(500).json({ error: e?.message || 'Failed to load activity events' });
-  }
-});
-
-app.post('/api/content/activity-events/:activityKey', async (req, res) => {
-  try {
-    const activityKey = toSafeString(req.params.activityKey, 80);
-    const body = req.body || {};
-    const auth = { name: body.name, email: body.email, phone: body.phone, password: body.password };
-    if (!(await canManageActivityEvent(auth))) {
-      return res.status(401).json({ error: 'Unauthorized. Core team details or password did not match.' });
-    }
-
-    const event = {
-      id: `manual-${Date.now()}`,
-      name: toSafeString(body.eventName, 120),
-      date: toSafeString(body.eventDate, 80),
-      tagline: toSafeString(body.eventTagline, 240),
-      description: toSafeString(body.eventDescription, 1200),
-      status: 'completed',
-      createdAt: new Date().toISOString(),
-      createdBy: {
-        name: toSafeString(body.name, 120),
-        email: toSafeString(body.email, 140),
-        phone: normalizePhone(body.phone),
-      },
-    };
-    if (!event.name || !event.date || !event.description) {
-      return res.status(400).json({ error: 'Event name, date and description are required.' });
-    }
-
-    await createActivityEventStore(activityKey, event);
-    return res.status(201).json({ ok: true, event });
-  } catch (e) {
-    return res.status(500).json({ error: e?.message || 'Unable to add activity event' });
-  }
-});
-
-app.delete('/api/content/activity-events/:activityKey/:eventId', async (req, res) => {
-  try {
-    const activityKey = toSafeString(req.params.activityKey, 80);
-    const eventId = toSafeString(req.params.eventId, 120);
-    const body = req.body || {};
-    const auth = { name: body.name, email: body.email, phone: body.phone, password: body.password };
-    if (!(await canManageActivityEvent(auth))) {
-      return res.status(401).json({ error: 'Unauthorized. Core team details or password did not match.' });
-    }
-
-    const deleted = await deleteActivityEventStore(activityKey, eventId);
-    if (!deleted) return res.status(404).json({ error: 'Event not found in manual activity events.' });
-    return res.json({ ok: true });
-  } catch (e) {
-    return res.status(500).json({ error: e?.message || 'Unable to delete activity event' });
-  }
-});
+app.get('/api/content/activity-events/:activityKey', activityEventsController.listActivityEvents);
+app.post('/api/content/activity-events/:activityKey', activityEventsController.addActivityEvent);
+app.delete('/api/content/activity-events/:activityKey/:eventId', activityEventsController.deleteActivityEvent);
 
 app.post('/api/admin/login', adminAuthMiddleware.login);
 app.post('/api/admin/logout', adminAuthMiddleware.logout);
 
-app.get('/api/admin/events', adminAuth, async (req, res) => {
-  return res.json({ events: await listEventsStore() });
-});
-
-app.post('/api/admin/events', adminAuth, async (req, res) => {
-  try {
-    const event = sanitizeEvent(req.body || {});
-    if (!event.name || !event.date || !event.description) {
-      return res.status(400).json({ error: 'name, date and description are required' });
-    }
-    const saved = await createEventStore(event);
-    return res.status(201).json({ ok: true, event: saved });
-  } catch (e) {
-    return res.status(500).json({ error: e?.message || 'Unable to create event' });
-  }
-});
-
-app.put('/api/admin/events/:id', adminAuth, async (req, res) => {
-  try {
-    const id = String(req.params.id || '').trim();
-    const patch = sanitizeEvent({ ...req.body, id });
-    const updated = await updateEventStore(id, patch);
-    if (!updated) return res.status(404).json({ error: 'Event not found' });
-    return res.json({ ok: true, event: updated });
-  } catch (e) {
-    return res.status(500).json({ error: e?.message || 'Unable to update event' });
-  }
-});
-
-app.delete('/api/admin/events/:id', adminAuth, async (req, res) => {
-  try {
-    const id = String(req.params.id || '').trim();
-    const deleted = await deleteEventStore(id);
-    if (!deleted) return res.status(404).json({ error: 'Event not found' });
-    return res.json({ ok: true });
-  } catch (e) {
-    return res.status(500).json({ error: e?.message || 'Unable to delete event' });
-  }
-});
+app.get('/api/admin/events', adminAuth, eventsController.adminListEvents);
+app.post('/api/admin/events', adminAuth, eventsController.adminCreateEvent);
+app.put('/api/admin/events/:id', adminAuth, eventsController.adminUpdateEvent);
+app.delete('/api/admin/events/:id', adminAuth, eventsController.adminDeleteEvent);
 
 app.get('/api/content/core-team', async (req, res) => {
   try {
-    return res.json(await listCoreTeamStore());
+    const members = await coreTeamService.listMembers();
+    return res.json(members);
   } catch (e) {
     return res.status(500).json({ error: e?.message || 'Failed to load core team' });
   }
 });
 
-app.get('/api/admin/core-team', adminAuth, async (req, res) => {
-  try {
-    return res.json(await listCoreTeamStore());
-  } catch (e) {
-    return res.status(500).json({ error: e?.message || 'Failed to load core team' });
-  }
-});
-
-app.post('/api/admin/core-team', adminAuth, async (req, res) => {
-  try {
-    const body = req.body || {};
-    const adminEmail = req.adminSession?.username || 'admin';
-    
-    const member = {
-      name: toSafeString(body.name, 100),
-      role: toSafeString(body.role, 100),
-      year: toSafeString(body.year, 20),
-      branch: toSafeString(body.branch, 100),
-      section: validateSection(body.section),
-      email: toSafeString(body.email, 140),
-      whatsapp: validateWhatsApp(body.whatsapp),
-      linkedin: toSafeString(body.linkedin, 255) || null,
-      instagram: toSafeString(body.instagram, 255) || null,
-      photoUrl: toSafeString(body.photoUrl, 500) || null,
-    };
-    
-    if (!member.name || !member.role || !member.year || !member.branch || !member.email) {
-      return res.status(400).json({ error: 'Missing required fields' });
-    }
-    if (!isEmail(member.email)) {
-      return res.status(400).json({ error: 'Invalid email format' });
-    }
-    
-    const saved = await createCoreTeamStore(member);
-    adminEvents.emit('CORE_TEAM_MEMBER_ADDED', { adminEmail, member: saved, timestamp: new Date().toISOString() });
-    
-    return res.status(201).json(saved);
-  } catch (e) {
-    return res.status(400).json({ error: e?.message || 'Validation failed' });
-  }
-});
-
-app.delete('/api/admin/core-team/:id', adminAuth, async (req, res) => {
-  try {
-    const id = String(req.params.id || '').trim();
-    const adminEmail = req.adminSession?.username || 'admin';
-    
-    const deleted = await deleteCoreTeamStore(id);
-    if (!deleted) return res.status(404).json({ error: 'Member not found' });
-    
-    adminEvents.emit('CORE_TEAM_MEMBER_REMOVED', { adminEmail, memberId: id, timestamp: new Date().toISOString() });
-    
-    return res.json({ ok: true });
-  } catch (e) {
-    return res.status(500).json({ error: e?.message || 'Unable to delete member' });
-  }
-});
+app.get('/api/admin/core-team', adminAuth, coreTeamController.adminListCoreTeamMembers);
+app.post('/api/admin/core-team', adminAuth, coreTeamController.adminAddCoreTeamMember);
+app.delete('/api/admin/core-team/:id', adminAuth, coreTeamController.adminDeleteCoreTeamMember);
 
 async function handleForm(formType, req, res) {
   try {
@@ -694,23 +404,20 @@ async function handleForm(formType, req, res) {
   }
 }
 
-app.post('/api/forms/membership', (req, res) => handleForm('membership', req, res));
-app.post('/api/forms/recruitment', (req, res) => handleForm('recruitment', req, res));
-app.post('/api/core-team/apply', (req, res) => handleForm('core_team', req, res));
+app.post('/api/forms/membership', formsController.makeHandleForm('membership'));
+app.post('/api/forms/recruitment', formsController.makeHandleForm('recruitment'));
+app.post('/api/core-team/apply', formsController.makeHandleForm('core_team'));
 
 const port = Number(process.env.PORT || 8787);
 if (!process.env.VERCEL) {
   const boot = HAS_SUPABASE ? Promise.resolve() : ensureContentFile();
   boot.then(() => {
     app.listen(port, () => {
-      // eslint-disable-next-line no-console
       console.log(`NexaSphere server listening on http://localhost:${port}`);
     });
   });
 } else {
-  // Vercel/Render style deployments rely on the platform to start the server.
   app.listen(port, () => {
-    // eslint-disable-next-line no-console
     console.log(`NexaSphere server listening on http://localhost:${port}`);
   });
 }
