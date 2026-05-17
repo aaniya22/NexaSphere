@@ -33,7 +33,8 @@ import TeamPage            from './pages/team/TeamPage';
 import ContactPage         from './pages/contact/ContactPage';
 import RecruitmentPage     from './pages/recruitment/RecruitmentPage';
 import MembershipPage      from './pages/membership/MembershipPage';
-import AdminPage           from './pages/admin/AdminPage';
+// Admin has moved to the standalone dashboard (admin-dashboard/)
+// The standalone admin app runs separately (dev: http://localhost:5174)
 
 import { activityPages }   from './data/activities/index';
 import { events as fallbackEvents } from './data/eventsData';
@@ -429,7 +430,16 @@ export default function App() {
              {page.type === 'activity' && cur && <ActivityDetailPage activity={cur} onBack={onBackMain} onSelectEvent={onEvent}/>}
              {page.type === 'apply' && <RecruitmentPage onBack={onBackHome}/>}
              {page.type === 'join' && <MembershipPage onBack={onBackHome}/>}
-             {page.type === 'admin' && <AdminPage onBack={onBackHome} />}
+            {page.type === 'admin' && (
+              <div style={{ maxWidth: 760, margin: '6vh auto', padding: '2rem', textAlign: 'center', borderRadius: 12, background: 'var(--card)', boxShadow: 'var(--shadow-card)' }}>
+                <button onClick={onBackHome} className="btn-back">← Back</button>
+                <h2 style={{ marginTop: 12 }}>Admin Panel moved</h2>
+                <p style={{ opacity: 0.8 }}>The admin interface now lives in the standalone NexaSphere Control Center. Run it locally from <code>admin-dashboard/</code> or open the deployed admin URL below.</p>
+                <div style={{ marginTop: 18 }}>
+                  <a href={import.meta.env.DEV ? 'http://localhost:5174' : 'https://admin.nexasphere-glbajaj.vercel.app'} target="_blank" rel="noreferrer" className="btn btn-primary">Open NexaSphere Control Center</a>
+                </div>
+              </div>
+            )}
              {page.type === 'event' && page.event && <EventDetailPage event={page.event} onBack={page.activityKey ? onBackAct : onBackMain}/>}
              {/* 404 fallback for unknown page types */}
              {page.type && !['section','activity','event','apply','join'].includes(page.type) && <NotFoundPage onGoHome={onBackHome}/>}

@@ -124,7 +124,7 @@ mvn spring-boot:run
 | Variable           | Example                     | Purpose                  |
 | ------------------ | --------------------------- | ------------------------ |
 | **ADMIN_EMAIL**    | nexasphere@glbajajgroup.org | Admin login email        |
-| **ADMIN_PASSWORD** | Admin@123                   | Admin login password     |
+| **ADMIN_PASSWORD** | admin@123                   | Admin login password     |
 | **CORS_ORIGIN**    | http://localhost:5173       | Allowed frontend origins |
 
 <br/>
@@ -172,7 +172,7 @@ spring.jpa.properties.hibernate.format_sql=true
 
 # ========== Admin Credentials ==========
 app.admin.email=nexasphere@glbajajgroup.org
-app.admin.password=Admin@123
+app.admin.password=admin@123
 
 # ========== CORS Configuration ==========
 app.cors.origin=http://localhost:5173,https://nexasphere-glbajaj.vercel.app
@@ -358,7 +358,7 @@ curl -X POST http://localhost:8080/api/admin/login \
   -H "Content-Type: application/json" \
   -d '{
     "email":"nexasphere@glbajajgroup.org",
-    "password":"Admin@123"
+    "password":"admin@123"
   }'
 ```
 
@@ -460,7 +460,7 @@ In Railway Dashboard, add:
 
 ```
 ADMIN_EMAIL=nexasphere@glbajajgroup.org
-ADMIN_PASSWORD=Admin@123
+ADMIN_PASSWORD=admin@123
 CORS_ORIGIN=https://nexasphere-glbajaj.vercel.app
 DB_URL=jdbc:postgresql://[rail-host]:5432/railway
 DB_DRIVER=org.postgresql.Driver

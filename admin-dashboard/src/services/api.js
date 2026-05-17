@@ -166,6 +166,12 @@ async function fetchWithAuth(url, options = {}) {
           setDb('core_team', team);
           resolve(newMem);
         }
+        if (method === 'PUT') {
+          const id = url.split('/').pop();
+          team = team.map(m => m.id === id ? { ...m, ...body, id } : m);
+          setDb('core_team', team);
+          resolve(team.find(m => m.id === id));
+        }
         if (method === 'DELETE') {
           const id = url.split('/').pop();
           team = team.filter(m => m.id !== id);
@@ -228,10 +234,7 @@ export const api = {
       const result = await fetchWithAuth('/api/admin/core-team');
       const members = result?.members ?? result ?? [];
 
-      // If Java DB is empty, seed it with the official team data
-      // (photos are bundled assets and can't live in Java, so we always merge)
       if (members.length === 0) {
-        // Return the local seeded team so admin always sees the real team
         const seeded = getDb('core_team', []);
         return { members: seeded };
       }
@@ -241,6 +244,12 @@ export const api = {
       const result = await fetchWithAuth('/api/admin/core-team', { method: 'POST', body: JSON.stringify(member) });
       eventEmitter.emit(EVENTS.CORE_TEAM_MEMBER_ADDED, result);
       eventEmitter.emit(EVENTS.NOTIFY, { type: 'success', message: 'Member added' });
+      return result;
+    },
+    update: async (id, member) => {
+      const result = await fetchWithAuth(`/api/admin/core-team/${id}`, { method: 'PUT', body: JSON.stringify(member) });
+      eventEmitter.emit(EVENTS.CORE_TEAM_MEMBER_UPDATED, result);
+      eventEmitter.emit(EVENTS.NOTIFY, { type: 'success', message: 'Member updated' });
       return result;
     },
     remove: async (id) => {

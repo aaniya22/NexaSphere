@@ -20,7 +20,7 @@ public class AdminAuthService {
     @Value("${ADMIN_EMAIL:nexasphere@glbajajgroup.org}")
     private String adminEmail;
 
-    @Value("${ADMIN_PASSWORD:Admin@123}")
+    @Value("${ADMIN_PASSWORD:admin@123}")
     private String adminPassword;
 
     private final TokenService tokenService;

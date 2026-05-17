@@ -1,4 +1,4 @@
-# NexaSphere Admin Dashboard
+# NexaSphere Control Center
 
 Standalone React admin panel for managing NexaSphere content.
 
@@ -139,20 +139,12 @@ npm run dev
 
 ## 🔑 Login Credentials
 
-<br/>
+By default the admin dashboard ships with a developer-friendly fallback credential set (for local development). When using the standalone dashboard without connecting to a production Java backend, you can use:
 
-<table align="center">
-  <tr>
-    <td><strong>Email</strong></td>
-    <td>nexasphere@glbajajgroup.org</td>
-  </tr>
-  <tr>
-    <td><strong>Password</strong></td>
-    <td>Admin@123</td>
-  </tr>
-</table>
+- Email: `nexasphere@glbajajgroup.org`
+- Password: `admin@123`
 
-<br/>
+For security, the live Java backend enforces a stronger password policy; to allow the weaker local credential during development set the environment variable `VITE_ALLOW_WEAK_ADMIN=true` in your `.env` (or rely on `import.meta.env.DEV` during local development).
 
 ---
 ## 📋 Environment Variables
