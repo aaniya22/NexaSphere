@@ -42,6 +42,7 @@ function getWhatsappDisplay(raw) {
 // ── Modal Content ──
 function ModalContent({ member, onClose }) {
   const [activePopup, setActivePopup] = useState(null);
+  const [imgError, setImgError] = useState(false);
 
   useEffect(() => {
     const handler = (e) => { if (e.key === 'Escape') onClose(); };
@@ -66,7 +67,12 @@ function ModalContent({ member, onClose }) {
         <button className="modal-close" onClick={onClose} aria-label="Close">✕</button>
 
         {/* Photo */}
-        <img src={member.photo} alt={member.name} className="modal-photo" loading="lazy" />
+        <img 
+          src={(!member.photo || imgError) ? 'https://api.dicebear.com/7.x/initials/svg?seed=' + encodeURIComponent(member.name) + '&backgroundColor=7b6fff&textColor=ffffff' : member.photo} 
+          alt={member.name} 
+          className="modal-photo" 
+          onError={() => setImgError(true)}
+        />
 
         {/* Name & Role */}
         <div className="modal-name">{member.name}</div>

@@ -1,83 +1,43 @@
-# 📊 src/data/
+# 📊 NexaSphere Live Data & Portal Architecture
 
-All site content lives here. Edit these files to update the website **without touching any component code**.
-
----
-
-## Files
-
-| File | Edit to... |
-|---|---|
-| `teamData.js` | Add / update core team members |
-| `activitiesData.js` | Change activity card icons & descriptions (home grid) |
-| `eventsData.js` | Add events to the home page timeline + Events page |
-| `activities/index.js` | Register a new activity page |
-| `activities/workshop.js` | Add / update Workshop events |
-| `activities/insightSession.js` | Add / update KSS & Insight Session events |
-| `activities/hackathon.js` | Add / update Hackathon events |
+All site content is now fully dynamic and managed via the **NexaSphere Spring Boot Backend** and **PostgreSQL Database**. Future maintainers should **not** modify or create static JS arrays for content.
 
 ---
 
-## How to add a new event to the Home / Events page
+## 🛠️ How to Manage Content & Submissions
 
-Open `eventsData.js` and add a new object to the `events` array:
-
-```js
-{
-  id: 4,                          // next sequential number
-  name: 'Your Event Name',
-  shortName: 'Short Name',
-  date: 'April 2026',
-  description: 'One paragraph description.',
-  status: 'upcoming',             // 'upcoming' | 'completed'
-  icon: '🚀',
-  tags: ['Tag1', 'Tag2'],
-}
-```
+To add, update, or remove events, activities, core team members, and review applications, use the official **Admin Dashboard**:
+1. Open the [admin-dashboard/](file:///c:/Users/itzza/NexaSphere/admin-dashboard/) directory.
+2. Run `npm install` and `npm run dev` to start the portal.
+3. Access the dashboard at `http://localhost:5174` (or the deployed admin domain).
+4. Login using your authorized administrative email and password.
 
 ---
 
-## How to add an upcoming Workshop
+## 📡 Active REST API Envs & Endpoints
 
-Open `activities/workshop.js` → add to `upcomingEvents`:
+The website uses the following production endpoints:
 
-```js
-{
-  id: 'workshop-your-id',
-  name: 'Workshop: Topic Name',
-  shortName: 'Topic Name',
-  date: 'Coming Soon',
-  status: 'upcoming',
-  description: 'What attendees will learn.',
-  tags: ['Tag1', 'Tag2'],
-}
-```
+### Public Read API (Main Website)
+* **Events Timeline**: `GET /api/content/events` -> Returns `{ "events": [...] }`
+* **Core Team Grid**: `GET /api/content/team` -> Returns `{ "members": [...] }`
+* **Activity Events**: `GET /api/content/activity-events/{activityKey}` -> Returns `{ "events": [...] }`
 
----
+### Public Submission Write API (Forms)
+* **Membership Application**: `POST /api/submissions/membership`
+* **Recruitment Application**: `POST /api/submissions/recruitment`
+  > [!NOTE]
+  > Duplicate submissions are strictly validated server-side based on the `@glbajajgroup.org` college email address. The system returns a `409 Conflict` if the email is already registered.
 
-## How to add an upcoming Insight Session
-
-Open `activities/insightSession.js` → add to `upcomingEvents`:
-
-```js
-{
-  id: 'insight-session-id',
-  name: 'Session Title',
-  shortName: 'Short Name',
-  date: 'March 13',
-  status: 'upcoming',
-  description: 'Session description.',
-  tags: ['Career', 'Guidance'],
-}
-```
-
-When the session is conducted, move it to `conductedEvents` and fill in speakers, topics, volunteers, etc.
+### Authenticated CRUD API (Admin Portal)
+* **Manage Events**: `GET` / `POST` / `PUT` / `DELETE` at `/api/admin/events`
+* **Manage Core Team**: `GET` / `POST` / `PUT` / `DELETE` at `/api/admin/core-team`
+* **Manage Submissions**: `GET` / `PATCH` at `/api/admin/submissions/membership` and `/api/admin/submissions/recruitment`
 
 ---
 
-## Events log (April 2026)
+## 💾 Server & Database Configurations
 
-| Event | Status | File |
-|---|---|---|
-| KSS #153 — Impact of AI | ✅ Completed | `activities/insightSession.js` |
-| Workshop: Git & GitHub | ✅ Completed | `activities/workshop.js` + `eventsData.js` |
+All persistent database configurations are set in [application.properties](file:///c:/Users/itzza/NexaSphere/server-java/src/main/resources/application.properties). Default admin credentials and datasource connection strings support dynamic environment variables:
+* `ADMIN_EMAIL` / `ADMIN_PASSWORD` (Administrative login)
+* `DB_URL` / `DB_USER` / `DB_PASS` (PostgreSQL connection configuration)

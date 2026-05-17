@@ -1,65 +1,31 @@
-# 📝 src/pages/recruitment/
+# src/pages/recruitment/
 
-In-website **NexaSphere Core Team Application Form** — 7-step form that collects applicant details and writes responses directly to Google Sheets via Apps Script.
-
----
+In-website NexaSphere Core Team Application Form. Submissions are sent to the Spring Boot backend and are visible in the admin dashboard.
 
 ## Files
 
 | File | Purpose |
 |---|---|
-| `RecruitmentPage.jsx` | Full 7-step application form + Roles & Responsibilities slide-over modal |
+| `RecruitmentPage.jsx` | Full application form and roles guide modal |
 
----
+## Backend Integration
+
+| Flow | Endpoint |
+|---|---|
+| Submit recruitment form | `POST /api/submissions/recruitment` |
+| Admin list responses | `GET /api/admin/submissions/recruitment` |
+| Admin update status | `PATCH /api/admin/submissions/recruitment/{id}/status` |
+
+Duplicate submissions are checked server-side by `collegeEmail`. The backend returns `409 Conflict` when an email has already submitted.
 
 ## Form Steps
 
 | Step | Title | Key Fields |
 |---|---|---|
-| 0 | About NexaSphere | Informational — no input |
-| 1 | Personal Information | Full Name, College Email, WhatsApp, Year, Branch, Section |
-| 2 | Role & Domain Preference | Role applied for, Areas of interest (multi-select) |
-| 3 | Skills & Experience | Programming skills, Communication languages, Campus experience, GitHub |
-| 4 | Commitment & Availability | Hours/week, Campus attendance, Assessment consent |
-| 5 | Motivation & Statement | Why join, Anything else |
-| 6 | Declaration & Consent | 3 agreement checkboxes + 1 disagree (blocks submission) |
-
----
-
-## Validation Rules
-
-- **College Email** must end with `@glbajajgroup.org`
-- **WhatsApp** must be exactly 10 digits
-- **GitHub URL** format: `https://github.com/username` (optional — only validated if filled)
-- All `*` fields must be filled before proceeding to next step
-- Declaration: all 3 positive boxes must be checked; "disagree" must be unchecked
-
----
-
-## Google Sheets Integration
-
-| Setting | Value |
-|---|---|
-| Constant | `APPS_SCRIPT_URL` (line ~883 in `RecruitmentPage.jsx`) |
-| Sheet tab | `Responses` |
-| Dedup key | College email (stored in `localStorage: ns_submitted_emails`) |
-
-The script is a **separate** Apps Script project from the Membership form.
-
----
-
-## Roles & Responsibilities Modal
-
-A `RolesGuideModal` slide-over panel (renders at z-index 99999) lists all Core Team roles with their responsibilities. Triggered by the "View Roles & Responsibilities" button on Step 2.
-
-- Opens with `slideInRight` animation
-- Closes on backdrop click, ✕ button, or Escape key
-- Locks body scroll while open
-
----
-
-## Success Screen
-
-After submission, the user sees links to:
-- 💬 Core Team Screening Room (WhatsApp group)
-- 🌐 NexaSphere Community (WhatsApp group)
+| 0 | About NexaSphere | Informational |
+| 1 | Personal Information | Full name, college email, WhatsApp, year, branch, section |
+| 2 | Role & Domain Preference | Role applied for, areas of interest |
+| 3 | Skills & Experience | Programming skills, communication languages, campus experience, GitHub |
+| 4 | Commitment & Availability | Hours/week, campus attendance, assessment consent |
+| 5 | Motivation & Statement | Why join, anything else |
+| 6 | Declaration & Consent | Required agreement checkboxes |

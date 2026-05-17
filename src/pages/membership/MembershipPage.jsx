@@ -28,7 +28,6 @@ const GROUP_OPTIONS    = [
   'NexaSphere Career & Placement',
 ];
 
-const MEMBERSHIP_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyRQOW3Xjv13vXvft8ezD9sJdvjV3kf-VHm1l_mImHRDUAEqsilK0wb5QBD5GOkixwe/exec';
 
 function clamp(n, min, max) { return Math.max(min, Math.min(max, n)); }
 
@@ -201,16 +200,7 @@ export default function MembershipPage({ onBack }) {
   const [busy, setBusy]   = useState(false);
   const [done, setDone]   = useState(false);
   const [err,  setErr]    = useState('');
-  const [alreadySubmitted, setAlreadySubmitted] = useState(false);
   const topRef = useRef(null);
-
-  
-  useEffect(() => {
-    try {
-      const submitted = JSON.parse(localStorage.getItem('ns_member_emails') || '[]');
-      if (submitted.length > 0) setAlreadySubmitted(true);
-    } catch { /* ignore */ }
-  }, []);
 
   const [form, setForm] = useState({
     
@@ -272,48 +262,37 @@ export default function MembershipPage({ onBack }) {
     setErr('');
     setBusy(true);
     try {
-      const emailKey = String(form.whatsapp || '').trim(); 
-      try {
-        const existing = JSON.parse(localStorage.getItem('ns_member_emails') || '[]');
-        if (existing.includes(emailKey)) {
-          setErr('This number has already been used to submit a membership form. Each member may submit only once.');
-          setBusy(false);
-          return;
-        }
-      } catch { /* ignore */ }
-
       const payload = {
-        fullName:     form.fullName.trim(),
-        collegeEmail: form.collegeEmail.trim().toLowerCase(),
-        rollNumber:   form.rollNumber.trim(),
-        course:       form.course === 'Other' ? (form.courseOther.trim() || 'Other') : form.course,
-        branch:       form.branch === 'Other' ? (form.branchOther.trim() || 'Other') : form.branch,
-        section:      form.section === 'Other' ? form.sectionOther : form.section,
-        semester:     form.semester,
-        whatsapp:     form.whatsapp,
-        groups:       form.groups.join(', '),
-        whyJoin:      form.whyJoin.trim(),
-        submittedAt:  new Date().toISOString(),
-        userAgent:    navigator.userAgent,
-        formType:     'membership',
+        fullName:       form.fullName.trim(),
+        collegeEmail:   form.collegeEmail.trim().toLowerCase(),
+        rollNumber:     form.rollNumber.trim(),
+        course:         form.course === 'Other' ? (form.courseOther.trim() || 'Other') : form.course,
+        branch:         form.branch === 'Other' ? (form.branchOther.trim() || 'Other') : form.branch,
+        section:        form.section === 'Other' ? form.sectionOther : form.section,
+        semester:       form.semester,
+        whatsapp:       form.whatsapp,
+        groupsSelected: form.groups.join(', '),
+        whyJoin:        form.whyJoin.trim(),
       };
 
-      const res = await fetch(MEMBERSHIP_SCRIPT_URL, {
+      const base = (import.meta?.env?.VITE_API_BASE || '').replace(/\/+$/, '');
+      const url = base ? `${base}/api/submissions/membership` : '/api/submissions/membership';
+
+      const res = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
+
       const data = await res.json().catch(() => ({}));
-      if (!res.ok || (data && data.ok === false)) {
-        throw new Error(data?.error || 'Membership form submission failed');
+
+      if (res.status === 409) {
+        throw new Error('This email has already been used to submit a membership form.');
       }
 
-      
-      try {
-        const existing = JSON.parse(localStorage.getItem('ns_member_emails') || '[]');
-        existing.push(emailKey);
-        localStorage.setItem('ns_member_emails', JSON.stringify(existing));
-      } catch { /* ignore */ }
+      if (!res.ok) {
+        throw new Error(data?.error || 'Membership form submission failed');
+      }
 
       setDone(true);
       scrollTop();
@@ -752,45 +731,7 @@ export default function MembershipPage({ onBack }) {
 
           
           <div className="member-body">
-            {alreadySubmitted && !done ? (
-              <div style={{
-                background:'rgba(255,45,120,.08)', border:'1px solid rgba(255,45,120,.22)',
-                borderRadius:'var(--r3)', padding:'20px 22px', textAlign:'center',
-              }}>
-                <div style={{ display:'flex', justifyContent:'center', color:'#ff2d78', marginBottom:10 }}><DynamicIcon name="AlertTriangle" size={22} /></div>
-                <div style={{ color:'var(--t1)', fontSize:'.98rem', fontWeight:600, marginBottom:16 }}>
-                  Membership Form Already Submitted
-                </div>
-                <div style={{ color:'var(--t2)', fontSize:'.88rem', lineHeight:1.6, marginBottom:24 }}>
-                  A membership form has already been submitted from this device.<br/>
-                  If you need to update your application, please contact us at{' '}
-                  <a href="mailto:nexasphere@glbajajgroup.org" style={{ color:'var(--c1)', fontWeight:600 }}>
-                    nexasphere@glbajajgroup.org
-                  </a>
-                </div>
-
-                <div style={{ display:'flex', gap:12, flexWrap:'wrap', justifyContent:'center' }}>
-                  <a
-                    href={WHATSAPP_COMMUNITY}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="btn btn-whatsapp"
-                    style={{ flex:1, minWidth:0, justifyContent:'center' }}
-                  >
-                    Join WhatsApp Community
-                  </a>
-                  <a
-                    href={LINKEDIN_PAGE}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="btn btn-outline"
-                    style={{ flex:1, minWidth:0, justifyContent:'center' }}
-                  >
-                    NexaSphere LinkedIn
-                  </a>
-                </div>
-              </div>
-            ) : done ? (
+            {done ? (
               /* ── Success screen ── */
               <div style={{ display:'grid', gap:18 }}>
                 <div style={{

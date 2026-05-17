@@ -20,7 +20,12 @@ public class CoreTeamMemberEntity {
     private String year;
     private String email;
     private String linkedin;
+    @Column(columnDefinition = "TEXT")
     private String photo;
+
+    private String section;
+    private String whatsapp;
+    private String instagram;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -38,4 +43,10 @@ public class CoreTeamMemberEntity {
     public void setLinkedin(String linkedin) { this.linkedin = linkedin; }
     public String getPhoto() { return photo; }
     public void setPhoto(String photo) { this.photo = photo; }
+    public String getSection() { return section; }
+    public void setSection(String section) { this.section = section; }
+    public String getWhatsapp() { return whatsapp; }
+    public void setWhatsapp(String whatsapp) { this.whatsapp = whatsapp; }
+    public String getInstagram() { return instagram; }
+    public void setInstagram(String instagram) { this.instagram = instagram; }
 }

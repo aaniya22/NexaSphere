@@ -305,7 +305,7 @@ export default function EventDetailPage({ event, activityColor, activityIcon, on
             )}
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', marginBottom: '28px', marginTop: '12px' }}>
-              <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}><DynamicIcon name="Calendar" size={14} /> {event.date}</span>
+              <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}><DynamicIcon name="Calendar" size={14} /> {event.dateText ?? event.date}</span>
               <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}><DynamicIcon name="MapPin" size={14} /> GL Bajaj Group of Institutions, Mathura</span>
               <span style={{
                 fontSize: '0.72rem', padding: '3px 12px', borderRadius: '20px',

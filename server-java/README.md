@@ -30,8 +30,8 @@ Spring Boot 3 backend service providing:
 | **Runtime**             | Java 17+         |
 | **Framework**           | Spring Boot 3    |
 | **Build Tool**          | Maven 3.8+       |
-| **Default Database**    | H2 (development) |
-| **Production Database** | PostgreSQL       |
+| **Default Database**    | PostgreSQL       |
+| **Test Database**       | H2 in-memory     |
 | **Port**                | 8080             |
 
 <br/>
@@ -81,9 +81,16 @@ mvn clean install
 
 <br/>
 
-**Using H2 (in-memory database):**
+Set the required environment variables, then run:
 
 ```bash
+export ADMIN_EMAIL=admin@example.com
+export ADMIN_PASSWORD=change-me
+export DB_URL=jdbc:postgresql://localhost:5432/nexasphere
+export DB_DRIVER=org.postgresql.Driver
+export DB_USER=postgres
+export DB_PASS=yourpassword
+
 mvn spring-boot:run
 ```
 
@@ -123,8 +130,8 @@ mvn spring-boot:run
 
 | Variable           | Example                     | Purpose                  |
 | ------------------ | --------------------------- | ------------------------ |
-| **ADMIN_EMAIL**    | nexasphere@glbajajgroup.org | Admin login email        |
-| **ADMIN_PASSWORD** | Admin@123                   | Admin login password     |
+| **ADMIN_EMAIL**    | admin@example.com           | Admin login email        |
+| **ADMIN_PASSWORD** | use-a-strong-secret         | Admin login password     |
 | **CORS_ORIGIN**    | http://localhost:5173       | Allowed frontend origins |
 
 <br/>
@@ -133,10 +140,10 @@ mvn spring-boot:run
 
 | Variable      | Dev Value                | Prod Value                             |
 | ------------- | ------------------------ | -------------------------------------- |
-| **DB_URL**    | jdbc:h2:mem:nexaspheredb | jdbc:postgresql://host:5432/nexasphere |
-| **DB_DRIVER** | org.h2.Driver            | org.postgresql.Driver                  |
-| **DB_USER**   | sa                       | postgres                               |
-| **DB_PASS**   | _(empty)_                | your-password                          |
+| **DB_URL**    | jdbc:postgresql://host:5432/nexasphere |
+| **DB_DRIVER** | org.postgresql.Driver                  |
+| **DB_USER**   | postgres                               |
+| **DB_PASS**   | your-password                          |
 
 <br/>
 
@@ -144,43 +151,20 @@ mvn spring-boot:run
 
 <br/>
 
-Create `src/main/resources/application.properties`:
+`src/main/resources/application.properties` reads credentials and database settings from environment variables. Do not commit real admin credentials.
 
 ```properties
-# ========== Server Configuration ==========
 server.port=8080
-spring.profiles.active=dev
 
-# ========== Database (H2 - Development) ==========
-spring.datasource.url=jdbc:h2:mem:nexaspheredb
-spring.datasource.driverClassName=org.h2.Driver
-spring.datasource.username=sa
-spring.datasource.password=
+spring.datasource.url=${DB_URL}
+spring.datasource.driver-class-name=${DB_DRIVER:org.postgresql.Driver}
+spring.datasource.username=${DB_USER}
+spring.datasource.password=${DB_PASS}
 
-# ========== Database (PostgreSQL - Production) ==========
-# Uncomment for production
-# spring.datasource.url=jdbc:postgresql://localhost:5432/nexasphere
-# spring.datasource.driverClassName=org.postgresql.Driver
-# spring.datasource.username=postgres
-# spring.datasource.password=yourpassword
-
-# ========== JPA/Hibernate Configuration ==========
-spring.jpa.database-platform=org.hibernate.dialect.H2Dialect
-spring.jpa.hibernate.ddl-auto=create-drop
+spring.jpa.hibernate.ddl-auto=update
 spring.jpa.show-sql=false
-spring.jpa.properties.hibernate.format_sql=true
 
-# ========== Admin Credentials ==========
-app.admin.email=nexasphere@glbajajgroup.org
-app.admin.password=Admin@123
-
-# ========== CORS Configuration ==========
-app.cors.origin=http://localhost:5173,https://nexasphere-glbajaj.vercel.app
-
-# ========== Logging ==========
-logging.level.root=INFO
-logging.level.org.nexasphere=DEBUG
-logging.level.org.springframework.web=DEBUG
+CORS_ORIGIN=${CORS_ORIGIN:http://localhost:5173}
 ```
 
 <br/>
@@ -357,8 +341,8 @@ POST   /api/admin/logout
 curl -X POST http://localhost:8080/api/admin/login \
   -H "Content-Type: application/json" \
   -d '{
-    "email":"nexasphere@glbajajgroup.org",
-    "password":"Admin@123"
+    "email":"admin@example.com",
+    "password":"your-admin-password"
   }'
 ```
 
@@ -459,8 +443,8 @@ railway up
 In Railway Dashboard, add:
 
 ```
-ADMIN_EMAIL=nexasphere@glbajajgroup.org
-ADMIN_PASSWORD=Admin@123
+ADMIN_EMAIL=admin@example.com
+ADMIN_PASSWORD=your-admin-password
 CORS_ORIGIN=https://nexasphere-glbajaj.vercel.app
 DB_URL=jdbc:postgresql://[rail-host]:5432/railway
 DB_DRIVER=org.postgresql.Driver

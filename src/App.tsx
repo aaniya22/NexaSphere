@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import './styles/themes.css';
 import './styles/globals.css';
 import './styles/animations.css';
@@ -37,7 +37,7 @@ import RecruitmentPage from './pages/recruitment/RecruitmentPage';
 import MembershipPage from './pages/membership/MembershipPage';
 
 import { activityPages } from './data/activities/index';
-import { events as fallbackEvents } from './data/eventsData';
+const fallbackEvents: any[] = [];
 import Cursor from './components/Cursor';
 import Wipe from './components/Wipe';
 import PageIn from './components/PageIn';

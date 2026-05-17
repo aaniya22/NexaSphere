@@ -22,6 +22,9 @@ public class ActivityEventEntity {
     private String participants;
     private String result;
 
+    private String status;
+    private String tags;
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public String getActivityKey() { return activityKey; }
@@ -36,4 +39,8 @@ public class ActivityEventEntity {
     public void setParticipants(String participants) { this.participants = participants; }
     public String getResult() { return result; }
     public void setResult(String result) { this.result = result; }
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
+    public String getTags() { return tags; }
+    public void setTags(String tags) { this.tags = tags; }
 }

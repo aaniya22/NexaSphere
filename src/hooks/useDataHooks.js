@@ -26,7 +26,7 @@ export function useDynamicEvents(fallbackEvents) {
     fetch(url)
       .then(res => (res.ok ? res.json() : Promise.reject(new Error('Failed to load events'))))
       .then(data => {
-        if (isMounted && Array.isArray(data?.events) && data.events.length > 0) {
+        if (isMounted && Array.isArray(data?.events)) {
           setEventsData(data.events);
         }
       })

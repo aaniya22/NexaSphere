@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Rocket } from 'lucide-react';
-import { teamMembers } from '../../data/teamData';
 import TeamMemberModal from './TeamMemberModal';
 import { IconArrowRight, IconSpark } from '../../shared/Icons';
 import { BannerOrbs } from '../../shared/MotionLayer';
@@ -46,10 +45,9 @@ function MemberCard({ member, idx, onClick }) {
     >
       <div className="team-card-photo-wrap">
         <img 
-        src={imgError ? 'https://api.dicebear.com/7.x/initials/svg?seed=' + encodeURIComponent(member.name) + '&backgroundColor=CC1111&textColor=ffffff' : member.photo} 
+        src={(!member.photo || imgError) ? 'https://api.dicebear.com/7.x/initials/svg?seed=' + encodeURIComponent(member.name) + '&backgroundColor=7b6fff&textColor=ffffff' : member.photo} 
         alt={member.name} 
         className="team-card-photo"
-        loading="lazy"
         onError={() => setImgError(true)}
       />
       </div>
@@ -67,11 +65,29 @@ function MemberCard({ member, idx, onClick }) {
 
 export default function TeamPage({ onBack, onApply }) {
   const [sel, setSel] = useState(null);
+  const [members, setMembers] = useState([]);
 
   useEffect(() => { window.scrollTo({ top: 0 }); }, []);
 
-  const organiser = teamMembers.filter(m => m.role === 'Organiser' || m.role === 'Co-organiser');
-  const coreTeam  = teamMembers.filter(m => m.role === 'Core Team Member');
+  useEffect(() => {
+    let alive = true;
+    const base = (import.meta?.env?.VITE_API_BASE || '').replace(/\/+$/, '');
+    const url = base ? `${base}/api/content/team` : '/api/content/team';
+    
+    fetch(url)
+      .then(r => r.ok ? r.json() : Promise.reject())
+      .then(data => {
+        if (!alive) return;
+        if (Array.isArray(data?.members)) {
+          setMembers(data.members);
+        }
+      })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, []);
+
+  const organiser = members.filter(m => m.role === 'Organiser' || m.role === 'Co-organiser');
+  const coreTeam  = members.filter(m => m.role === 'Core Team Member');
 
   return (
     <div id="team-page" style={{ minHeight: '100vh', padding: '0 0 100px' }}>

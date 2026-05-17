@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin/activity-events")
@@ -24,8 +25,8 @@ public class ActivityEventsController {
     }
 
     @GetMapping("/{activityKey}")
-    public List<ActivityEventEntity> getByActivity(@PathVariable String activityKey) {
-        return repo.findByActivityKey(activityKey);
+    public Map<String, Object> getByActivity(@PathVariable String activityKey) {
+        return Map.of("events", repo.findByActivityKey(activityKey));
     }
 
     @PostMapping("/{activityKey}")

@@ -8,6 +8,7 @@ const links = [
   { to: '/dashboard/activity-events', label: 'Activity Events', icon: 'Target' },
   { to: '/dashboard/core-team', label: 'Core Team', icon: 'Users' },
   { to: '/dashboard/membership', label: 'Membership', icon: 'FileText' },
+  { to: '/dashboard/recruitment', label: 'Recruitment', icon: 'Users' },
 ];
 
 export function Sidebar() {
