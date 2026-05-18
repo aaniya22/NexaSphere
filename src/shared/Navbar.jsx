@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { BRAND_LOGO_FULL, BRAND_LOGO_ICON } from './brandAssets';
+import NotificationBell from '../components/NotificationBell';
 
 const TABS = ['Home', 'Activities', 'Events', 'About', 'Team', 'Contact'];
 
@@ -54,7 +55,10 @@ export default function Navbar({ activeTab, onTabChange, onToggleTheme, theme, o
       <div className="ns-mobile-top">
         <img src={BRAND_LOGO_ICON} alt="NexaSphere" className="ns-mobile-logo-ns"/>
         <span className="ns-mobile-brand"><span>NexaSphere</span></span>
-        <ThemeToggle theme={theme} onToggle={onToggleTheme} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <NotificationBell />
+          <ThemeToggle theme={theme} onToggle={onToggleTheme} />
+        </div>
       </div>
       <div className="ns-mobile-tabs">
         {TABS.map(t => (
@@ -95,6 +99,7 @@ export default function Navbar({ activeTab, onTabChange, onToggleTheme, theme, o
         </ul>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, justifySelf: 'end' }}>
+          <NotificationBell />
           <div className="ns-nav-ctas">
             <button className="btn btn-sm btn-outline ns-nav-cta-btn" onClick={onJoin} aria-label="Join as Member">Join</button>
             <button className="btn btn-sm btn-primary ns-nav-cta-btn" onClick={onApply} aria-label="Apply for Core Team">Apply</button>
@@ -105,4 +110,3 @@ export default function Navbar({ activeTab, onTabChange, onToggleTheme, theme, o
     </nav>
   );
 }
-
