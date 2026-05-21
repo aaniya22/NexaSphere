@@ -31,6 +31,7 @@ body {
   flex: 1;
   margin-left: var(--sidebar-w);
   padding: 32px;
+  padding-top: 64px;
   min-height: 100vh;
   background: var(--bg);
 }
@@ -505,6 +506,7 @@ body {
 
 .toast-success { background: #166534; border: 1px solid #22c55e; color: #bbf7d0; }
 .toast-error { background: #7f1d1d; border: 1px solid #ef4444; color: #fecaca; }
+.toast-warning { background: #78350f; border: 1px solid #f59e0b; color: #fde68a; }
 
 @keyframes slideIn {
   from { transform: translateX(100%); opacity: 0; }
@@ -638,3 +640,30 @@ body {
 }
 
 .animate-spin { animation: spin 1s linear infinite; }
+
+/* ── Offline Banner ── */
+.offline-banner {
+  position: fixed;
+  top: 0;
+  left: var(--sidebar-w);
+  right: 0;
+  z-index: 150;
+  background: #78350f;
+  border-bottom: 1px solid #f59e0b;
+  color: #fde68a;
+  padding: 8px 20px;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.offline-icon {
+  font-size: 16px;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
