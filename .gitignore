@@ -44,3 +44,11 @@ image.png
 node_modules/
 dist/
 build/
+
+# Custom GSSoC Issue Tracking
+GitHub_Issues/
+
+# Logs
+server/logs/
+*.log
+

@@ -3,7 +3,7 @@
  * Sends alerts to Slack for critical errors and metrics
  */
 
-const logger = require("./logger");
+import logger from "./logger.js";
 
 /**
  * Send Slack alert
@@ -186,7 +186,7 @@ async function sendErrorRateAlert(errorRate, threshold) {
   });
 }
 
-module.exports = {
+export {
   sendSlackAlert,
   formatSlackMessage,
   sendPerformanceAlert,

@@ -12,8 +12,10 @@ import { ZodError } from 'zod';
 import { normalizeFormSubmission } from './validators/formSchemas.js';
 import { adminAuthMiddleware } from './middleware/adminAuthMiddleware.js';
 import analyticsRouter from './routes/analytics.js';
+import { initializeSocketIO, emitToRoom, getRoom } from './config/socket.js';
+import adminStreamRouter from './routes/adminStream.js';
+import { broadcastSSEEvent } from './services/sseService.js';
 import { portfolioRepository } from './repositories/portfolioRepository.js';
-
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -128,6 +130,18 @@ async function readContent() {
 async function writeContent(content) {
   await ensureContentFile();
   await fs.writeFile(CONTENT_FILE, JSON.stringify(content, null, 2), 'utf8');
+}
+
+let contentLock = Promise.resolve();
+
+function withContentLock(fn) {
+  let release;
+  const next = new Promise((resolve) => {
+    release = resolve;
+  });
+  const current = contentLock;
+  contentLock = next;
+  return current.then(() => fn()).finally(() => release());
 }
 
 export async function supabaseRequest(pathname, { method = 'GET', body } = {}) {
@@ -263,10 +277,12 @@ async function createEventStore(event) {
       updatedAt: row.updated_at,
     });
   }
-  const content = await readContent();
-  content.events.unshift({ ...event, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
-  await writeContent(content);
-  return sanitizeEventRecord(content.events[0]);
+  return withContentLock(async () => {
+    const content = await readContent();
+    content.events.unshift({ ...event, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
+    await writeContent(content);
+    return sanitizeEventRecord(content.events[0]);
+  });
 }
 
 async function updateEventStore(id, patch) {
@@ -298,12 +314,14 @@ async function updateEventStore(id, patch) {
       updatedAt: row.updated_at,
     });
   }
-  const content = await readContent();
-  const idx = content.events.findIndex(e => e.id === id);
-  if (idx < 0) return null;
-  content.events[idx] = { ...content.events[idx], ...patch, id, updatedAt: new Date().toISOString() };
-  await writeContent(content);
-  return sanitizeEventRecord(content.events[idx]);
+  return withContentLock(async () => {
+    const content = await readContent();
+    const idx = content.events.findIndex(e => e.id === id);
+    if (idx < 0) return null;
+    content.events[idx] = { ...content.events[idx], ...patch, id, updatedAt: new Date().toISOString() };
+    await writeContent(content);
+    return sanitizeEventRecord(content.events[idx]);
+  });
 }
 
 async function deleteEventStore(id) {
@@ -311,12 +329,14 @@ async function deleteEventStore(id) {
     const rows = await supabaseRequest(`events?id=eq.${encodeURIComponent(id)}`, { method: 'DELETE' });
     return Array.isArray(rows) && rows.length > 0;
   }
-  const content = await readContent();
-  const before = content.events.length;
-  content.events = content.events.filter(e => e.id !== id);
-  if (content.events.length === before) return false;
-  await writeContent(content);
-  return true;
+  return withContentLock(async () => {
+    const content = await readContent();
+    const before = content.events.length;
+    content.events = content.events.filter(e => e.id !== id);
+    if (content.events.length === before) return false;
+    await writeContent(content);
+    return true;
+  });
 }
 
 async function listActivityEventsStore(activityKey) {
@@ -367,12 +387,14 @@ async function createActivityEventStore(activityKey, event) {
       createdAt: row.created_at,
     });
   }
-  const content = await readContent();
-  content.activityEvents = content.activityEvents || {};
-  content.activityEvents[activityKey] = content.activityEvents[activityKey] || [];
-  content.activityEvents[activityKey].unshift(event);
-  await writeContent(content);
-  return sanitizeActivityEventRecord(event);
+  return withContentLock(async () => {
+    const content = await readContent();
+    content.activityEvents = content.activityEvents || {};
+    content.activityEvents[activityKey] = content.activityEvents[activityKey] || [];
+    content.activityEvents[activityKey].unshift(event);
+    await writeContent(content);
+    return sanitizeActivityEventRecord(event);
+  });
 }
 
 async function deleteActivityEventStore(activityKey, eventId) {
@@ -380,14 +402,16 @@ async function deleteActivityEventStore(activityKey, eventId) {
     const rows = await supabaseRequest(`activity_events?activity_key=eq.${encodeURIComponent(activityKey)}&id=eq.${encodeURIComponent(eventId)}`, { method: 'DELETE' });
     return Array.isArray(rows) && rows.length > 0;
   }
-  const content = await readContent();
-  content.activityEvents = content.activityEvents || {};
-  const list = content.activityEvents[activityKey] || [];
-  const next = list.filter(e => e.id !== eventId);
-  if (next.length === list.length) return false;
-  content.activityEvents[activityKey] = next;
-  await writeContent(content);
-  return true;
+  return withContentLock(async () => {
+    const content = await readContent();
+    content.activityEvents = content.activityEvents || {};
+    const list = content.activityEvents[activityKey] || [];
+    const next = list.filter(e => e.id !== eventId);
+    if (next.length === list.length) return false;
+    content.activityEvents[activityKey] = next;
+    await writeContent(content);
+    return true;
+  });
 }
 
 async function listCoreTeamStore() {
@@ -426,12 +450,14 @@ async function createCoreTeamStore(member) {
       photoUrl: row.photo_url, createdAt: row.created_at
     });
   }
-  const content = await readContent();
-  content.coreTeam = content.coreTeam || [];
-  const newMember = { ...member, id: crypto.randomUUID(), createdAt: new Date().toISOString() };
-  content.coreTeam.push(newMember);
-  await writeContent(content);
-  return sanitizeCoreTeamMemberRecord(newMember);
+  return withContentLock(async () => {
+    const content = await readContent();
+    content.coreTeam = content.coreTeam || [];
+    const newMember = { ...member, id: crypto.randomUUID(), createdAt: new Date().toISOString() };
+    content.coreTeam.push(newMember);
+    await writeContent(content);
+    return sanitizeCoreTeamMemberRecord(newMember);
+  });
 }
 
 async function deleteCoreTeamStore(id) {
@@ -439,13 +465,15 @@ async function deleteCoreTeamStore(id) {
     const rows = await supabaseRequest(`core_team_members?id=eq.${encodeURIComponent(id)}`, { method: 'DELETE' });
     return Array.isArray(rows) && rows.length > 0;
   }
-  const content = await readContent();
-  content.coreTeam = content.coreTeam || [];
-  const before = content.coreTeam.length;
-  content.coreTeam = content.coreTeam.filter(m => String(m.id) !== String(id));
-  if (content.coreTeam.length === before) return false;
-  await writeContent(content);
-  return true;
+  return withContentLock(async () => {
+    const content = await readContent();
+    content.coreTeam = content.coreTeam || [];
+    const before = content.coreTeam.length;
+    content.coreTeam = content.coreTeam.filter(m => String(m.id) !== String(id));
+    if (content.coreTeam.length === before) return false;
+    await writeContent(content);
+    return true;
+  });
 }
 
 async function appendToSupabaseForms(formType, payload) {
@@ -593,6 +621,7 @@ app.delete('/api/content/activity-events/:activityKey/:eventId', async (req, res
 app.post('/api/admin/login', adminAuthMiddleware.login);
 app.post('/api/admin/logout', adminAuthMiddleware.logout);
 app.use('/api/admin/analytics', adminAuth, analyticsRouter);
+app.use('/api/admin/metrics', adminAuth, adminStreamRouter);
 
 app.get('/api/admin/events', adminAuth, async (req, res) => {
   return res.json({ events: await listEventsStore() });
@@ -720,6 +749,14 @@ async function handleForm(formType, req, res) {
       // We don't fail the whole request if email fails, but we log it.
     }
 
+    // NEW: Real-time notification and metrics updates
+    try {
+      broadcastSSEEvent('registration', { formType, fullName: payload.fullName, timestamp: new Date().toISOString() });
+      emitToRoom(getRoom('admin'), 'admin:new-registration', { formType, userName: payload.fullName, timestamp: new Date() });
+    } catch (realtimeErr) {
+      console.error('[Form Handler] Failed to broadcast real-time updates:', realtimeErr);
+    }
+
     return res.json({ ok: true });
   } catch (e) {
     if (e instanceof ZodError) {
@@ -738,6 +775,27 @@ async function handleForm(formType, req, res) {
 app.post('/api/forms/membership', (req, res) => handleForm('membership', req, res));
 app.post('/api/forms/recruitment', (req, res) => handleForm('recruitment', req, res));
 app.post('/api/core-team/apply', (req, res) => handleForm('core_team', req, res));
+
+// Real-time notification subscriber channels
+const pushSubscriptions = new Set();
+app.post('/api/notifications/subscribe', (req, res) => {
+  try {
+    const { subscription } = req.body;
+    if (subscription) pushSubscriptions.add(JSON.stringify(subscription));
+    return res.json({ success: true });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+app.post('/api/notifications/unsubscribe', (req, res) => {
+  try {
+    const { subscription } = req.body;
+    if (subscription) pushSubscriptions.delete(JSON.stringify(subscription));
+    return res.json({ success: true });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
 
 // Portfolio System API Endpoints
 app.get('/api/portfolio/:username', async (req, res) => {
@@ -789,21 +847,24 @@ app.put('/api/portfolio', async (req, res) => {
 });
 
 
+>>>>>>> upstream/main
 const port = Number(process.env.PORT || 8787);
 if (!process.env.VERCEL) {
   const boot = HAS_SUPABASE ? Promise.resolve() : ensureContentFile();
   boot.then(() => {
-    app.listen(port, () => {
+    const server = app.listen(port, () => {
       // eslint-disable-next-line no-console
       console.log(`NexaSphere server listening on http://localhost:${port}`);
     });
+    initializeSocketIO(server);
   });
 } else {
   // Vercel/Render style deployments rely on the platform to start the server.
-  app.listen(port, () => {
+  const server = app.listen(port, () => {
     // eslint-disable-next-line no-console
     console.log(`NexaSphere server listening on http://localhost:${port}`);
   });
+  initializeSocketIO(server);
 }
 
 export default app;

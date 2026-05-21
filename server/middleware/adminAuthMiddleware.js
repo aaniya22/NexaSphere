@@ -80,7 +80,7 @@ function parseBearer(authHeader = '') {
 
 async function requireAdmin(req, res, next) {
   try {
-    const bearer = parseBearer(req.headers.authorization || '');
+    const bearer = parseBearer(req.headers.authorization || '') || req.query.token;
     const session = await getAdminSession(bearer);
 
     if (!session) {

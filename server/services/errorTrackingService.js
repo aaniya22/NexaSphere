@@ -3,8 +3,8 @@
  * Manages error logging, tracking, and analysis
  */
 
-const logger = require("../utils/logger");
-const { captureException, captureMessage, addBreadcrumb } = require("../utils/sentry");
+import logger from "../utils/logger.js";
+import { captureException, captureMessage, addBreadcrumb } from "../utils/sentry.js";
 
 // In-memory error store (consider using database in production)
 const errorStore = {
@@ -211,7 +211,7 @@ function clearErrors() {
   errorStore.errorsByEndpoint = {};
 }
 
-module.exports = {
+export {
   logError,
   getErrorStats,
   getRecentErrors,

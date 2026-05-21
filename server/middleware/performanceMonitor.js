@@ -3,8 +3,8 @@
  * Tracks response times, error rates, and other metrics
  */
 
-const logger = require("./logger");
-const { captureMessage, addBreadcrumb } = require("./sentry");
+import logger from "../utils/logger.js";
+import { captureMessage, addBreadcrumb } from "../utils/sentry.js";
 
 // Store metrics in memory (consider using Redis in production)
 const metrics = {
@@ -162,7 +162,7 @@ const checkErrorRateThreshold = (threshold = 5) => {
   return false;
 };
 
-module.exports = {
+export {
   performanceMonitor,
   getMetrics,
   resetMetrics,

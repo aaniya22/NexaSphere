@@ -3,16 +3,16 @@
  * Provides endpoints for dashboard and error tracking
  */
 
-const express = require("express");
+import express from "express";
 const router = express.Router();
-const { getMetrics } = require("../middleware/performanceMonitor");
-const {
+import { getMetrics } from "../middleware/performanceMonitor.js";
+import {
   getErrorStats,
   getRecentErrors,
   getEndpointErrors,
   getUserErrors,
-} = require("../services/errorTrackingService");
-const logger = require("../utils/logger");
+} from "../services/errorTrackingService.js";
+import logger from "../utils/logger.js";
 
 /**
  * GET /api/monitoring/health
@@ -207,4 +207,4 @@ router.post("/test-error", (req, res, next) => {
   next(testError);
 });
 
-module.exports = router;
+export default router;

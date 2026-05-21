@@ -73,6 +73,67 @@ export default function AdminPage({ onBack }) {
     }
   }, [token]);
 
+  useEffect(() => {
+    if (!token) return;
+
+    const base = (import.meta?.env?.VITE_API_BASE || '').replace(/\/+$/, '');
+    // Connect to SSE metrics stream endpoint using query token auth
+    const eventSource = new EventSource(`${base}/api/admin/metrics/stream?token=${encodeURIComponent(token)}`);
+
+    eventSource.addEventListener('registration', (event) => {
+      try {
+        const parsed = JSON.parse(event.data);
+        const payload = parsed.data;
+        
+        setData(prev => {
+          const currentStats = prev.stats || { totalUsers: 1240, activeRegistrations: 85, upcomingEvents: 3, conversionRate: '12.5%' };
+          const nextStats = {
+            ...currentStats,
+            totalUsers: (currentStats.totalUsers || 0) + 1,
+            activeRegistrations: (currentStats.activeRegistrations || 0) + 1
+          };
+
+          const todayStr = new Date().toISOString().split('T')[0];
+          const updatedGrowth = [...(prev.growth || [])];
+          const todayIdx = updatedGrowth.findIndex(g => g.date === todayStr);
+          if (todayIdx >= 0) {
+            updatedGrowth[todayIdx] = {
+              ...updatedGrowth[todayIdx],
+              registrations: (updatedGrowth[todayIdx].registrations || 0) + 1
+            };
+          } else {
+            updatedGrowth.push({ date: todayStr, registrations: 1 });
+          }
+
+          return {
+            ...prev,
+            stats: nextStats,
+            growth: updatedGrowth
+          };
+        });
+      } catch (err) {
+        console.error('Failed to parse registration SSE message:', err);
+      }
+    });
+
+    eventSource.addEventListener('login', (event) => {
+      try {
+        const parsed = JSON.parse(event.data);
+        console.log(`SSE Login Alert: User ${parsed.data.username} connected from ${parsed.data.ip}`);
+      } catch (err) {
+        console.error('Failed to parse login SSE message:', err);
+      }
+    });
+
+    eventSource.onerror = (err) => {
+      console.warn('Admin SSE metrics stream connection interrupted or reconnecting...', err);
+    };
+
+    return () => {
+      eventSource.close();
+    };
+  }, [token]);
+
   const handleLogin = async (e) => {
     e.preventDefault();
     try {

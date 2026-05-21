@@ -3,9 +3,9 @@
  * Handles all errors in a centralized location
  */
 
-const logger = require("./logger");
-const { captureException } = require("./sentry");
-const { sendSlackAlert } = require("./slack");
+import logger from "../utils/logger.js";
+import { captureException } from "../utils/sentry.js";
+import { sendSlackAlert } from "../utils/slack.js";
 
 /**
  * Main error handler middleware
@@ -123,7 +123,7 @@ const asyncHandler = (fn) => (req, res, next) => {
   });
 };
 
-module.exports = {
+export {
   errorHandler,
   notFoundHandler,
   validationErrorHandler,

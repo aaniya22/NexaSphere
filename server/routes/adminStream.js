@@ -14,7 +14,7 @@ const router = express.Router();
  * GET /api/admin/stream
  */
 router.get('/stream', setupSSEHeaders, (req, res) => {
-  const adminId = req.user?.id || 'anonymous';
+  const adminId = req.adminSession?.username || 'anonymous';
   logger.info('Admin connected to SSE stream', { adminId });
 
   // Add client to broadcast list

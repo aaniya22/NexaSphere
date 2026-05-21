@@ -3,8 +3,8 @@
  * Enterprise error tracking and monitoring
  */
 
-const Sentry = require("@sentry/node");
-const { nodeProfilingIntegration } = require("@sentry/profiling-node");
+import * as Sentry from "@sentry/node";
+import { nodeProfilingIntegration } from "@sentry/profiling-node";
 
 /**
  * Initialize Sentry for backend monitoring
@@ -101,7 +101,7 @@ function addBreadcrumb(data) {
   });
 }
 
-module.exports = {
+export {
   Sentry,
   initializeSentry,
   addSentryErrorHandler,

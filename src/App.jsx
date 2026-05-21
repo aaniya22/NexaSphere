@@ -39,6 +39,7 @@ import MembershipPage      from './pages/membership/MembershipPage';
 import AdminPage           from './pages/admin/AdminPage';
 import RoadmapsPage        from './pages/roadmaps/RoadmapsPage';
 import ProjectsPage        from './pages/projects/ProjectsPage';
+import CollabPage          from './pages/collab/CollabPage';
 import PortfolioBuilder    from './components/portfolio/PortfolioBuilder';
 import PublicPortfolio     from './pages/portfolio/PublicPortfolio';
 
@@ -53,7 +54,7 @@ import { BookmarkProvider } from './context/BookmarkContext';
 import BookmarksDrawer from './components/bookmarks/BookmarksDrawer';
 
 const MNH = 88, DNH = 64;
-const TABS = ['Home','Activities','Events','Projects','Roadmaps','Portfolio','About','Team','Contact'];
+const TABS = ['Home','Activities','Events','Projects','Roadmaps','Portfolio','Collab','About','Team','Contact'];
 
 /* ── Page wipe transition ── */
 function Wipe({ on, ph }) {
@@ -136,10 +137,10 @@ function Cursor() {
       const opacity = s.visible ? (s.hovering ? 0.95 : 0.82) : 0;
 
       if (orbRef.current) {
-        orbRef.current.style.left      = s.ox + 'px';
-        orbRef.current.style.top       = fy   + 'px';
+        orbRef.current.style.left = s.ox + 'px';
+        orbRef.current.style.top = fy + 'px';
         orbRef.current.style.transform = `translate(-50%,-50%) scale(${scale})`;
-        orbRef.current.style.opacity   = opacity;
+        orbRef.current.style.opacity = opacity;
       }
       if (trailRef.current) {
         trailRef.current.style.left    = s.ox + 'px';
@@ -150,6 +151,14 @@ function Cursor() {
         glowRef.current.style.left    = s.mx + 'px';
         glowRef.current.style.top     = s.my + 'px';
         glowRef.current.style.opacity = s.visible ? 1 : 0;
+        trailRef.current.style.left = s.ox + 'px';
+        trailRef.current.style.top = s.oy + s.floatY * 0.4 + 'px';
+        trailRef.current.style.opacity = s.visible ? (s.hovering ? 0 : 0.35) : 0; 
+      }
+      if (glowRef.current) {
+        glowRef.current.style.left = s.mx + 'px';
+        glowRef.current.style.top = s.my + 'px';
+        glowRef.current.style.opacity = s.visible ? 1 : 0; 
       }
       s.raf = requestAnimationFrame(tick);
     };
@@ -237,6 +246,22 @@ export default function App() {
   const toggleTheme = useCallback(() => {
     setTheme(t => t === 'dark' ? 'light' : 'dark');
   }, []);
+
+  useEffect(() => {
+    if (cinDone) {
+      const initPush = async () => {
+        try {
+          const { initializePushNotifications } = await import('./utils/pushNotificationClient');
+          const vapidKey = import.meta.env.VITE_VAPID_PUBLIC_KEY || 'BFG7-T9CszX7v2Xg707l3qTNY2p5N1N4iO3J8t5vJv5O7g7i5r5v5i5v5o5r5i5v5r5e5s5w5s';
+          await initializePushNotifications(vapidKey);
+        } catch (err) {
+          console.warn('Push notification initialization skipped or failed gracefully:', err);
+        }
+      };
+      const timer = setTimeout(initPush, 3500);
+      return () => clearTimeout(timer);
+    }
+  }, [cinDone]);
 
   useEffect(() => {
     let alive = true;
@@ -358,7 +383,7 @@ export default function App() {
   }, []);
 
   const onTab = useCallback(tab => {
-    if (['Activities','Events','Projects','Roadmaps','Portfolio','About','Team','Contact'].includes(tab)) {
+    if (['Activities','Events','Projects','Roadmaps','Portfolio','Collab','About','Team','Contact'].includes(tab)) {
       nav(() => { setPage({ type:'section', section:tab }); setActiveTab(tab); });
       return;
     }
@@ -455,6 +480,7 @@ export default function App() {
             {page.section === 'Projects'   && <ProjectsPage onBack={onBackHome}/>}
             {page.section === 'Roadmaps'   && <RoadmapsPage onBack={onBackHome}/>}
             {page.section === 'Portfolio'  && <PortfolioBuilder />}
+            {page.section === 'Collab'     && <CollabPage onBack={onBackHome}/>}
             {page.section === 'About'      && <AboutPage onBack={onBackHome}/>}
             {page.section === 'Team'       && <TeamPage onBack={onBackHome} onApply={openApply}/>}
             {page.section === 'Contact'    && <ContactPage onBack={onBackHome}/>}
