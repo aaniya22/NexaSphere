@@ -58,15 +58,6 @@ import BookmarksDrawer from './components/bookmarks/BookmarksDrawer';
 const MNH = 88, DNH = 64;
 const TABS = ['Home','Dashboard','Activities','Events','Projects','Roadmaps','Portfolio','Collab','About','Team','Contact'];
 
-// Check if current URL is an invalid route
-function getInitialPage() {
-  const path = window.location.pathname;
-  const portfolioMatch = path.match(/^\/p\/([a-zA-Z0-9_-]+)/);
-  if (portfolioMatch) return { type: 'portfolio', username: portfolioMatch[1] };
-  if (path !== '/' && path !== '') return { type: '404' };
-  return null;
-}
-
 /* ── Page wipe transition ── */
 function Wipe({ on, ph }) {
   if (!on) return null;
@@ -119,6 +110,7 @@ function Cursor() {
     const onOver = e => {
       s.hovering = !!(e.target.closest('button,a,[role="button"],[tabindex]'));
     };
+
 
     const onMouseLeave = () => {
       s.visible = false;
@@ -230,25 +222,31 @@ function Cursor() {
 }
 
 export default function App() {
-  const initialPage = getInitialPage();
-  const is404 = initialPage?.type === '404' || initialPage?.type === 'portfolio';
-
-  const [cinDone,      setCinDone]    = useState(is404);
-  const [activeTab,    setActiveTab]  = useState('Home');
-  const [mobile,       setMobile]     = useState(window.innerWidth <= 768);
-  const [wipeOn,       setWipeOn]     = useState(false);
-  const [wipePh,       setWipePh]     = useState('out');
-  const [page,         setPage]       = useState(initialPage);
-  const [theme,        setTheme]      = useState(() => localStorage.getItem('ns-theme') || 'dark');
-  const [eventsData,   setEventsData] = useState(fallbackEvents);
-  const [searchOpen,   setSearchOpen] = useState(false);
-  const [bookmarksOpen,setBookmarksOpen] = useState(false);
+  const [cinDone,    setCinDone]    = useState(false);
+  const [activeTab,  setActiveTab]  = useState('Home');
+  const [mobile,     setMobile]     = useState(window.innerWidth <= 768);
+  const [wipeOn,     setWipeOn]     = useState(false);
+  const [wipePh,     setWipePh]     = useState('out');
+  const [page,       setPage]       = useState(null);
+  const [theme,      setTheme]      = useState(() => localStorage.getItem('ns-theme') || 'dark');
+  const [eventsData, setEventsData] = useState(fallbackEvents);
+  const [searchOpen, setSearchOpen] = useState(false);   // ← Search state
+  const [bookmarksOpen, setBookmarksOpen] = useState(false);
   const { isOpen: isTerminalOpen, closeTerminal } = useDeveloperMode();
 
   useEffect(()=>{
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('ns-theme', theme);
   }, [theme]);
+
+  useEffect(() => {
+    const path = window.location.pathname;
+    const match = path.match(/^\/p\/([a-zA-Z0-9_-]+)/);
+    if (match) {
+      const name = match[1];
+      setPage({ type: 'portfolio', username: name });
+    }
+  }, []);
 
   const toggleTheme = useCallback(() => {
     setTheme(t => t === 'dark' ? 'light' : 'dark');
@@ -313,6 +311,7 @@ export default function App() {
     return () => window.removeEventListener('resize', fn);
   }, []);
 
+  /* ── Ctrl+K / Cmd+K opens search ── */
   useEffect(()=>{
     const fn = e => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
@@ -452,6 +451,7 @@ export default function App() {
 
   return (
     <BookmarkProvider>
+      {/* Chatbot – kept at very top */}
       <Chatbot />
 
       {!cinDone && (
@@ -478,7 +478,7 @@ export default function App() {
       )}
 
       <main style={{ paddingTop:nh, position:'relative', zIndex:1 }}>
-        {cinDone && page ? (
+        {page ? (
           <PageIn k={page.type + (page.section || page.activityKey)}>
             {page.section === 'Dashboard'  && <DashboardPage onBack={onBackHome}/>}
             {page.section === 'Activities' && <ActivitiesPage onNavigate={onNavigate} onBack={onBackHome}/>}
@@ -491,7 +491,6 @@ export default function App() {
             {page.section === 'Team'       && <TeamPage onBack={onBackHome} onApply={openApply}/>}
             {page.section === 'Contact'    && <ContactPage onBack={onBackHome}/>}
             {page.type === 'activity' && cur && <ActivityDetailPage activity={cur} onBack={onBackMain} onSelectEvent={onEvent}/>}
-            {page.type === 'activity' && !cur && <NotFoundPage onGoHome={onBackHome}/>}
             {page.type === 'apply'    && <RecruitmentPage onBack={onBackHome}/>}
             {page.type === 'join'     && <MembershipPage  onBack={onBackHome}/>}
             {page.type === 'admin'    && <AdminPage        onBack={onBackHome}/>}
@@ -521,8 +520,10 @@ export default function App() {
         )}
       </main>
 
+      {/* Back to top button */}
       {cinDone && <button id="back-to-top" aria-label="Back to top">↑</button>}
 
+      {/* ── Floating Search Button (bottom-left) ── */}
       {cinDone && (
         <button
           onClick={() => setSearchOpen(true)}
@@ -554,6 +555,7 @@ export default function App() {
         </button>
       )}
 
+      {/* ── Search Overlay ── */}
       <SearchBar
         open={searchOpen}
         onClose={() => setSearchOpen(false)}
@@ -563,6 +565,7 @@ export default function App() {
         onEventClick={onKSSClick}
       />
 
+      {/* ── Developer Terminal ── */}
       <Terminal 
         isOpen={isTerminalOpen} 
         onClose={closeTerminal} 
@@ -571,6 +574,7 @@ export default function App() {
         onNavigate={onTab} 
       />
 
+      {/* ── Bookmarks Drawer ── */}
       <BookmarksDrawer
         isOpen={bookmarksOpen}
         onClose={() => setBookmarksOpen(false)}
