@@ -36,7 +36,11 @@ else:
         model_name='gemini-3.1-flash-lite-preview'
     )
 
-app = FastAPI(title="NexaSphere AI Core")
+app = FastAPI(
+    title="NexaSphere AI Core",
+    description="Python FastAPI backend for AI Chat and Recommendations.",
+    version="1.0.0"
+)
 
 @app.get("/")
 async def root():

@@ -10,7 +10,7 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-@router.post("/api/forms/membership")
+@router.post("/api/forms/membership", tags=["Forms"], summary="Submit Membership Form", description="Submit a new membership application to Google Sheets and Supabase.")
 async def submit_membership(form: FormSubmission):
     try:
         form_dict = form.model_dump()
@@ -27,7 +27,7 @@ async def submit_membership(form: FormSubmission):
         raise HTTPException(status_code=500, detail="Failed to submit form") from e
 
 
-@router.post("/api/forms/recruitment")
+@router.post("/api/forms/recruitment", tags=["Forms"], summary="Submit Recruitment Form", description="Submit a new recruitment application to Google Sheets and Supabase.")
 async def submit_recruitment(form: FormSubmission):
     try:
         form_dict = form.model_dump()
@@ -44,7 +44,7 @@ async def submit_recruitment(form: FormSubmission):
         raise HTTPException(status_code=500, detail="Failed to submit form") from e
 
 
-@router.post("/api/core-team/apply")
+@router.post("/api/core-team/apply", tags=["Forms"], summary="Submit Core Team Application", description="Submit a new core team application to Google Sheets and Supabase.")
 async def submit_core_team_application(form: FormSubmission):
     try:
         form_dict = form.model_dump()
