@@ -6,7 +6,7 @@ export const DEFAULT_THEME = 'dark';
 export const EVENTS_API_ENDPOINT = '/api/content/events';
 
 export const NAV_HEIGHTS = {
-  DESKTOP: 60,
+  DESKTOP: 86,
   MOBILE: 56
 };
 

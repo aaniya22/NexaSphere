@@ -37,11 +37,16 @@ function BookmarkToggle({ onToggle }) {
 
 export default function Navbar({ activeTab, onTabChange, onApply, onJoin, onToggleBookmarks }) {
   const [scrolled, setScrolled] = useState(false);
-  const [mobile,   setMobile]   = useState(window.innerWidth <= 768);
+  const [compact, setCompact] = useState(window.innerWidth <= 790);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     const s = () => setScrolled(window.scrollY > 20);
-    const r = () => setMobile(window.innerWidth <= 768);
+    const r = () => {
+      const isCompact = window.innerWidth <= 790;
+      setCompact(isCompact);
+      if (!isCompact) setMenuOpen(false);
+    };
     window.addEventListener('scroll', s, { passive: true });
     window.addEventListener('resize', r, { passive: true });
     return () => {
@@ -50,75 +55,124 @@ export default function Navbar({ activeTab, onTabChange, onApply, onJoin, onTogg
     };
   }, []);
 
-  const handleTab = tab => onTabChange(tab);
+const handleTab = tab => {
+  setMenuOpen(false);
+  onTabChange(tab);
+};
 
-  if (mobile) return (
-    <nav className="ns-navbar-mobile">
-      <div 
+if (compact) return (
+  <nav className="ns-navbar-mobile">
+    <div
       className="ns-mobile-top"
       onClick={() => handleTab('Home')}
       style={{ cursor: 'pointer' }}
       aria-label="Go to homepage"
-      >
-        <img src={BRAND_LOGO_ICON} alt="NexaSphere" className="ns-mobile-logo-ns"/>
-        <span className="ns-mobile-brand"><span>NexaSphere</span></span>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <NotificationBell />
-          <BookmarkToggle onToggle={onToggleBookmarks} />
-          <ThemeToggle />
-        </div>
-      </div>
-      <div className="ns-mobile-tabs">
-        {TABS.map(t => (
-          <button
-            key={t}
-            className={`ns-mobile-tab${activeTab === t ? ' active' : ''}${t === 'Contact' ? ' contact-tab' : ''}`}
-            onClick={() => handleTab(t)}
-          >
-            {t}
-          </button>
-        ))}
-        <button className="ns-mobile-tab ns-mobile-cta" onClick={onJoin} aria-label="Join as Member">Join</button>
-        <button className="ns-mobile-tab ns-mobile-cta ns-mobile-cta-apply" onClick={onApply} aria-label="Apply for Core Team">Apply</button>
-      </div>
-    </nav>
-  );
+    >
+      <img
+        src={BRAND_LOGO_ICON}
+        alt="NexaSphere"
+        className="ns-mobile-logo-ns"
+      />
 
-  return (
-    <nav className={`ns-navbar${scrolled ? ' scrolled' : ''}`}>
-      <div className="container">
-        <div 
-        className="ns-nav-logos"
-        onClick={() => handleTab('Home')}
-        style={{ cursor: 'pointer' }}
-        aria-label="Go to homepage"
+      <span className="ns-mobile-brand">
+        <span>NexaSphere</span>
+      </span>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <NotificationBell />
+        <BookmarkToggle onToggle={onToggleBookmarks} />
+        <ThemeToggle />
+      </div>
+    </div>
+
+    <div className="ns-mobile-tabs">
+      {TABS.map(t => (
+        <button
+          key={t}
+          className={`ns-mobile-tab${
+            activeTab === t ? ' active' : ''
+          }${t === 'Contact' ? ' contact-tab' : ''}`}
+          onClick={() => handleTab(t)}
         >
-          <img src={BRAND_LOGO_FULL} alt="NexaSphere" className="ns-nav-logo-ns ns-nav-logo-icon"/>
-          <div className="ns-nav-divider"/>
-          <span className="ns-nav-brand">NexaSphere</span>
-        </div>
+          {t}
+        </button>
+      ))}
 
-        <ul className="ns-nav-tabs">
-          {TABS.map(t => (
-            <li key={t}>
-              <button
-                className={`ns-nav-tab${activeTab === t ? ' active' : ''}${t === 'Contact' ? ' contact-nav-tab' : ''}`}
-                onClick={() => handleTab(t)}
-              >
-                {t}
-              </button>
-            </li>
-          ))}
-        </ul>
+      <button
+        className="ns-mobile-tab ns-mobile-cta"
+        onClick={onJoin}
+        aria-label="Join as Member"
+      >
+        Join
+      </button>
 
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <NotificationBell />
-          <BookmarkToggle onToggle={onToggleBookmarks} />
-          <div className="ns-nav-ctas">
-            <button className="btn btn-sm btn-outline ns-nav-cta-btn" onClick={onJoin} aria-label="Join as Member">Join</button>
-            <button className="btn btn-sm btn-primary ns-nav-cta-btn" onClick={onApply} aria-label="Apply for Core Team">Apply</button>
+      <button
+        className="ns-mobile-tab ns-mobile-cta ns-mobile-cta-apply"
+        onClick={onApply}
+        aria-label="Apply for Core Team"
+      >
+        Apply
+      </button>
+    </div>
+  </nav>
+);
+  return (
+    <nav
+      className={`ns-navbar${scrolled ? ' scrolled' : ''}`}
+    >
+      <div className="container">
+        <div className="ns-nav-top">
+          <div 
+          className="ns-nav-logos"
+          onClick={() => handleTab('Home')}
+          style={{ cursor: 'pointer' }}
+          aria-label="Go to homepage"
+          >
+            <img src={BRAND_LOGO_FULL} alt="NexaSphere" className="ns-nav-logo-ns ns-nav-logo-icon"/>
+            <div className="ns-nav-divider"/>
+            <span className="ns-nav-brand">NexaSphere</span>
           </div>
-          <ThemeToggle />
+
+<div className="ns-nav-actions">
+  <NotificationBell />
+  <BookmarkToggle onToggle={onToggleBookmarks} />
+
+<div className="ns-nav-actions">
+  <NotificationBell />
+
+  <BookmarkToggle onToggle={onToggleBookmarks} />
+
+  <div className="ns-nav-ctas">
+    <button
+      className="btn btn-sm btn-outline ns-nav-cta-btn"
+      onClick={onJoin}
+      aria-label="Join as Member"
+    >
+      Join
+    </button>
+
+    <button
+      className="btn btn-sm btn-primary ns-nav-cta-btn"
+      onClick={onApply}
+      aria-label="Apply for Core Team"
+    >
+      Apply
+    </button>
+  </div>
+
+  <ThemeToggle />
+
+  <button
+    className={`ns-nav-menu-toggle${menuOpen ? ' open' : ''}`}
+    onClick={() => compact && setMenuOpen(open => !open)}
+    aria-label="Toggle navigation menu"
+    aria-expanded={menuOpen}
+  >
+    <span />
+    <span />
+    <span />
+  </button>
+</div>
         </div>
       </div>
     </nav>
