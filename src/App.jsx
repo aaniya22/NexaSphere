@@ -9,6 +9,7 @@ import './styles/portfolio.css';
 
 import './styles/aurora.css';
 import './styles/motion.css';
+import WorkspacePage from './pages/workspace/WorkspacePage';
 import SearchBar from './components/SearchBar';
 import FloatingDock from "./components/common/FloatingDock";
 import ParticleBackground  from './shared/ParticleBackground';
@@ -384,6 +385,21 @@ export default function App() {
     return () => { obs.disconnect(); window.removeEventListener('mousemove', onMove); };
   }, [cinDone, page]);
 
+  useInteractionEffects(cinDone, page);
+  useBackToTop();
+  useActiveTabObserver(page, mobile, NAV_TABS, NAV_HEIGHTS, setActiveTab);
+  
+  // Add direct URL parsing for workspace route
+  useEffect(() => {
+    if (window.location.pathname.startsWith('/workspace/')) {
+      const roomId = window.location.pathname.split('/workspace/')[1];
+      if (roomId) {
+        setCinDone(true);
+        setPage({ type: 'workspace', roomId });
+      }
+    }
+  }, []);
+
   useNsReveal([cinDone, page]);
   useHeroParallax();
   useNavScrollTint();
@@ -512,7 +528,8 @@ export default function App() {
               <EventDetailPage event={page.event} onBack={page.activityKey ? onBackAct : onBackMain}/>
             )}
             {page.type === 'portfolio' && <PublicPortfolio username={page.username} onBack={onBackHome} />}
-            {page.type && !['section','activity','event','apply','join','portfolio'].includes(page.type) && (
+            {page.type === 'workspace' && <WorkspacePage roomId={page.roomId} onBack={onBackHome} />}
+            {page.type && !['section','activity','event','apply','join','portfolio','workspace'].includes(page.type) && (
               <NotFoundPage onGoHome={onBackHome}/>
             )}
           </PageIn>
