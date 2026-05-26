@@ -62,8 +62,10 @@ import { useTheme } from './hooks/useTheme';
 
 import MoveToTop from "./shared/MoveToTop";
 
-const MNH = 88, DNH = 64;
+
+const MNH = 88, DNH = 86;
 const TABS = ['Home','Dashboard','Activities','Events','Projects','Roadmaps','Portfolio','Collab','About','Team','Contact'];
+
 
 /* ── Page wipe transition ── */
 function Wipe({ on, ph }) {
