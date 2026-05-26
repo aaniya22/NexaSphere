@@ -41,19 +41,19 @@ import dynamic from 'next/dynamic';
 const RecruitmentPage = dynamic(() => import('./pages/recruitment/RecruitmentPage'), { ssr: false });
 const MembershipPage = dynamic(() => import('./pages/membership/MembershipPage'), { ssr: false });
 const AdminPage = dynamic(() => import('./pages/admin/AdminPage'), { ssr: false });
-import RoadmapsPage        from './pages/roadmaps/RoadmapsPage';
-import ProjectsPage        from './pages/projects/ProjectsPage';
-import CertificateVerifyPage from './pages/certificates/CertificateVerifyPage';
-import CollabPage          from './pages/collab/CollabPage';
-import PortfolioBuilder    from './components/portfolio/PortfolioBuilder';
-import PublicPortfolio     from './pages/portfolio/PublicPortfolio';
-import DashboardPage       from './pages/dashboard/DashboardPage';
+const RoadmapsPage = dynamic(() => import('./pages/roadmaps/RoadmapsPage'), { ssr: false });
+const ProjectsPage = dynamic(() => import('./pages/projects/ProjectsPage'), { ssr: false });
+const CertificateVerifyPage = dynamic(() => import('./pages/certificates/CertificateVerifyPage'), { ssr: false });
+const CollabPage = dynamic(() => import('./pages/collab/CollabPage'), { ssr: false });
+const PortfolioBuilder = dynamic(() => import('./components/portfolio/PortfolioBuilder'), { ssr: false });
+const PublicPortfolio = dynamic(() => import('./pages/portfolio/PublicPortfolio'), { ssr: false });
+const DashboardPage = dynamic(() => import('./pages/dashboard/DashboardPage'), { ssr: false });
 
 import { activityPages }   from './data/activities/index';
 import { events as fallbackEvents } from './data/eventsData';
 import nexasphereLogo      from './assets/images/logos/nexasphere-logo.png';
 
-import Terminal from './components/developer/Terminal';
+const Terminal = dynamic(() => import('./components/developer/Terminal'), { ssr: false });
 import { useDeveloperMode } from './hooks/useDeveloperMode';
 
 import { BookmarkProvider } from './context/BookmarkContext';
