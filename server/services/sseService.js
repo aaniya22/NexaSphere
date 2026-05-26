@@ -4,6 +4,7 @@
  */
 
 import logger from '../utils/logger.js';
+import { getPublicAppUrl } from '../utils/publicAppUrl.js';
 
 const adminClients = new Set();
 
@@ -59,7 +60,7 @@ export function getConnectedSSEClientsCount() {
  * SSE middleware setup
  */
 export function setupSSEHeaders(req, res, next) {
-  const allowedOrigin = process.env.PUBLIC_APP_URL || process.env.CORS_ORIGIN?.split(',')[0]?.trim() || 'http://localhost:5173';
+  const allowedOrigin = getPublicAppUrl();
 
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
