@@ -3,6 +3,7 @@ import InterestSelector from '../../components/dashboard/InterestSelector';
 import QuestTracker from '../../components/dashboard/QuestTracker';
 import Leaderboard from '../../components/dashboard/Leaderboard';
 import AiMentor from '../../components/dashboard/AiMentor';
+import { buildUrl, getAiApiBase } from '../../utils/runtimeConfig';
 
 export default function DashboardPage({ onBack }) {
   // Mock current user for demonstration
@@ -48,8 +49,12 @@ export default function DashboardPage({ onBack }) {
     if (interests.length === 0) return;
     setLoadingRecs(true);
     try {
-      const base = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
-      const res = await fetch(`${base}/recommend/events/${currentUser.id}`);
+      const recommendationsUrl = buildUrl(getAiApiBase(), `/recommend/events/${currentUser.id}`);
+      if (!recommendationsUrl) {
+        throw new Error('Recommendations service is not configured');
+      }
+
+      const res = await fetch(recommendationsUrl);
       if (res.ok) {
         const data = await res.json();
         setRecommendations(data.recommended_events || []);
@@ -92,7 +97,7 @@ export default function DashboardPage({ onBack }) {
             {interests.length === 0 ? (
               <p style={{ color: 'var(--t2)' }}>Select some interests above to see recommendations!</p>
             ) : loadingRecs ? (
-              <p style={{ color: 'var(--t2)' }}>Curating your shelf...</p>
+              <DashboardCardSkeleton count={3} />
             ) : recommendations.length > 0 ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 {recommendations.map((rec, i) => (

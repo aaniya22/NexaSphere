@@ -3,6 +3,8 @@ import { useReactToPrint } from 'react-to-print';
 import { projectsData } from '../../data/projectsData';
 import { roadmapData } from '../../data/roadmapData';
 import ResumePrintTemplate from '../../components/portfolio/ResumePrintTemplate';
+import { Helmet } from 'react-helmet-async';
+import { generatePortfolioMeta } from '../../utils/seoUtils';
 import '../../styles/print.css';
 
 export default function PublicPortfolio({ username, onBack }) {
@@ -42,53 +44,9 @@ export default function PublicPortfolio({ username, onBack }) {
     return () => { alive = false; };
   }, [username]);
 
-  // SEO & Social sharing headers dynamic updates
-  useEffect(() => {
-    if (!portfolio) return;
+  // SEO & Social sharing headers dynamic updates removed from useEffect
+  // We use react-helmet-async directly in the render now.
 
-    const pageTitle = portfolio.seoMetadata?.title || `@${portfolio.username} | NexaSphere Developer Showcase`;
-    const pageDesc = portfolio.seoMetadata?.description || portfolio.bio || `Check out @${portfolio.username}'s developer achievements, skills, and roadmap progress on NexaSphere.`;
-    const pageImage = `https://api.dicebear.com/7.x/pixel-art/svg?seed=${portfolio.username}`;
-
-    document.title = pageTitle;
-
-    // Update Meta Description
-    let metaDesc = document.querySelector('meta[name="description"]');
-    if (!metaDesc) {
-      metaDesc = document.createElement('meta');
-      metaDesc.setAttribute('name', 'description');
-      document.head.appendChild(metaDesc);
-    }
-    metaDesc.setAttribute('content', pageDesc);
-
-    // Open Graph / Twitter Tags mapping
-    const metaTags = {
-      'og:title': pageTitle,
-      'og:description': pageDesc,
-      'og:image': pageImage,
-      'og:type': 'profile',
-      'og:url': window.location.href,
-      'twitter:card': 'summary_large_image',
-      'twitter:title': pageTitle,
-      'twitter:description': pageDesc,
-      'twitter:image': pageImage
-    };
-
-    Object.entries(metaTags).forEach(([key, value]) => {
-      let el = document.querySelector(`meta[property="${key}"]`) || document.querySelector(`meta[name="${key}"]`);
-      if (!el) {
-        el = document.createElement('meta');
-        if (key.startsWith('og:')) {
-          el.setAttribute('property', key);
-        } else {
-          el.setAttribute('name', key);
-        }
-        document.head.appendChild(el);
-      }
-      el.setAttribute('content', value);
-    });
-
-  }, [portfolio]);
 
   const [isExporting, setIsExporting] = useState(false);
   const printRef = useRef();
@@ -105,20 +63,7 @@ export default function PublicPortfolio({ username, onBack }) {
   });
 
   if (isLoading) {
-    return (
-      <div style={{ minHeight: '80vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '16px' }}>
-        <div style={{
-          width: '50px', height: '50px',
-          border: '3px solid rgba(204, 17, 17, 0.1)',
-          borderTopColor: 'var(--c1)',
-          borderRadius: '50%',
-          animation: 'spin 1s linear infinite'
-        }}></div>
-        <p style={{ fontFamily: 'Orbitron, monospace', color: 'var(--t2)', fontSize: '0.9rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-          Decompiling Showcase Portfolio...
-        </p>
-      </div>
-    );
+    return <PortfolioSkeleton />;
   }
 
   if (error || !portfolio) {
@@ -156,8 +101,32 @@ export default function PublicPortfolio({ username, onBack }) {
     ...(customProjects || [])
   ];
 
+  const meta = generatePortfolioMeta(portfolio);
+
   return (
     <div className={`portfolio-presentation-container theme-${theme}`}>
+      <Helmet>
+        <title>{meta.title}</title>
+        <meta name="description" content={meta.description} />
+        <meta name="keywords" content={meta.keywords} />
+        <meta name="author" content={meta.author} />
+        
+        <link rel="canonical" href={meta.url} />
+        
+        {/* OpenGraph */}
+        <meta property="og:title" content={meta.title} />
+        <meta property="og:description" content={meta.description} />
+        <meta property="og:image" content={meta.image} />
+        <meta property="og:type" content={meta.type} />
+        <meta property="og:url" content={meta.url} />
+        
+        {/* Twitter */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={meta.title} />
+        <meta name="twitter:description" content={meta.description} />
+        <meta name="twitter:image" content={meta.image} />
+      </Helmet>
+
       <div style={{ display: 'none' }}>
         <ResumePrintTemplate ref={printRef} portfolio={portfolio} />
       </div>

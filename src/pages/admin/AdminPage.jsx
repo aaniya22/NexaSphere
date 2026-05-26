@@ -3,6 +3,7 @@ import DashboardStats from '../../components/admin/analytics/DashboardStats';
 import UserGrowthChart from '../../components/admin/analytics/UserGrowthChart';
 import EventAttendanceChart from '../../components/admin/analytics/EventAttendanceChart';
 import '../../components/admin/analytics/analytics.css';
+import socketClient from '../../utils/socketClient';
 
 export default function AdminPage({ onBack }) {
   const [loading, setLoading] = useState(false);
@@ -47,21 +48,6 @@ export default function AdminPage({ onBack }) {
       setError(null);
     } catch (err) {
       setError(err.message);
-      // Fallback for dev environment if token is present but API fails
-      if (import.meta.env.DEV && authToken) {
-        console.warn('Using fallback mock data for analytics');
-        setData({
-          stats: { totalUsers: 1240, activeRegistrations: 85, upcomingEvents: 3, conversionRate: '12.5%' },
-          growth: Array.from({ length: 30 }, (_, i) => ({
-            date: new Date(Date.now() - (30 - i) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-            registrations: Math.floor(Math.random() * 20) + i
-          })),
-          events: [
-            { name: 'KSS #153', capacity: 100, attendance: 92, waitlist: 15 },
-            { name: 'AI Workshop', capacity: 60, attendance: 58, waitlist: 20 }
-          ]
-        });
-      }
     } finally {
       setLoading(false);
     }
@@ -151,11 +137,11 @@ export default function AdminPage({ onBack }) {
         const payload = parsed.data;
 
         setData(prev => {
-          const currentStats = prev.stats || { totalUsers: 1240, activeRegistrations: 85, upcomingEvents: 3, conversionRate: '12.5%' };
+          const currentStats = prev.stats || { totalUsers: null, activeRegistrations: null, upcomingEvents: null, conversionRate: null };
           const nextStats = {
             ...currentStats,
-            totalUsers: (currentStats.totalUsers || 0) + 1,
-            activeRegistrations: (currentStats.activeRegistrations || 0) + 1
+            totalUsers: currentStats.totalUsers !== null ? currentStats.totalUsers + 1 : 1,
+            activeRegistrations: currentStats.activeRegistrations !== null ? currentStats.activeRegistrations + 1 : 1
           };
 
           const todayStr = new Date().toISOString().split('T')[0];
@@ -183,8 +169,7 @@ export default function AdminPage({ onBack }) {
 
     sseClient.addEventListener('login', (event) => {
       try {
-        const parsed = JSON.parse(event.data);
-        console.log(`SSE Login Alert: User ${parsed.data.username} connected from ${parsed.data.ip}`);
+        JSON.parse(event.data);
       } catch (err) {
         console.error('Failed to parse login SSE message:', err);
       }
@@ -224,6 +209,7 @@ export default function AdminPage({ onBack }) {
     localStorage.removeItem('ns_admin_token');
     setToken(null);
     setData({ stats: null, growth: [], events: [] });
+    socketClient.destroySocket();
   };
 
   if (!token) {

@@ -5,6 +5,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import socketClient from '../utils/socketClient';
+import { getSocketServerUrl } from '../utils/runtimeConfig';
 
 export function useSocket(serverUrl) {
   const [connected, setConnected] = useState(false);
@@ -12,20 +13,27 @@ export function useSocket(serverUrl) {
 
   useEffect(() => {
     // Initialize socket connection if not already done
-    const base = serverUrl || (import.meta?.env?.VITE_API_BASE || window.location.origin).replace(/\/+$/, '');
+    const base = serverUrl || getSocketServerUrl();
     const socket = socketClient.initializeSocket(base);
+    if (!socket) {
+      setConnected(false);
+      setSocketId(null);
+      return undefined;
+    }
 
     const onConnect = () => {
+      if (!isMounted) return;
       setConnected(true);
       setSocketId(socket.id);
     };
 
     const onDisconnect = () => {
+      if (!isMounted) return;
       setConnected(false);
       setSocketId(null);
     };
 
-    // Listen to standard connection events
+    // Listen to standard connection events using socket directly
     socket.on('connect', onConnect);
     socket.on('disconnect', onDisconnect);
 
@@ -34,10 +42,12 @@ export function useSocket(serverUrl) {
     setSocketId(socket.id || null);
 
     return () => {
+      isMounted = false;
       socket.off('connect', onConnect);
       socket.off('disconnect', onDisconnect);
     };
   }, [serverUrl]);
+
 
   /**
    * Identify authenticated user to the WebSocket room
@@ -66,16 +76,17 @@ export function useSocket(serverUrl) {
   const on = useCallback((eventName, handler) => {
     socketClient.on(eventName, handler);
     return () => {
-      socketClient.off(eventName);
+      socketClient.off(eventName, handler);
     };
   }, []);
 
   /**
    * Unregister dynamic listener for a custom socket event
    */
-  const off = useCallback((eventName) => {
-    socketClient.off(eventName);
+  const off = useCallback((eventName, handler) => {
+    socketClient.off(eventName, handler);
   }, []);
+
 
   /**
    * Emit event to the socket server

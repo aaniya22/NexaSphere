@@ -58,11 +58,15 @@ import { useDeveloperMode } from './hooks/useDeveloperMode';
 
 import { BookmarkProvider } from './context/BookmarkContext';
 import BookmarksDrawer from './components/bookmarks/BookmarksDrawer';
+import { useTheme } from './hooks/useTheme';
+import { useInteractionEffects } from './hooks/useInteractionEffects';
 
 import MoveToTop from "./shared/MoveToTop";
 
-const MNH = 88, DNH = 64;
+
+const MNH = 88, DNH = 86;
 const TABS = ['Home','Dashboard','Activities','Events','Projects','Roadmaps','Portfolio','Collab','About','Team','Contact'];
+
 
 /* ── Page wipe transition ── */
 function Wipe({ on, ph }) {
@@ -159,14 +163,6 @@ function Cursor() {
         glowRef.current.style.left    = s.mx + 'px';
         glowRef.current.style.top     = s.my + 'px';
         glowRef.current.style.opacity = s.visible ? 1 : 0;
-        trailRef.current.style.left = s.ox + 'px';
-        trailRef.current.style.top = s.oy + s.floatY * 0.4 + 'px';
-        trailRef.current.style.opacity = s.visible ? (s.hovering ? 0 : 0.35) : 0; 
-      }
-      if (glowRef.current) {
-        glowRef.current.style.left = s.mx + 'px';
-        glowRef.current.style.top = s.my + 'px';
-        glowRef.current.style.opacity = s.visible ? 1 : 0; 
       }
       s.raf = requestAnimationFrame(tick);
     };
@@ -250,16 +246,11 @@ export default function App() {
   const [wipeOn,     setWipeOn]     = useState(false);
   const [wipePh,     setWipePh]     = useState('out');
   const [page,       setPage]       = useState(null);
-  const [theme,      setTheme]      = useState(() => localStorage.getItem('ns-theme') || 'dark');
   const [eventsData, setEventsData] = useState(fallbackEvents);
   const [searchOpen, setSearchOpen] = useState(false);   // ← Search state
   const [bookmarksOpen, setBookmarksOpen] = useState(false);
+  const { resolvedTheme: theme } = useTheme();
   const { isOpen: isTerminalOpen, closeTerminal } = useDeveloperMode();
-
-  useEffect(()=>{
-    document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('ns-theme', theme);
-  }, [theme]);
 
   useEffect(() => {
     const path = window.location.pathname;
@@ -268,10 +259,6 @@ export default function App() {
       const name = match[1];
       setPage({ type: 'portfolio', username: name });
     }
-  }, []);
-
-  const toggleTheme = useCallback(() => {
-    setTheme(t => t === 'dark' ? 'light' : 'dark');
   }, []);
 
   useEffect(() => {
@@ -520,7 +507,6 @@ export default function App() {
         <Navbar
           activeTab={activeTab}
           onTabChange={onTab}
-          onToggleTheme={toggleTheme}
           theme={theme}
           onApply={openApply}
           onJoin={openJoin}
