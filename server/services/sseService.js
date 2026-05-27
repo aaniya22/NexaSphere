@@ -7,24 +7,52 @@ import logger from '../utils/logger.js';
 import { getPublicAppUrl } from '../utils/publicAppUrl.js';
 
 const adminClients = new Set();
+const MAX_SSE_CLIENTS = Math.max(1, parseInt(process.env.MAX_SSE_CLIENTS || '200', 10) || 200);
+const HEARTBEAT_INTERVAL_MS = Math.max(
+  5_000,
+  parseInt(process.env.SSE_HEARTBEAT_INTERVAL_MS || '30000', 10) || 30_000
+);
+const MAX_DROPPED_WRITES = Math.max(
+  1,
+  parseInt(process.env.SSE_MAX_DROPPED_WRITES || '3', 10) || 3
+);
+
+function cleanupClient(res, reason, meta = {}) {
+  if (!adminClients.has(res)) return;
+  adminClients.delete(res);
+  if (res._heartbeat) clearInterval(res._heartbeat);
+  res._heartbeat = null;
+  res._droppedWrites = 0;
+  logger.info('SSE client removed', { reason, totalClients: adminClients.size, ...meta });
+}
 
 /**
  * Add SSE client
  */
 export function addSSEClient(res) {
+  if (adminClients.size >= MAX_SSE_CLIENTS) {
+    logger.warn('SSE client rejected: max clients reached', {
+      totalClients: adminClients.size,
+      maxClients: MAX_SSE_CLIENTS,
+    });
+    // setupSSEHeaders likely already wrote headers; best-effort close.
+    try {
+      res.end();
+    } catch (_) {
+      // ignore
+    }
+    return;
+  }
+
   adminClients.add(res);
   logger.info('SSE client connected', { totalClients: adminClients.size });
 
   res.on('close', () => {
-    adminClients.delete(res);
-    if (res._heartbeat) clearInterval(res._heartbeat);
-    logger.info('SSE client disconnected', { totalClients: adminClients.size });
+    cleanupClient(res, 'close');
   });
 
   res.on('error', (error) => {
-    adminClients.delete(res);
-    if (res._heartbeat) clearInterval(res._heartbeat)
-    logger.error('SSE client error', { error: error.message });
+    cleanupClient(res, 'error', { error: error?.message });
   });
 }
 
@@ -37,21 +65,28 @@ export function broadcastSSEEvent(eventName, data) {
     data,
     timestamp: new Date().toISOString(),
   });
+  const message = `event: ${eventName}\ndata: ${eventData}\n\n`;
 
-  const dead = [];
   adminClients.forEach((client) => {
     try {
-      client.write(`event: ${eventName}\n`);
-      client.write(`data: ${eventData}\n\n`);
+      const ok = client.write(message);
+      if (!ok) {
+        client._droppedWrites = (client._droppedWrites || 0) + 1;
+        if (client._droppedWrites >= MAX_DROPPED_WRITES) {
+          cleanupClient(client, 'backpressure');
+          try {
+            client.end();
+          } catch (_) {
+            // ignore
+          }
+        }
+      } else {
+        client._droppedWrites = 0;
+      }
     } catch (error) {
       logger.error('Failed to send SSE event', { error: error.message });
-      dead.push(client);
+      cleanupClient(client, 'write_error', { error: error?.message });
     }
-  });
-
-  dead.forEach((c) => {
-    adminClients.delete(c);
-    clearInterval(c._heartbeat);
   });
 
   logger.debug('SSE event broadcast', { event: eventName, clientCount: adminClients.size });
@@ -68,6 +103,11 @@ export function getConnectedSSEClientsCount() {
  * SSE middleware setup
  */
 export function setupSSEHeaders(req, res, next) {
+  if (adminClients.size >= MAX_SSE_CLIENTS) {
+    res.status(503).end('Too many SSE connections');
+    return;
+  }
+
   const allowedOrigin = getPublicAppUrl();
 
   res.setHeader('Content-Type', 'text/event-stream');
@@ -87,11 +127,13 @@ export function setupSSEHeaders(req, res, next) {
       res.write(': heartbeat\n\n');
     } catch (error) {
       clearInterval(res._heartbeat);
+      cleanupClient(res, 'heartbeat_error', { error: error?.message });
     }
-  }, 30000);
+  }, HEARTBEAT_INTERVAL_MS);
 
   res.on('close', () => {
     clearInterval(res._heartbeat);
+    cleanupClient(res, 'close');
   });
 
   next();
