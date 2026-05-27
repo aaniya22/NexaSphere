@@ -32,7 +32,7 @@
     "@sentry/react": "^7.84.0",
     "@sentry/tracing": "^7.84.0",
     "@tensorflow/tfjs": "^4.22.0",
-    "framer-motion": "^12.38.0",
+    "framer-motion": "^12.40.0",
     "lucide-react": "^0.460.0",
     "pino": "^10.3.1",
     "react": "^18.2.0",
