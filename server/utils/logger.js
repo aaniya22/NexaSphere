@@ -5,6 +5,7 @@
 
 import winston from "winston";
 import path from "path";
+import DailyRotateFile from "winston-daily-rotate-file";
 
 // Create logs directory if it doesn't exist
 import fs from "fs";
@@ -71,13 +72,14 @@ const transports = [
     format: winston.format.uncolorize(),
   }),
 
-  // Daily rotate logs (optional - install winston-daily-rotate-file for this)
-  new winston.transports.File({
+  // Daily rotate logs (requires winston-daily-rotate-file)
+  new DailyRotateFile({
     filename: path.join(logsDir, "application-%DATE%.log"),
     datePattern: "YYYY-MM-DD",
     maxSize: "20m",
     maxFiles: "14d",
     format: winston.format.uncolorize(),
+    utc: true,
   }),
 ];
 
@@ -88,13 +90,23 @@ const logger = winston.createLogger({
   format,
   transports,
   exceptionHandlers: [
-    new winston.transports.File({
-      filename: path.join(logsDir, "exceptions.log"),
+    new DailyRotateFile({
+      filename: path.join(logsDir, "exceptions-%DATE%.log"),
+      datePattern: "YYYY-MM-DD",
+      maxSize: "20m",
+      maxFiles: "14d",
+      format: winston.format.uncolorize(),
+      utc: true,
     }),
   ],
   rejectionHandlers: [
-    new winston.transports.File({
-      filename: path.join(logsDir, "rejections.log"),
+    new DailyRotateFile({
+      filename: path.join(logsDir, "rejections-%DATE%.log"),
+      datePattern: "YYYY-MM-DD",
+      maxSize: "20m",
+      maxFiles: "14d",
+      format: winston.format.uncolorize(),
+      utc: true,
     }),
   ],
 });
