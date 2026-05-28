@@ -46,10 +46,11 @@ const AdminPage = dynamic(() => import('./pages/admin/AdminPage'), { ssr: false 
 import RoadmapsPage from './pages/roadmaps/RoadmapsPage';
 import ProjectsPage from './pages/projects/ProjectsPage';
 import CertificateVerifyPage from './pages/certificates/CertificateVerifyPage';
-import CollabPage from './pages/collab/CollabPage';
-import PortfolioBuilder from './components/portfolio/PortfolioBuilder';
-import PublicPortfolio from './pages/portfolio/PublicPortfolio';
-import DashboardPage from './pages/dashboard/DashboardPage';
+import CollabPage          from './pages/collab/CollabPage';
+import PortfolioBuilder    from './components/portfolio/PortfolioBuilder';
+import PublicPortfolio     from './pages/portfolio/PublicPortfolio';
+import DashboardPage       from './pages/dashboard/DashboardPage';
+import AnalyticsPage       from './pages/analytics/AnalyticsPage';
 
 import { activityPages } from './data/activities/index';
 import { events as fallbackEvents } from './data/eventsData';
@@ -425,8 +426,8 @@ export default function App() {
   }, []);
 
   const onTab = useCallback(tab => {
-    if (['Dashboard', 'Activities', 'Events', 'Projects', 'Roadmaps', 'Portfolio', 'Collab', 'About', 'Team', 'Contact'].includes(tab)) {
-      nav(() => { setPage({ type: 'section', section: tab }); setActiveTab(tab); });
+    if (['Dashboard','Analytics','Activities','Events','Projects','Roadmaps','Portfolio','Collab','About','Team','Contact'].includes(tab)) {
+      nav(() => { setPage({ type:'section', section:tab }); setActiveTab(tab); });
       return;
     }
     nav(() => {
@@ -532,20 +533,21 @@ export default function App() {
       <main style={{ paddingTop: nh, position: 'relative', zIndex: 1 }}>
         {page ? (
           <PageIn k={page.type + (page.section || page.activityKey)}>
-            {page.section === 'Dashboard' && <DashboardPage onBack={onBackHome} />}
-            {page.section === 'Activities' && <ActivitiesPage onNavigate={onNavigate} onBack={onBackHome} />}
-            {page.section === 'Events' && <EventsPage onBack={onBackHome} onEventClick={onKSSClick} events={eventsData} />}
-            {page.section === 'Projects' && <ProjectsPage onBack={onBackHome} />}
-            {page.section === 'Roadmaps' && <RoadmapsPage onBack={onBackHome} />}
-            {page.section === 'Portfolio' && <PortfolioBuilder />}
-            {page.section === 'Collab' && <CollabPage onBack={onBackHome} />}
-            {page.section === 'About' && <AboutPage onBack={onBackHome} />}
-            {page.section === 'Team' && <TeamPage onBack={onBackHome} onApply={openApply} />}
-            {page.section === 'Contact' && <ContactPage onBack={onBackHome} />}
-            {page.type === 'activity' && cur && <ActivityDetailPage activity={cur} onBack={onBackMain} onSelectEvent={onEvent} />}
-            {page.type === 'apply' && <RecruitmentPage onBack={onBackHome} />}
-            {page.type === 'join' && <MembershipPage onBack={onBackHome} />}
-            {page.type === 'admin' && <AdminPage onBack={onBackHome} />}
+            {page.section === 'Dashboard'  && <DashboardPage onBack={onBackHome}/>}
+            {page.section === 'Analytics'  && <AnalyticsPage onBack={onBackHome}/>}
+            {page.section === 'Activities' && <ActivitiesPage onNavigate={onNavigate} onBack={onBackHome}/>}
+            {page.section === 'Events'     && <EventsPage onBack={onBackHome} onEventClick={onKSSClick} events={eventsData}/>}
+            {page.section === 'Projects'   && <ProjectsPage onBack={onBackHome}/>}
+            {page.section === 'Roadmaps'   && <RoadmapsPage onBack={onBackHome}/>}
+            {page.section === 'Portfolio'  && <PortfolioBuilder />}
+            {page.section === 'Collab'     && <CollabPage onBack={onBackHome}/>}
+            {page.section === 'About'      && <AboutPage onBack={onBackHome}/>}
+            {page.section === 'Team'       && <TeamPage onBack={onBackHome} onApply={openApply}/>}
+            {page.section === 'Contact'    && <ContactPage onBack={onBackHome}/>}
+            {page.type === 'activity' && cur && <ActivityDetailPage activity={cur} onBack={onBackMain} onSelectEvent={onEvent}/>}
+            {page.type === 'apply'    && <RecruitmentPage onBack={onBackHome}/>}
+            {page.type === 'join'     && <MembershipPage  onBack={onBackHome}/>}
+            {page.type === 'admin'    && <AdminPage        onBack={onBackHome}/>}
             {page.type === 'event' && page.event && (
               <EventDetailPage event={page.event} onBack={page.activityKey ? onBackAct : onBackMain} />
             )}

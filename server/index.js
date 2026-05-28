@@ -414,6 +414,167 @@ function clearPasskeyAttempts(username, ip) {
   failedPasskeyAttempts.delete(key);
 }
 
+app.post("/api/forms/membership", formRateLimiter, (req, res) =>
+  handleForm("membership", req, res),
+);
+app.post("/api/forms/recruitment", formRateLimiter, (req, res) =>
+  handleForm("recruitment", req, res),
+);
+app.post("/api/core-team/apply", formRateLimiter, (req, res) =>
+  handleForm("core_team", req, res),
+);
+// Real-time notification subscriber channels
+const pushSubscriptions = new Set();
+app.post("/api/notifications/subscribe", notificationRateLimiter, (req, res) => {
+  try {
+    const { subscription } = req.body;
+    if (subscription) {
+      pushSubscriptions.add(JSON.stringify(subscription));
+      if (pushSubscriptions.size > 10000) {
+        const oldest = pushSubscriptions.values().next().value;
+        pushSubscriptions.delete(oldest);
+      }
+    }
+    return res.json({ success: true });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+app.post("/api/notifications/unsubscribe", notificationRateLimiter, (req, res) => {
+  try {
+    const { subscription } = req.body;
+    if (subscription) pushSubscriptions.delete(JSON.stringify(subscription));
+    return res.json({ success: true });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// Server-side notifications API (simple in-memory store)
+import notificationsService from "./services/notificationsService.js";
+
+app.get("/api/notifications", adminAuth, notificationRateLimiter, (req, res) => {
+  try {
+    const userId = req.adminSession?.username || "global";
+    const list = notificationsService.getNotifications(userId);
+    return res.json({ notifications: list });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+app.post(
+  "/api/notifications/mark-read",
+  adminAuth,
+  notificationRateLimiter,
+  (req, res) => {
+    try {
+      const { id } = req.body || {};
+      if (!id) return res.status(400).json({ error: "id required" });
+      const uid = req.adminSession?.username || "global";
+      const ok = notificationsService.markAsRead(uid, id);
+      return res.json({ success: ok });
+    } catch (err) {
+      return res.status(500).json({ error: err.message });
+    }
+  },
+);
+
+app.post(
+  "/api/notifications/mark-all-read",
+  adminAuth,
+  notificationRateLimiter,
+  (req, res) => {
+    try {
+      const uid = req.adminSession?.username || "global";
+      notificationsService.markAllAsRead(uid);
+      return res.json({ success: true });
+    } catch (err) {
+      return res.status(500).json({ error: err.message });
+    }
+  },
+);
+
+app.delete(
+  "/api/notifications/:id",
+  adminAuth,
+  notificationRateLimiter,
+  (req, res) => {
+    try {
+      const id = req.params.id;
+      const uid = req.adminSession?.username || "global";
+      const removed = notificationsService.removeNotification(uid, id);
+      if (!removed)
+        return res.status(404).json({ error: "Notification not found" });
+      return res.json({ success: true });
+    } catch (err) {
+      return res.status(500).json({ error: err.message });
+    }
+  },
+);
+
+// Delete all notifications for a user (or global)
+app.delete(
+  "/api/notifications",
+  adminAuth,
+  notificationRateLimiter,
+  (req, res) => {
+    try {
+      const uid = req.adminSession?.username || "global";
+      notificationsService.clearAll(uid);
+      return res.json({ success: true });
+    } catch (err) {
+      return res.status(500).json({ error: err.message });
+    }
+  },
+);
+
+// Create notification (admin/testing)
+app.post(
+  "/api/notifications",
+  adminAuth,
+  notificationRateLimiter,
+  (req, res) => {
+    try {
+      const { title, message, type, link } = req.body || {};
+      if (!title || !message)
+        return res
+          .status(400)
+          .json({ error: "title and message are required" });
+      const note = notificationsService.addNotification(req.adminSession?.username || "global", {
+        title,
+        message,
+        type,
+        link,
+      });
+      return res.json({ success: true, notification: note });
+    } catch (err) {
+      return res.status(500).json({ error: err.message });
+    }
+  },
+);
+
+// Portfolio System API Endpoints
+app.get("/api/portfolio/:username", async (req, res) => {
+  try {
+    const username = String(req.params.username || "").trim();
+    if (!username) {
+      return res.status(400).json({ error: "Username is required" });
+    }
+    const portfolio = await portfolioRepository.getByUsername(username);
+    if (!portfolio) {
+      return res.status(404).json({ error: "Portfolio not found" });
+    }
+    return res.json(portfolio);
+  } catch (err) {
+    console.error("Error fetching portfolio:", err);
+    return res
+      .status(500)
+      .json({ error: err.message || "Internal server error" });
+  }
+});
+
+app.put("/api/portfolio", portfolioRateLimiter, async (req, res) => {
 app.put('/api/portfolio', portfolioRateLimiter, async (req, res) => {
   try {
     const body = req.body || {};
