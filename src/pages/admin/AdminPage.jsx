@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import apiClient from '../../utils/apiClient.js';
 import DashboardStats from '../../components/admin/analytics/DashboardStats';
 import UserGrowthChart from '../../components/admin/analytics/UserGrowthChart';
 import EventAttendanceChart from '../../components/admin/analytics/EventAttendanceChart';
@@ -22,26 +23,10 @@ export default function AdminPage({ onBack }) {
       const base = (import.meta?.env?.VITE_API_BASE || '').replace(/\/+$/, '');
       const headers = { 'Authorization': `Bearer ${authToken}` };
       
-      const [statsRes, growthRes, eventsRes] = await Promise.all([
-        fetch(`${base}/api/admin/analytics/stats`, { headers }),
-        fetch(`${base}/api/admin/analytics/growth`, { headers }),
-        fetch(`${base}/api/admin/analytics/events`, { headers })
-      ]);
-
-      if (statsRes.status === 401) {
-        setToken(null);
-        localStorage.removeItem('ns_admin_token');
-        throw new Error('Session expired. Please login again.');
-      }
-
-      if (!statsRes.ok || !growthRes.ok || !eventsRes.ok) {
-        throw new Error('Failed to fetch analytics data.');
-      }
-
       const [stats, growth, events] = await Promise.all([
-        statsRes.json(),
-        growthRes.json(),
-        eventsRes.json()
+        apiClient(`${base}/api/admin/analytics/stats`, { headers }),
+        apiClient(`${base}/api/admin/analytics/growth`, { headers }),
+        apiClient(`${base}/api/admin/analytics/events`, { headers })
       ]);
 
       setData({ stats, growth, events });
@@ -187,14 +172,11 @@ export default function AdminPage({ onBack }) {
     try {
       setLoading(true);
       const base = (import.meta?.env?.VITE_API_BASE || '').replace(/\/+$/, '');
-      const res = await fetch(`${base}/api/admin/login`, {
+      const result = await apiClient(`${base}/api/admin/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(loginData)
       });
-
-      const result = await res.json();
-      if (!res.ok) throw new Error(result.error || 'Login failed');
 
       localStorage.setItem('ns_admin_token', result.token);
       setToken(result.token);

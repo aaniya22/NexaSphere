@@ -37,6 +37,7 @@ import AboutPage from './pages/about/AboutPage';
 import TeamPage from './pages/team/TeamPage';
 import ContactPage from './pages/contact/ContactPage';
 import dynamic from 'next/dynamic';
+import apiClient from './utils/apiClient.js';
 
 const RecruitmentPage = dynamic(() => import('./pages/recruitment/RecruitmentPage'), { ssr: false });
 const MembershipPage = dynamic(() => import('./pages/membership/MembershipPage'), { ssr: false });
@@ -280,12 +281,8 @@ export default function App() {
   useEffect(() => {
     let alive = true;
     const base = (import.meta?.env?.VITE_API_BASE || '').replace(/\/+$/, '');
-    const url = base ? `${base}/api/content/events` : '/api/content/events';
-    fetch(url)
-      .then(async (r) => {
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        return r.json();
-      })
+    const url  = base ? `${base}/api/content/events` : '/api/content/events';
+    apiClient(url)
       .then(data => {
         if (!alive) return;
         if (data && Array.isArray(data.events)) {
