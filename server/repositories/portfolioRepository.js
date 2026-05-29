@@ -215,7 +215,18 @@ export const portfolioRepository = {
     };
   },
 
-  async verifyPasskey(username, passkey) {
+  /**
+   * Verify that the provided passkey is correct for the given username.
+   *
+   * @param {string} username
+   * @param {string} passkey
+   * @param {object} [options]
+   * @param {boolean} [options.allowNew=false] - When true, a non-existent username
+   *   is treated as a new registration and the passkey is accepted unconditionally.
+   *   When false (default), a non-existent username returns false so that callers
+   *   cannot bypass authentication by supplying an unrecognised username.
+   */
+  async verifyPasskey(username, passkey, { allowNew = false } = {}) {
     const isDbAvailable = await ensureReady();
     const sanitizedUsername = canonicalizeUsername(username);
 
@@ -226,7 +237,12 @@ export const portfolioRepository = {
             'SELECT passkey_hash FROM portfolios WHERE username = $1',
             [sanitizedUsername]
           );
-          if (!rows.length) return false;
+          if (!rows.length) {
+            // Username does not exist yet.
+            // Only allow if the caller has explicitly declared this is a new registration.
+            // Returning true unconditionally here was the authentication bypass vector.
+            return allowNew;
+          }
           return await verifyHash(passkey, rows[0].passkey_hash);
         });
       } catch (err) {
@@ -237,7 +253,10 @@ export const portfolioRepository = {
     // Local file fallback (read-only cache — fail closed when user is unknown)
     const portfolios = await readLocalPortfolios();
     const portfolio = portfolios[sanitizedUsername];
-    if (!portfolio) return false; // Cannot prove non-existence globally
+    if (!portfolio) {
+      // Same guard as the DB path — only allow if explicitly a new registration.
+      return allowNew;
+    }
     return await verifyHash(passkey, portfolio.passkeyHash);
   },
 

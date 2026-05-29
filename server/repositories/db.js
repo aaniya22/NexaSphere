@@ -100,4 +100,3 @@ export function setWithDbOverride(fn) {
 
 export { pg };
 
-export { pg };

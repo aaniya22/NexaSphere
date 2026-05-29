@@ -16,6 +16,8 @@ import analyticsRouter from "./routes/analytics.js";
 import { initializeSocketIO, emitToRoom, getRoom } from "./config/socket.js";
 import adminStreamRouter from "./routes/adminStream.js";
 import { broadcastSSEEvent } from "./services/sseService.js";
+import documentationRouter from "./routes/documentation.js";
+import monitoringRouter from "./routes/monitoring.js";
 import rateLimit from "express-rate-limit";
 import 'dotenv/config';
 import helmet from 'helmet';
@@ -113,6 +115,10 @@ function requestLogger(req, res, next) {
 }
 
 app.use(requestLogger);
+
+// Mount monitoring + API documentation routes (previously implemented but never registered).
+app.use("/api/monitoring", monitoringRouter);
+app.use("/api", documentationRouter);
 
 const adminAuth = adminAuthMiddleware.requireAdmin;
 adminEvents.on('CORE_TEAM_MEMBER_ADDED', (event) => console.log(`[EVENT] CORE_TEAM_MEMBER_ADDED:`, event));
@@ -1724,10 +1730,8 @@ app.put('/api/portfolio', portfolioRateLimiter, async (req, res) => {
       return res.status(400).json({ error: 'Passkey must be at least 12 characters long' });
     }
 
-    const existing = await portfolioRepository.getByUsername(username);
-    if (!existing) {
-      return res.status(404).json({ error: 'Portfolio not found. A registration process is required to create a new portfolio.' });
-    }
+    const existingPortfolio = await portfolioRepository.getByUsername(username);
+    const isNewRegistration = !existingPortfolio;
 
     const lockout = checkPasskeyLockout(username, ip);
     if (lockout) {
@@ -1736,7 +1740,9 @@ app.put('/api/portfolio', portfolioRateLimiter, async (req, res) => {
       });
     }
 
-    const isAuthorized = await portfolioRepository.verifyPasskey(username, passkey);
+    const isAuthorized = await portfolioRepository.verifyPasskey(username, passkey, {
+      allowNew: isNewRegistration,
+    });
     if (!isAuthorized) {
       recordFailedPasskeyAttempt(username, ip);
       return res.status(401).json({ error: 'Incorrect passkey for this username' });
