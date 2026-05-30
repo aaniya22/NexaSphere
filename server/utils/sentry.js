@@ -3,13 +3,13 @@
  * Enterprise error tracking and monitoring
  */
 
-import * as Sentry from "@sentry/node";
+import * as Sentry from '@sentry/node';
 
 let nodeProfilingIntegration = null;
 try {
   // Optional dependency: native bindings may be unavailable on some platforms.
   // If profiling cannot be loaded, fall back to Sentry without profiling.
-  const profiling = await import("@sentry/profiling-node");
+  const profiling = await import('@sentry/profiling-node');
   nodeProfilingIntegration = profiling.nodeProfilingIntegration;
 } catch (error) {
   nodeProfilingIntegration = null;
@@ -20,17 +20,17 @@ try {
  * @param {Object} app - Express app instance
  */
 function initializeSentry(app) {
-  const isDevelopment = process.env.NODE_ENV === "development";
+  const isDevelopment = process.env.NODE_ENV === 'development';
   const dsn = process.env.SENTRY_DSN;
 
   if (!dsn && !isDevelopment) {
-    console.warn("Sentry DSN not configured. Error tracking disabled.");
+    console.warn('Sentry DSN not configured. Error tracking disabled.');
     return;
   }
 
   Sentry.init({
     dsn: dsn,
-    environment: process.env.NODE_ENV || "development",
+    environment: process.env.NODE_ENV || 'development',
     integrations: [
       new Sentry.Integrations.Http({ tracing: true }),
       new Sentry.Integrations.Express({
@@ -69,7 +69,7 @@ function addSentryErrorHandler(app) {
  * @param {Object} context - Additional context
  * @param {string} level - Error level (fatal, error, warning, info)
  */
-function captureException(error, context = {}, level = "error") {
+function captureException(error, context = {}, level = 'error') {
   Sentry.captureException(error, {
     level,
     tags: context.tags || {},
@@ -88,7 +88,7 @@ function captureException(error, context = {}, level = "error") {
  * @param {string} level - Message level
  * @param {Object} context - Additional context
  */
-function captureMessage(message, level = "info", context = {}) {
+function captureMessage(message, level = 'info', context = {}) {
   Sentry.captureMessage(message, {
     level,
     tags: context.tags || {},
@@ -102,9 +102,9 @@ function captureMessage(message, level = "info", context = {}) {
  */
 function addBreadcrumb(data) {
   Sentry.addBreadcrumb({
-    category: data.category || "custom",
-    message: data.message || "",
-    level: data.level || "info",
+    category: data.category || 'custom',
+    message: data.message || '',
+    level: data.level || 'info',
     data: data.data || {},
     timestamp: Date.now() / 1000,
   });

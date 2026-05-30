@@ -3,6 +3,7 @@ import helmet from "helmet";
 import express from "express";
 import { EventEmitter } from "events";
 import cors from "cors";
+import morgan from "morgan";
 import { google } from "googleapis";
 import { promises as fs } from "fs";
 import path from "path";
@@ -37,6 +38,9 @@ import analyticsRouter from './routes/analytics.js';
 import { initializeSocketIO, emitToRoom, getRoom } from './config/socket.js';
 import adminStreamRouter from './routes/adminStream.js';
 import { broadcastSSEEvent } from './services/sseService.js';
+import { performanceMonitor } from "./middleware/performanceMonitor.js";
+import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
+import { initializeSentry, addSentryErrorHandler } from "./utils/sentry.js";
 import {
   apiRateLimiter,
   authRateLimiter,
@@ -71,6 +75,7 @@ const __dirname = path.dirname(__filename);
 const CONTENT_FILE = path.join(__dirname, 'data', 'content.json');
 
 const app = express();
+initializeSentry(app);
 app.use(helmet());
 
 app.use(
@@ -84,6 +89,8 @@ app.use(
   }),
 );
 app.use(express.json({ limit: "512kb" }));
+app.use(morgan("combined"));
+app.use(performanceMonitor);
 const adminEvents = new EventEmitter();
 
 app.use(helmet());
@@ -1757,6 +1764,11 @@ app.put('/api/portfolio', portfolioRateLimiter, async (req, res) => {
     return res.status(500).json({ error: err.message || 'Internal server error' });
   }
 });
+
+// Must be registered after all routes.
+app.use(notFoundHandler);
+addSentryErrorHandler(app);
+app.use(errorHandler);
 
 process.on('unhandledRejection', (reason) => {
   console.error(
