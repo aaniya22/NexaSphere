@@ -327,6 +327,12 @@ async function fetchWithAuth(url, options = {}) {
           setDb('core_team', team);
           resolve(newMem);
         }
+        if (method === 'PUT') {
+          const id = url.split('/').pop();
+          team = team.map((m) => (m.id === id ? { ...body, id } : m));
+          setDb('core_team', team);
+          resolve({ ...body, id });
+        }
         if (method === 'DELETE') {
           const id = url.split('/').pop();
           team = team.filter((m) => m.id !== id);
@@ -493,6 +499,25 @@ export const api = {
       eventEmitter.emit(EVENTS.NOTIFY, {
         type: 'success',
         message: 'Member added',
+      });
+      broadcastContentUpdate('team');
+      notifyContentUpdated('ns_db_core_team');
+    },
+    update: async (id, member) => {
+      if (auth.isOfflineMode()) {
+        eventEmitter.emit(EVENTS.NOTIFY, {
+          type: 'warning',
+          message: 'Offline — changes not saved to server',
+        });
+      }
+      const result = await fetchWithAuth(`/api/admin/core-team/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(member),
+      });
+      eventEmitter.emit(EVENTS.CORE_TEAM_MEMBER_UPDATED, result);
+      eventEmitter.emit(EVENTS.NOTIFY, {
+        type: 'success',
+        message: 'Member updated',
       });
       broadcastContentUpdate('team');
       notifyContentUpdated('ns_db_core_team');
