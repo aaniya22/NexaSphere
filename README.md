@@ -233,7 +233,7 @@ See `server/.env.example` and `website/.env.example` for the complete list.
 
 ## 🤝 Contributing
 
-See [CONTRIBUTING.md](docs/community/CONTRIBUTING.md) for guidelines.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 This project is part of **GSSoC 2026** — check the open issues for tasks labelled `good first issue`.
 
