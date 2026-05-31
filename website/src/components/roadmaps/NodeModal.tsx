@@ -9,6 +9,7 @@ import {
   Link,
   CheckSquare,
   ListPlus,
+  AlertCircle,
 } from "lucide-react";
 
 interface NodeModalProps {

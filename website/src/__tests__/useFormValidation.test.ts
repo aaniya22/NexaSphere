@@ -21,7 +21,7 @@ function validateSingleField(
     isValid = result.current.validateForm([fieldName]);
   });
 
-  return result.current.errors;
+  return result.current.errors as any;
 }
 
 // ---------------------------------------------------------------------------
@@ -286,13 +286,13 @@ describe("useFormValidation", () => {
       act(() => {
         result.current.validateForm(["username"]);
       });
-      expect(result.current.errors.username).toBe("This field is required");
+      expect((result.current.errors as any).username).toBe("This field is required");
 
       // User types a valid value
       act(() => {
         result.current.handleChange("username", "Nexasphere");
       });
-      expect(result.current.errors.username).toBeUndefined();
+      expect((result.current.errors as any).username).toBeUndefined();
     });
 
     it("shows maxLength error as soon as the user exceeds the limit", () => {
@@ -311,7 +311,7 @@ describe("useFormValidation", () => {
       act(() => {
         result.current.handleChange("username", "a".repeat(11));
       });
-      expect(result.current.errors.username).toBe(
+      expect((result.current.errors as any).username).toBe(
         "Maximum length is 10 characters"
       );
     });
@@ -329,7 +329,7 @@ describe("useFormValidation", () => {
       act(() => {
         result.current.validateForm();
       });
-      expect(result.current.errors.name).toBeDefined();
+      expect((result.current.errors as any).name).toBeDefined();
 
       act(() => {
         result.current.resetForm();

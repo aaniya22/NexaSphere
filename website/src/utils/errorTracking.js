@@ -18,11 +18,11 @@ export const initializeSentry = (environment = import.meta.env.MODE) => {
     tracesSampleRate: isDevelopment ? 1.0 : 0.1, // 100% in dev, 10% in prod
     profilesSampleRate: isDevelopment ? 1.0 : 0.1,
     integrations: [
-      new Sentry.Replay({
+      Sentry.replayIntegration({
         maskAllText: true,
         blockAllMedia: true,
       }),
-      new Sentry.BrowserTracing(),
+      Sentry.browserTracingIntegration(),
     ],
     denyUrls: [
       // Browser extensions
@@ -62,16 +62,16 @@ export const captureApiError = (error, context = {}) => {
  * @param {Object} metadata - Additional metadata
  */
 export const capturePerformanceMetric = (action, duration, metadata = {}) => {
-  const transaction = Sentry.startTransaction({
+  Sentry.startSpan({
     name: action,
     op: action,
+  }, (span) => {
+    setTimeout(() => {
+      span?.setAttribute("duration", duration);
+      span?.setAttribute("metadata", JSON.stringify(metadata));
+      span?.end();
+    }, duration);
   });
-
-  setTimeout(() => {
-    transaction.setTag("duration", duration);
-    transaction.setData("metadata", metadata);
-    transaction.finish();
-  }, duration);
 };
 
 /**

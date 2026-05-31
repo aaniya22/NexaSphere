@@ -4,7 +4,7 @@ import { MemoryRouter } from 'react-router-dom';
 import EventsPage from '../pages/events/EventsPage';
 
 describe('EventsPage Component', () => {
-  const mockEvents = [
+  const mockEvents: any[] = [
     {
       id: 'kss-153',
       name: 'KSS #153 — AI Workshop',
