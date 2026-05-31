@@ -25,7 +25,7 @@ export default defineConfig({
         functions: 70,
         branches: 70,
         statements: 70,
-      }
+      },
     },
     include: ['src/**/*.test.{ts,tsx}', 'src/**/*.spec.{ts,tsx}'],
   },

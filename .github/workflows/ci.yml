@@ -25,9 +25,7 @@ jobs:
         run: rm -rf node_modules package-lock.json
 
       - name: Install dependencies
-        run: |
-          rm -rf package-lock.json node_modules
-          npm install --no-audit
+        run: rm -rf node_modules package-lock.json && npm install
 
       - name: Build (production)
         run: npm run build --workspace=website
