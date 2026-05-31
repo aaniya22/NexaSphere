@@ -1,3 +1,4 @@
+import { env } from './config/env.js';
 import 'dotenv/config';
 import helmet from 'helmet';
 import express from 'express';
@@ -70,7 +71,7 @@ app.use(performanceMonitor);
 // Global API rate limiter — protects all /api routes from request flooding
 // Previously missing: the middleware was correctly defined in rateLimiter.js
 // but never mounted, leaving every API endpoint without baseline protection.
-app.use("/api", apiRateLimiter);
+app.use('/api', apiRateLimiter);
 
 const adminEvents = new EventEmitter();
 
