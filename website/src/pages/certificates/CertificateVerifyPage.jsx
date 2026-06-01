@@ -12,15 +12,11 @@
  */
 
 import { useEffect, useState } from 'react';
+import { getApiBase } from '../../utils/runtimeConfig';
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-function getApiBase() {
-  const base = (import.meta?.env?.VITE_API_BASE || '').replace(/\/+$/, '');
-  return base || 'http://localhost:8080';
-}
 
 function formatDate(dateStr) {
   if (!dateStr) return '—';
