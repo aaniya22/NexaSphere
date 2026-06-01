@@ -36,4 +36,3 @@ export const EVENTS = {
   ANNOUNCEMENT_UPDATED: 'announcement:updated',
   ANNOUNCEMENT_DELETED: 'announcement:deleted',
 };
-

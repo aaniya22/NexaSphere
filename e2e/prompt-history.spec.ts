@@ -36,7 +36,7 @@ test.describe('Prompt History & Workspace System', () => {
     // Type and send message
     const input = page.locator('.chat-input-container input[type="text"]');
     await input.fill('Hello, how are you?');
-    
+
     const sendBtn = page.locator('.send-btn');
     await sendBtn.click();
 
@@ -88,7 +88,7 @@ test.describe('Prompt History & Workspace System', () => {
 
     // Get workspace selector
     const workspaceSelect = page.locator('.workspace-selector-inline');
-    
+
     // Check current value
     const currentValue = await workspaceSelect.inputValue();
     expect(['default', 'coding', 'research']).toContain(currentValue);
@@ -186,7 +186,7 @@ test.describe('Prompt History & Workspace System', () => {
     await deleteBtn.click();
 
     // Handle confirmation
-    page.once('dialog', dialog => {
+    page.once('dialog', (dialog) => {
       dialog.accept();
     });
 

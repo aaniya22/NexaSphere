@@ -139,7 +139,7 @@ describe('api service', () => {
             headers: expect.objectContaining({
               Authorization: 'Bearer admin-token',
             }),
-          }),
+          })
         );
       });
 
@@ -210,7 +210,7 @@ describe('api service', () => {
           expect.objectContaining({
             method: 'PATCH',
             body: JSON.stringify({ status: 'approved' }),
-          }),
+          })
         );
       });
     });
@@ -298,7 +298,7 @@ describe('api service', () => {
 
       expect(eventEmitter.emit).toHaveBeenCalledWith(
         EVENTS.NOTIFY,
-        expect.objectContaining({ type: 'warning' }),
+        expect.objectContaining({ type: 'warning' })
       );
     });
   });

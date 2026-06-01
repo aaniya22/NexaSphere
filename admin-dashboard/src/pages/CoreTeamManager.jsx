@@ -28,9 +28,10 @@ export function CoreTeamManager() {
   }, []);
 
   const filteredMembers = members.filter((member) => {
-    const matchesSearch = !searchQuery || 
-                          (member.name || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          (member.role || '').toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch =
+      !searchQuery ||
+      (member.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (member.role || '').toLowerCase().includes(searchQuery.toLowerCase());
     const matchesBranch = !selectedBranch || member.branch === selectedBranch;
     const matchesRole = !selectedRole || member.role === selectedRole;
     return matchesSearch && matchesBranch && matchesRole;
@@ -104,40 +105,73 @@ export function CoreTeamManager() {
 
       {!loading && (
         <>
-          <div className="filters-row animate-fade-in" style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
+          <div
+            className="filters-row animate-fade-in"
+            style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}
+          >
             <input
               type="text"
               placeholder="Search by name or role..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              style={{ flex: 2, minWidth: 200, padding: '8px 12px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)' }}
+              style={{
+                flex: 2,
+                minWidth: 200,
+                padding: '8px 12px',
+                borderRadius: 6,
+                border: '1px solid var(--border)',
+                background: 'var(--bg)',
+                color: 'var(--text)',
+              }}
             />
             <select
               value={selectedBranch}
               onChange={(e) => setSelectedBranch(e.target.value)}
-              style={{ flex: 1, minWidth: 140, padding: '8px 12px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)' }}
+              style={{
+                flex: 1,
+                minWidth: 140,
+                padding: '8px 12px',
+                borderRadius: 6,
+                border: '1px solid var(--border)',
+                background: 'var(--bg)',
+                color: 'var(--text)',
+              }}
               aria-label="Filter by branch"
             >
               <option value="">All Branches</option>
-              {[...new Set(members.map(m => m.branch).filter(Boolean))].map(branch => (
-                <option key={branch} value={branch}>{branch}</option>
+              {[...new Set(members.map((m) => m.branch).filter(Boolean))].map((branch) => (
+                <option key={branch} value={branch}>
+                  {branch}
+                </option>
               ))}
             </select>
             <select
               value={selectedRole}
               onChange={(e) => setSelectedRole(e.target.value)}
-              style={{ flex: 1, minWidth: 140, padding: '8px 12px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)' }}
+              style={{
+                flex: 1,
+                minWidth: 140,
+                padding: '8px 12px',
+                borderRadius: 6,
+                border: '1px solid var(--border)',
+                background: 'var(--bg)',
+                color: 'var(--text)',
+              }}
               aria-label="Filter by role"
             >
               <option value="">All Roles</option>
-              {[...new Set(members.map(m => m.role).filter(Boolean))].map(role => (
-                <option key={role} value={role}>{role}</option>
+              {[...new Set(members.map((m) => m.role).filter(Boolean))].map((role) => (
+                <option key={role} value={role}>
+                  {role}
+                </option>
               ))}
             </select>
           </div>
 
           <div className="team-grid">
-            {filteredMembers.length === 0 && <div className="empty-state">No core team members match your criteria.</div>}
+            {filteredMembers.length === 0 && (
+              <div className="empty-state">No core team members match your criteria.</div>
+            )}
             {filteredMembers.map((member) => (
               <div key={member.id} className="team-card animate-fade-in">
                 {member.photo ? (

@@ -4,16 +4,18 @@ import { io, Socket } from 'socket.io-client';
 let socketInstance: Socket | null = null;
 let connectionUrl: string = '';
 
-export const initializeSocket = (url: string = import.meta.env.VITE_API_URL || 'http://localhost:5000'): Socket => {
+export const initializeSocket = (
+  url: string = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+): Socket => {
   if (!socketInstance || (connectionUrl && connectionUrl !== url)) {
     if (socketInstance) {
       console.log(`[Socket.IO] Disconnecting existing socket due to URL change.`);
       socketInstance.disconnect();
     }
-    
+
     console.log(`[Socket.IO] Initializing new socket connection to: ${url}`);
     connectionUrl = url;
-    
+
     socketInstance = io(url, {
       reconnection: true,
       reconnectionAttempts: 10,
@@ -53,7 +55,7 @@ export const initializeSocket = (url: string = import.meta.env.VITE_API_URL || '
       return originalOff(event, listener);
     };
   }
-  
+
   return socketInstance;
 };
 

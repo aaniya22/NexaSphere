@@ -63,30 +63,38 @@ export default defineConfig({
       external: [],
       output: {
         manualChunks(id) {
-          if (id.includes("node_modules")) {
-            if (id.includes("react") || id.includes("react-dom") || id.includes("react-router-dom")) {
-              return "vendor-react";
+          if (id.includes('node_modules')) {
+            if (
+              id.includes('react') ||
+              id.includes('react-dom') ||
+              id.includes('react-router-dom')
+            ) {
+              return 'vendor-react';
             }
-            if (id.includes("framer-motion")) {
-              return "vendor-framer";
+            if (id.includes('framer-motion')) {
+              return 'vendor-framer';
             }
-            if (id.includes("recharts")) {
-              return "vendor-recharts";
+            if (id.includes('recharts')) {
+              return 'vendor-recharts';
             }
-            if (id.includes("@tensorflow/tfjs")) {
-              return "vendor-tensorflow";
+            if (id.includes('@tensorflow/tfjs')) {
+              return 'vendor-tensorflow';
             }
-            if (id.includes("@fullcalendar")) {
-              return "vendor-fullcalendar";
+            if (id.includes('@fullcalendar')) {
+              return 'vendor-fullcalendar';
             }
-            if (id.includes("@sentry")) {
-              return "vendor-sentry";
+            if (id.includes('@sentry')) {
+              return 'vendor-sentry';
             }
-            if (id.includes("jspdf") || id.includes("html2canvas") || id.includes("dompurify")) {
-              return "vendor-pdf";
+            if (id.includes('jspdf') || id.includes('html2canvas') || id.includes('dompurify')) {
+              return 'vendor-pdf';
             }
-            if (id.includes("i18next") || id.includes("react-i18next") || id.includes("i18next-browser-languagedetector")) {
-              return "vendor-i18n";
+            if (
+              id.includes('i18next') ||
+              id.includes('react-i18next') ||
+              id.includes('i18next-browser-languagedetector')
+            ) {
+              return 'vendor-i18n';
             }
           }
         },

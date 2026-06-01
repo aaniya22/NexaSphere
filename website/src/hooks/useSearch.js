@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from 'react';
 
 /* Debounce hook - delays search until user stops typing */
 function useDebounce(value, delay = 300) {
@@ -11,11 +11,11 @@ function useDebounce(value, delay = 300) {
 }
 
 function matchesText(value, query) {
-  return typeof value === "string" && value.toLowerCase().includes(query);
+  return typeof value === 'string' && value.toLowerCase().includes(query);
 }
 
 export function getEventDisplayTitle(event) {
-  return event?.title || event?.name || event?.shortName || "";
+  return event?.title || event?.name || event?.shortName || '';
 }
 
 export function eventMatchesQuery(event, query) {
@@ -32,8 +32,8 @@ export function eventMatchesQuery(event, query) {
 
 /* Main search hook */
 export function useSearch(activities, events) {
-  const [query, setQuery] = useState("");
-  const [filter, setFilter] = useState("all"); // 'all' | 'activities' | 'events'
+  const [query, setQuery] = useState('');
+  const [filter, setFilter] = useState('all'); // 'all' | 'activities' | 'events'
   const [results, setResults] = useState([]);
   const debouncedQuery = useDebounce(query, 300);
 
@@ -47,7 +47,7 @@ export function useSearch(activities, events) {
     let all = [];
 
     /* Search activities */
-    if (filter === "all" || filter === "activities") {
+    if (filter === 'all' || filter === 'activities') {
       const actRes = Object.entries(activities || {})
         .filter(
           ([key, a]) =>
@@ -59,16 +59,16 @@ export function useSearch(activities, events) {
         )
         .map(([key, a]) => ({
           id: key,
-          type: "activity",
+          type: 'activity',
           title: a?.title || key,
-          description: a?.description || a?.subtitle || a?.tagline || "",
+          description: a?.description || a?.subtitle || a?.tagline || '',
           key,
         }));
       all = [...all, ...actRes];
     }
 
     /* Search events */
-    if (filter === "all" || filter === "events") {
+    if (filter === 'all' || filter === 'events') {
       const evRes = (events || [])
         .filter((ev) => eventMatchesQuery(ev, q))
         .map((ev) => {
@@ -76,9 +76,9 @@ export function useSearch(activities, events) {
 
           return {
             id: ev.id || title,
-            type: "event",
+            type: 'event',
             title,
-            description: ev.description || ev.location || "",
+            description: ev.description || ev.location || '',
             date: ev.date,
             event: ev,
           };
@@ -90,8 +90,8 @@ export function useSearch(activities, events) {
   }, [debouncedQuery, filter, activities, events]);
 
   const clearSearch = useCallback(() => {
-    setQuery("");
-    setFilter("all");
+    setQuery('');
+    setFilter('all');
     setResults([]);
   }, []);
 

@@ -8,7 +8,7 @@ import { AdminIcon } from '../components/AdminIcon';
 export function AnnouncementsManager() {
   const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(true);
-  
+
   // Filtering states
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -59,9 +59,7 @@ export function AnnouncementsManager() {
   useEventListener(
     EVENTS.ANNOUNCEMENT_UPDATED,
     useCallback((updatedAnn) => {
-      setAnnouncements((prev) =>
-        prev.map((a) => (a.id === updatedAnn.id ? updatedAnn : a))
-      );
+      setAnnouncements((prev) => prev.map((a) => (a.id === updatedAnn.id ? updatedAnn : a)));
       closeForm();
     }, [])
   );
@@ -158,8 +156,7 @@ export function AnnouncementsManager() {
       const matchesSearch =
         ann.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         ann.content?.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesCategory =
-        selectedCategory === 'all' || ann.category === selectedCategory;
+      const matchesCategory = selectedCategory === 'all' || ann.category === selectedCategory;
       return matchesSearch && matchesCategory;
     })
     .sort((a, b) => {
@@ -188,7 +185,9 @@ export function AnnouncementsManager() {
       <div className="page-header">
         <div>
           <h2 className="page-title">Announcements & Notifications</h2>
-          <p className="page-subtitle">Publish club announcements, event updates, alerts, and system notices.</p>
+          <p className="page-subtitle">
+            Publish club announcements, event updates, alerts, and system notices.
+          </p>
         </div>
         <button className="btn-primary" onClick={openCreateForm}>
           + New Announcement
@@ -196,13 +195,13 @@ export function AnnouncementsManager() {
       </div>
 
       {/* ── Search and Filter Controls ── */}
-      <div 
-        style={{ 
-          display: 'flex', 
-          gap: '12px', 
-          marginBottom: '24px', 
+      <div
+        style={{
+          display: 'flex',
+          gap: '12px',
+          marginBottom: '24px',
           flexWrap: 'wrap',
-          alignItems: 'center'
+          alignItems: 'center',
         }}
       >
         <div style={{ position: 'relative', flex: '1', minWidth: '240px' }}>
@@ -214,7 +213,15 @@ export function AnnouncementsManager() {
             onChange={(e) => setSearchQuery(e.target.value)}
             style={{ paddingLeft: '36px', margin: 0 }}
           />
-          <div style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', opacity: 0.5 }}>
+          <div
+            style={{
+              position: 'absolute',
+              left: '12px',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              opacity: 0.5,
+            }}
+          >
             <AdminIcon name="Calendar" size={16} /> {/* Placeholder icon search helper */}
           </div>
         </div>
@@ -238,17 +245,28 @@ export function AnnouncementsManager() {
         <div className="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="form-title">
           <div className="modal" style={{ maxWidth: '600px', width: '100%' }}>
             <div className="modal-header">
-              <h3 id="form-title">{editingAnnouncement ? 'Edit Announcement' : 'New Announcement'}</h3>
+              <h3 id="form-title">
+                {editingAnnouncement ? 'Edit Announcement' : 'New Announcement'}
+              </h3>
               <button className="modal-close" onClick={closeForm} aria-label="Close">
                 <AdminIcon name="X" size={16} />
               </button>
             </div>
-            
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {formError && <div className="page-error" style={{ padding: '10px', borderRadius: '4px' }}>{formError}</div>}
-              
+
+            <form
+              onSubmit={handleSubmit}
+              style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}
+            >
+              {formError && (
+                <div className="page-error" style={{ padding: '10px', borderRadius: '4px' }}>
+                  {formError}
+                </div>
+              )}
+
               <div>
-                <label className="input-label" htmlFor="title">Title *</label>
+                <label className="input-label" htmlFor="title">
+                  Title *
+                </label>
                 <input
                   type="text"
                   id="title"
@@ -262,7 +280,9 @@ export function AnnouncementsManager() {
 
               <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
                 <div style={{ flex: 1, minWidth: '180px' }}>
-                  <label className="input-label" htmlFor="category">Category</label>
+                  <label className="input-label" htmlFor="category">
+                    Category
+                  </label>
                   <select
                     id="category"
                     className="input-field"
@@ -276,7 +296,9 @@ export function AnnouncementsManager() {
                   </select>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '24px' }}>
+                <div
+                  style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '24px' }}
+                >
                   <input
                     type="checkbox"
                     id="pinned"
@@ -291,7 +313,9 @@ export function AnnouncementsManager() {
               </div>
 
               <div>
-                <label className="input-label" htmlFor="content">Content *</label>
+                <label className="input-label" htmlFor="content">
+                  Content *
+                </label>
                 <textarea
                   id="content"
                   className="input-field"
@@ -303,12 +327,28 @@ export function AnnouncementsManager() {
                 />
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '12px' }}>
-                <button type="button" className="btn-secondary" onClick={closeForm} disabled={saving}>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  gap: '10px',
+                  marginTop: '12px',
+                }}
+              >
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={closeForm}
+                  disabled={saving}
+                >
                   Cancel
                 </button>
                 <button type="submit" className="btn-primary" disabled={saving}>
-                  {saving ? 'Saving...' : editingAnnouncement ? 'Save Changes' : 'Publish Announcement'}
+                  {saving
+                    ? 'Saving...'
+                    : editingAnnouncement
+                      ? 'Save Changes'
+                      : 'Publish Announcement'}
                 </button>
               </div>
             </form>
@@ -322,7 +362,10 @@ export function AnnouncementsManager() {
       {!loading && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           {filteredAnnouncements.length === 0 && (
-            <div className="empty-state" style={{ padding: '48px 0', border: '1px dashed rgba(255,255,255,0.06)' }}>
+            <div
+              className="empty-state"
+              style={{ padding: '48px 0', border: '1px dashed rgba(255,255,255,0.06)' }}
+            >
               No announcements match your search filters.
             </div>
           )}
@@ -330,45 +373,56 @@ export function AnnouncementsManager() {
           {filteredAnnouncements.map((ann) => {
             const colors = getCategoryColor(ann.category);
             return (
-              <div 
-                key={ann.id} 
-                className="team-card" 
-                style={{ 
-                  flexDirection: 'column', 
+              <div
+                key={ann.id}
+                className="team-card"
+                style={{
+                  flexDirection: 'column',
                   alignItems: 'stretch',
                   padding: '20px',
                   position: 'relative',
-                  borderLeft: ann.pinned ? '3px solid var(--admin-accent, #CC1111)' : '3px solid transparent'
+                  borderLeft: ann.pinned
+                    ? '3px solid var(--admin-accent, #CC1111)'
+                    : '3px solid transparent',
                 }}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px' }}>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
-                    <span 
-                      style={{ 
-                        fontSize: '0.7rem', 
-                        fontWeight: 'bold', 
-                        padding: '3px 8px', 
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'flex-start',
+                    gap: '16px',
+                  }}
+                >
+                  <div
+                    style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}
+                  >
+                    <span
+                      style={{
+                        fontSize: '0.7rem',
+                        fontWeight: 'bold',
+                        padding: '3px 8px',
                         borderRadius: '12px',
                         textTransform: 'uppercase',
                         backgroundColor: colors.bg,
-                        color: colors.color
+                        color: colors.color,
                       }}
                     >
                       {ann.category}
                     </span>
 
                     {ann.pinned && (
-                      <span 
-                        style={{ 
-                          fontSize: '0.7rem', 
-                          fontWeight: 'bold', 
-                          padding: '3px 8px', 
+                      <span
+                        style={{
+                          fontSize: '0.7rem',
+                          fontWeight: 'bold',
+                          padding: '3px 8px',
                           borderRadius: '12px',
                           display: 'inline-flex',
                           alignItems: 'center',
                           gap: '4px',
                           backgroundColor: 'rgba(204, 17, 17, 0.15)',
-                          color: 'var(--admin-accent, #CC1111)'
+                          color: 'var(--admin-accent, #CC1111)',
                         }}
                       >
                         <AdminIcon name="Pin" size={10} />
@@ -377,26 +431,26 @@ export function AnnouncementsManager() {
                     )}
 
                     <span style={{ fontSize: '0.75rem', color: 'var(--admin-text-muted, #888)' }}>
-                      {new Date(ann.createdAt).toLocaleDateString(undefined, { 
-                        month: 'short', 
-                        day: 'numeric', 
+                      {new Date(ann.createdAt).toLocaleDateString(undefined, {
+                        month: 'short',
+                        day: 'numeric',
                         year: 'numeric',
                         hour: '2-digit',
-                        minute: '2-digit'
+                        minute: '2-digit',
                       })}
                     </span>
                   </div>
 
                   <div style={{ display: 'flex', gap: '6px' }}>
-                    <button 
-                      className="btn-icon" 
+                    <button
+                      className="btn-icon"
                       onClick={() => openEditForm(ann)}
                       aria-label="Edit announcement"
                     >
                       <AdminIcon name="Pencil" size={14} />
                     </button>
-                    <button 
-                      className="btn-icon danger" 
+                    <button
+                      className="btn-icon danger"
                       onClick={() => setDeleteTarget(ann)}
                       aria-label="Delete announcement"
                     >
@@ -405,16 +459,25 @@ export function AnnouncementsManager() {
                   </div>
                 </div>
 
-                <h3 style={{ fontSize: '1.2rem', marginTop: '12px', marginBottom: '8px', color: '#fff' }}>
+                <h3
+                  style={{
+                    fontSize: '1.2rem',
+                    marginTop: '12px',
+                    marginBottom: '8px',
+                    color: '#fff',
+                  }}
+                >
                   {ann.title}
                 </h3>
 
-                <p style={{ 
-                  fontSize: '0.9rem', 
-                  color: 'var(--admin-text-muted, #bbb)', 
-                  lineHeight: '1.5',
-                  whiteSpace: 'pre-wrap'
-                }}>
+                <p
+                  style={{
+                    fontSize: '0.9rem',
+                    color: 'var(--admin-text-muted, #bbb)',
+                    lineHeight: '1.5',
+                    whiteSpace: 'pre-wrap',
+                  }}
+                >
                   {ann.content}
                 </p>
               </div>
@@ -425,26 +488,51 @@ export function AnnouncementsManager() {
 
       {/* ── Delete Confirmation Modal ── */}
       {deleteTarget && (
-        <div className="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="delete-title">
+        <div
+          className="modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-title"
+        >
           <div className="modal">
             <div className="modal-header">
               <h3 id="delete-title">Delete Announcement</h3>
-              <button className="modal-close" onClick={() => setDeleteTarget(null)} aria-label="Close">
+              <button
+                className="modal-close"
+                onClick={() => setDeleteTarget(null)}
+                aria-label="Close"
+              >
                 <AdminIcon name="X" size={16} />
               </button>
             </div>
-            
+
             <p className="page-subtitle" style={{ marginBottom: 16 }}>
-              Are you sure you want to permanently delete "{deleteTarget.title}"? This action is irreversible.
+              Are you sure you want to permanently delete "{deleteTarget.title}"? This action is
+              irreversible.
             </p>
 
             {deleteError && <div className="page-error">{deleteError}</div>}
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '20px' }}>
-              <button className="btn-secondary" onClick={() => setDeleteTarget(null)} disabled={deleting === deleteTarget.id}>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'flex-end',
+                gap: '10px',
+                marginTop: '20px',
+              }}
+            >
+              <button
+                className="btn-secondary"
+                onClick={() => setDeleteTarget(null)}
+                disabled={deleting === deleteTarget.id}
+              >
                 Cancel
               </button>
-              <button className="btn-primary" onClick={handleDelete} disabled={deleting === deleteTarget.id}>
+              <button
+                className="btn-primary"
+                onClick={handleDelete}
+                disabled={deleting === deleteTarget.id}
+              >
                 {deleting === deleteTarget.id ? 'Deleting...' : 'Delete Announcement'}
               </button>
             </div>

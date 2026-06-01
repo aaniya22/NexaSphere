@@ -1,10 +1,6 @@
 import { formsService } from '../services/formsService.js';
 
-const ALLOWED_FORM_TYPES = new Set([
-  'membership',
-  'recruitment',
-  'core_team',
-]);
+const ALLOWED_FORM_TYPES = new Set(['membership', 'recruitment', 'core_team']);
 
 function wrapAsync(fn) {
   return (req, res) =>

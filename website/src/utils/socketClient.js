@@ -4,13 +4,13 @@
  * to ensure exactly one WebSocket connection exists across the app.
  */
 
-import { captureHandledException } from "./errorTracking";
-import { getSocketPath, getSocketServerUrl } from "./runtimeConfig";
-import { 
-  initializeSocket as initCoreSocket, 
-  getSocket as getCoreSocket, 
-  disconnectSocket as disconnectCoreSocket 
-} from "../services/socket";
+import { captureHandledException } from './errorTracking';
+import { getSocketPath, getSocketServerUrl } from './runtimeConfig';
+import {
+  initializeSocket as initCoreSocket,
+  getSocket as getCoreSocket,
+  disconnectSocket as disconnectCoreSocket,
+} from '../services/socket';
 
 let warnedMissingSocketConfig = false;
 let hasAttachedGlobalListeners = false;
@@ -23,9 +23,7 @@ export function initializeSocket(serverUrl = getSocketServerUrl()) {
   if (!resolvedUrl) {
     if (!warnedMissingSocketConfig) {
       warnedMissingSocketConfig = true;
-      console.warn(
-        "Socket.IO disabled: no socket server URL configured for this environment."
-      );
+      console.warn('Socket.IO disabled: no socket server URL configured for this environment.');
     }
     return null;
   }
@@ -37,22 +35,22 @@ export function initializeSocket(serverUrl = getSocketServerUrl()) {
   if (!hasAttachedGlobalListeners) {
     hasAttachedGlobalListeners = true;
 
-    socket.on("connect", () => {
+    socket.on('connect', () => {
       identifyUser();
     });
 
-    socket.on("connect_error", (error) => {
-      captureHandledException(error, "Socket.IO connect_error:");
+    socket.on('connect_error', (error) => {
+      captureHandledException(error, 'Socket.IO connect_error:');
     });
 
-    socket.on("error", (error) => {
-      captureHandledException(error, "Socket.IO error:");
+    socket.on('error', (error) => {
+      captureHandledException(error, 'Socket.IO error:');
     });
 
-    socket.on("reconnect_failed", () => {
+    socket.on('reconnect_failed', () => {
       captureHandledException(
-        new Error("Socket.IO reconnect attempts exhausted"),
-        "Socket.IO reconnect failed:"
+        new Error('Socket.IO reconnect attempts exhausted'),
+        'Socket.IO reconnect failed:'
       );
     });
   }
@@ -66,7 +64,7 @@ export function initializeSocket(serverUrl = getSocketServerUrl()) {
 export function getSocket() {
   const socket = getCoreSocket();
   if (!socket) {
-    throw new Error("Socket.IO not initialized. Call initializeSocket first.");
+    throw new Error('Socket.IO not initialized. Call initializeSocket first.');
   }
   return socket;
 }
@@ -79,7 +77,7 @@ export function identifyUser(userId, email) {
   let finalEmail = email;
 
   if (!finalUserId || !finalEmail) {
-    const storedUser = localStorage.getItem("ns_user");
+    const storedUser = localStorage.getItem('ns_user');
     if (storedUser) {
       try {
         const user = JSON.parse(storedUser);
@@ -93,21 +91,21 @@ export function identifyUser(userId, email) {
 
   const socket = getCoreSocket();
   if (socket && finalUserId) {
-    socket.emit("user:identify", { userId: finalUserId, email: finalEmail });
+    socket.emit('user:identify', { userId: finalUserId, email: finalEmail });
   }
 }
 
 export function joinRoom(roomName) {
   const socket = getCoreSocket();
   if (socket) {
-    socket.emit("room:join", roomName);
+    socket.emit('room:join', roomName);
   }
 }
 
 export function leaveRoom(roomName) {
   const socket = getCoreSocket();
   if (socket) {
-    socket.emit("room:leave", roomName);
+    socket.emit('room:leave', roomName);
   }
 }
 

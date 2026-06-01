@@ -117,10 +117,7 @@ describe('useAuth hook', () => {
   test('subscribes to AUTH_TOKEN_EXPIRED event', () => {
     renderHook(() => useAuth(), { wrapper: MemoryRouter });
 
-    expect(eventEmitter.on).toHaveBeenCalledWith(
-      'auth:token-expired',
-      expect.any(Function),
-    );
+    expect(eventEmitter.on).toHaveBeenCalledWith('auth:token-expired', expect.any(Function));
   });
 
   test('cleans up event listener on unmount', () => {

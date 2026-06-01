@@ -209,7 +209,8 @@ const getDb = (key, defaultVal) => {
         {
           id: '1',
           title: 'Welcome to the NexaSphere Admin Dashboard',
-          content: 'Manage events, team members, announcements, and certificates with real-time updates.',
+          content:
+            'Manage events, team members, announcements, and certificates with real-time updates.',
           category: 'general',
           pinned: true,
           createdAt: new Date().toISOString(),
@@ -217,11 +218,12 @@ const getDb = (key, defaultVal) => {
         {
           id: '2',
           title: 'Upcoming Hackathon Registration Open',
-          content: 'Registration for the national hackathon closes in 3 days. Push notifications are active.',
+          content:
+            'Registration for the national hackathon closes in 3 days. Push notifications are active.',
           category: 'event',
           pinned: false,
           createdAt: new Date(Date.now() - 86400000).toISOString(),
-        }
+        },
       ];
       setDb(key, initialAnnouncements);
       return initialAnnouncements;
@@ -397,7 +399,9 @@ async function fetchWithAuth(url, options = {}) {
         }
         if (method === 'PUT') {
           const id = url.split('/').pop();
-          announcements = announcements.map((a) => (a.id === id ? { ...body, id, updatedAt: new Date().toISOString() } : a));
+          announcements = announcements.map((a) =>
+            a.id === id ? { ...body, id, updatedAt: new Date().toISOString() } : a
+          );
           setDb('announcements', announcements);
           resolve({ ...body, id });
         }

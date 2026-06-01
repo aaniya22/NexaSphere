@@ -49,8 +49,8 @@ describe('Socket.IO Lifecycle Management', () => {
 
     const socket = socketClient.getSocket();
     expect(socket).toBeDefined();
-    
-    // We should be able to track if multiple were created if we intercepted io(), 
+
+    // We should be able to track if multiple were created if we intercepted io(),
     // but the singleton structure guarantees the returned object is the same reference.
     const socketAgain = socketClient.getSocket();
     expect(socket).toBe(socketAgain);
@@ -76,7 +76,7 @@ describe('Socket.IO Lifecycle Management', () => {
 
     // The shared socket should NOT have been disconnected
     expect(disconnectSpy).not.toHaveBeenCalled();
-    
+
     // Listeners should be cleaned up (handled by useNotifications cleanup)
     // We expect the connection to stay alive.
     expect(socketClient.isConnected()).toBe(socket.connected);
@@ -107,9 +107,13 @@ describe('Socket.IO Lifecycle Management', () => {
 
     // Every 'on' for custom events should have a matching 'off'
     // This proves listeners don't accumulate.
-    const customEventOnCalls = onSpy.mock.calls.filter(c => c[0] !== 'connect' && c[0] !== 'disconnect');
-    const customEventOffCalls = offSpy.mock.calls.filter(c => c[0] !== 'connect' && c[0] !== 'disconnect');
-    
+    const customEventOnCalls = onSpy.mock.calls.filter(
+      (c) => c[0] !== 'connect' && c[0] !== 'disconnect'
+    );
+    const customEventOffCalls = offSpy.mock.calls.filter(
+      (c) => c[0] !== 'connect' && c[0] !== 'disconnect'
+    );
+
     // Because each cycle registers and unregisters listeners, the counts should match.
     // E.g. useNotifications registers 4 custom events, useSocket registers connect/disconnect natively but not custom.
     expect(customEventOnCalls.length).toBeGreaterThan(0);
