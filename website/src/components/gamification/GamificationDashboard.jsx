@@ -12,9 +12,10 @@ export default function GamificationDashboard() {
     loadData();
   }, []);
 
-  const loadData = () => {
+  const loadData = async () => {
     setUserStats(gamificationService.getUserStats());
-    setLeaderboard(gamificationService.getLeaderboard());
+    const lb = await gamificationService.getLeaderboard();
+    setLeaderboard(lb);
   };
 
   const handleAction = (action) => {

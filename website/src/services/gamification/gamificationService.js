@@ -406,16 +406,37 @@ class GamificationService {
     return nextLevel ? nextLevel.xpRequired : this.userData.xp;
   }
 
-  getLeaderboard() {
-    // For demo, return mock leaderboard
-    // In production, this would fetch from backend
-    return [
+  async getLeaderboard() {
+    const MOCK_LEADERBOARD = [
       { rank: 1, name: 'Alex Johnson', xp: 2850, level: 8, avatar: '👨‍💻' },
       { rank: 2, name: 'Sarah Chen', xp: 2420, level: 7, avatar: '👩‍💻' },
       { rank: 3, name: 'Mike Ross', xp: 2100, level: 7, avatar: '👨‍💼' },
       { rank: 4, name: 'Emma Watson', xp: 1850, level: 6, avatar: '👩‍🎓' },
       { rank: 5, name: 'David Kim', xp: 1520, level: 6, avatar: '👨‍🔬' },
     ];
+
+    const base = (
+      (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_BASE) ||
+      ''
+    ).replace(/\/+$/, '');
+    if (!base) return MOCK_LEADERBOARD;
+
+    try {
+      const res = await fetch(`${base}/api/dashboard/leaderboard`);
+      if (!res.ok) return MOCK_LEADERBOARD;
+      const data = await res.json();
+      if (!Array.isArray(data) || data.length === 0) return MOCK_LEADERBOARD;
+      // Map backend UserProfileEntity shape to leaderboard display shape
+      return data.map((user, i) => ({
+        rank: i + 1,
+        name: user.username || user.name || 'Anonymous',
+        xp: user.xp ?? 0,
+        level: user.level ?? 1,
+        avatar: '👤',
+      }));
+    } catch {
+      return MOCK_LEADERBOARD;
+    }
   }
 
   getTierColor(tier) {
