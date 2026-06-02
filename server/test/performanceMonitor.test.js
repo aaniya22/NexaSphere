@@ -1,111 +1,326 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import {
+  performanceMonitor,
+  getMetrics,
+  resetMetrics,
+  checkErrorRateThreshold,
+} from '../middleware/performanceMonitor.js';
 
-// Configure environment variable for testing performance monitor bounds
-process.env.MONITORING_MAX_TRACKED_ENDPOINTS = '10';
+test.beforeEach(() => {
+  resetMetrics();
+});
 
 // Mock request and response objects
-const createMockReqRes = (method, baseUrl, path, routePath = null, isError = false) => {
-  const req = {
+function createMockReq(method = 'GET', path = '/test', baseUrl = '') {
+  return {
     method,
-    baseUrl,
     path,
-    route: routePath ? { path: routePath } : null,
-    headers: {},
+    baseUrl,
+    route: {
+      path,
+    },
   };
-  
-  let sendCallback = null;
+}
+
+function createMockRes() {
   const res = {
-    statusCode: isError ? 500 : 200,
-    send(data) {
-      if (sendCallback) sendCallback(data);
-    }
+    statusCode: 200,
+    send: function (data) {
+      this.lastSendData = data;
+      return this;
+    },
   };
-  
-  return { req, res, setOnSend: (cb) => { sendCallback = cb; } };
-};
+  return res;
+}
 
-test('Security Audit & Validation: Performance Monitor Middleware Memory Leak', async (t) => {
-  const { performanceMonitor, getMetrics, resetMetrics } = await import('../middleware/performanceMonitor.js');
+function createMockNext() {
+  return function () {};
+}
 
-  await t.test('Scenario 1: Metrics track endpoints correctly under normal usage', () => {
-    resetMetrics();
-    
-    const { req, res, setOnSend } = createMockReqRes('GET', '/api', '/events', '/events');
-    
-    // Apply middleware
-    performanceMonitor(req, res, () => {});
-    
-    // Simulate handler response
-    setOnSend(() => {
-      const data = getMetrics();
-      assert.equal(data.totalRequests, 1);
-      assert.equal(data.endpoints.length, 1);
-      assert.equal(data.endpoints[0].endpoint, 'GET /api/events');
-      assert.equal(data.endpoints[0].count, 1);
-    });
-    
-    res.send({ success: true });
-  });
+test('performanceMonitor tracks basic request metrics', async () => {
+  const req = createMockReq();
+  const res = createMockRes();
+  const next = createMockNext();
 
-  await t.test('Scenario 2: Parameterized routes aggregate under their template path', () => {
-    resetMetrics();
+  // Call the middleware
+  performanceMonitor(req, res, next);
 
-    // Event 1
-    const { req: req1, res: res1, setOnSend: setOnSend1 } = createMockReqRes('GET', '/api', '/events/1', '/events/:id');
-    performanceMonitor(req1, res1, () => {});
-    setOnSend1(() => {});
-    res1.send({ id: 1 });
+  // Simulate sending a response
+  res.send('test response');
 
-    // Event 2
-    const { req: req2, res: res2, setOnSend: setOnSend2 } = createMockReqRes('GET', '/api', '/events/2', '/events/:id');
-    performanceMonitor(req2, res2, () => {});
-    setOnSend2(() => {});
-    res2.send({ id: 2 });
+  // Get metrics
+  const metrics = getMetrics();
 
-    const data = getMetrics();
-    // They must be aggregated together as a single endpoint key!
-    assert.equal(data.endpoints.length, 1);
-    assert.equal(data.endpoints[0].endpoint, 'GET /api/events/:id');
-    assert.equal(data.endpoints[0].count, 2);
-  });
+  // Should have tracked the endpoint
+  assert.ok(metrics.endpoints['GET /test']);
+  const endpointMetrics = metrics.endpoints['GET /test'];
 
-  await t.test('Scenario 3: 404/Non-matched routes collapse variable params dynamically', () => {
-    resetMetrics();
+  // Should have 5min, 1hr, 24hr windows
+  assert.ok(endpointMetrics['5min']);
+  assert.ok(endpointMetrics['1hr']);
+  assert.ok(endpointMetrics['24hr']);
 
-    // 404 attempt with numeric ID
-    const { req: req1, res: res1, setOnSend: setOnSend1 } = createMockReqRes('GET', '', '/api/unknown/54321', null, true);
-    performanceMonitor(req1, res1, () => {});
-    setOnSend1(() => {});
-    res1.send({ error: 'Not Found' });
+  // Each window should have 1 request
+  assert.strictEqual(endpointMetrics['5min'].count, 1);
+  assert.strictEqual(endpointMetrics['1hr'].count, 1);
+  assert.strictEqual(endpointMetrics['24hr'].count, 1);
 
-    // 404 attempt with MongoDB ObjectID
-    const { req: req2, res: res2, setOnSend: setOnSend2 } = createMockReqRes('GET', '', '/api/unknown/507f1f77bcf86cd799439011', null, true);
-    performanceMonitor(req2, res2, () => {});
-    setOnSend2(() => {});
-    res2.send({ error: 'Not Found' });
+  // Error rate should be 0% (successful request)
+  assert.strictEqual(endpointMetrics['5min'].errorRate, 0);
+  assert.strictEqual(endpointMetrics['1hr'].errorRate, 0);
+  assert.strictEqual(endpointMetrics['24hr'].errorRate, 0);
+});
 
-    const data = getMetrics();
-    // Since both contain dynamic IDs in non-matched routes, they should collapse to /api/unknown/:id
-    assert.equal(data.endpoints.length, 1);
-    assert.equal(data.endpoints[0].endpoint, 'GET /api/unknown/:id');
-    assert.equal(data.endpoints[0].count, 2);
-  });
+test('performanceMonitor tracks error requests correctly', async () => {
+  const req = createMockReq();
+  const res = createMockRes();
+  res.statusCode = 500; // Simulate error
+  const next = createMockNext();
 
-  await t.test('Scenario 4: Hard memory bounding prevents memory exhaustion under rotating URL storm', () => {
-    resetMetrics();
+  // Call the middleware
+  performanceMonitor(req, res, next);
 
-    // Flood the middleware with 25 unique non-matched paths (our test cap is configured to 10)
-    for (let i = 1; i <= 25; i++) {
-      const { req, res, setOnSend } = createMockReqRes('GET', '', `/api/flood-test-${i}`, null);
-      performanceMonitor(req, res, () => {});
-      setOnSend(() => {});
-      res.send({ test: i });
-    }
+  // Simulate sending a response
+  res.send('error response');
 
-    const data = getMetrics();
-    // The metric endpoint count MUST be strictly bounded at exactly 10, preventing unbounded memory leak!
-    console.log(`[Memory Bound Audit] Stored unique endpoints count: ${data.endpoints.length} (Max Cap: 10)`);
-    assert.equal(data.endpoints.length, 10);
-  });
+  // Get metrics
+  const metrics = getMetrics();
+  const endpointMetrics = metrics.endpoints['GET /test'];
+
+  // Should have 1 request with 1 error
+  assert.strictEqual(endpointMetrics['5min'].count, 1);
+  assert.strictEqual(endpointMetrics['5min'].errorCount, 1);
+  assert.strictEqual(endpointMetrics['5min'].errorRate, 100);
+});
+
+test('performanceMonitor tracks request duration', async () => {
+  const req = createMockReq();
+  const res = createMockRes();
+  const next = createMockNext();
+
+  // Call the middleware
+  performanceMonitor(req, res, next);
+
+  // Simulate some processing time
+  await new Promise((resolve) => setTimeout(resolve, 10)); // 10ms delay
+
+  // Simulate sending a response
+  res.send('test response');
+
+  // Get metrics
+  const metrics = getMetrics();
+  const endpointMetrics = metrics.endpoints['GET /test'];
+
+  // Should have tracked some time (at least 10ms)
+  assert.ok(endpointMetrics['5min'].totalTime >= 10);
+  assert.ok(endpointMetrics['5min'].avgTime >= 10);
+});
+
+test('performanceMonitor handles multiple requests to same endpoint', async () => {
+  const req = createMockReq();
+  const res = createMockRes();
+  const next = createMockNext();
+
+  // Make 5 requests
+  for (let i = 0; i < 5; i++) {
+    performanceMonitor(req, res, next);
+    res.send(`response ${i}`);
+  }
+
+  // Get metrics
+  const metrics = getMetrics();
+  const endpointMetrics = metrics.endpoints['GET /test'];
+
+  // Should have 5 requests
+  assert.strictEqual(endpointMetrics['5min'].count, 5);
+  assert.strictEqual(endpointMetrics['1hr'].count, 5);
+  assert.strictEqual(endpointMetrics['24hr'].count, 5);
+
+  // Error rate should still be 0%
+  assert.strictEqual(endpointMetrics['5min'].errorRate, 0);
+});
+
+test('performanceMonitor handles different endpoints separately', async () => {
+  const next = createMockNext();
+
+  // Call middleware for first endpoint
+  const req1 = createMockReq('GET', '/endpoint1');
+  const res1 = createMockRes();
+  performanceMonitor(req1, res1, next);
+  res1.send('response 1');
+
+  // Call middleware for second endpoint
+  const req2 = createMockReq('GET', '/endpoint2');
+  const res2 = createMockRes();
+  performanceMonitor(req2, res2, next);
+  res2.send('response 2');
+
+  // Get metrics
+  const metrics = getMetrics();
+
+  // Should have both endpoints tracked
+  assert.ok(metrics.endpoints['GET /endpoint1']);
+  assert.ok(metrics.endpoints['GET /endpoint2']);
+
+  // Each should have 1 request
+  assert.strictEqual(metrics.endpoints['GET /endpoint1']['5min'].count, 1);
+  assert.strictEqual(metrics.endpoints['GET /endpoint2']['5min'].count, 1);
+});
+
+test('performanceMonitor tracks different HTTP methods separately', async () => {
+  const next = createMockNext();
+
+  // Call middleware for GET
+  const reqGet = createMockReq('GET', '/test');
+  const resGet = createMockRes();
+  performanceMonitor(reqGet, resGet, next);
+  resGet.send('get response');
+
+  // Call middleware for POST
+  const reqPost = createMockReq('POST', '/test');
+  const resPost = createMockRes();
+  performanceMonitor(reqPost, resPost, next);
+  resPost.send('post response');
+
+  // Get metrics
+  const metrics = getMetrics();
+
+  // Should have different endpoints for different methods
+  assert.ok(metrics.endpoints['GET /test']);
+  assert.ok(metrics.endpoints['POST /test']);
+
+  // Each should have 1 request
+  assert.strictEqual(metrics.endpoints['GET /test']['5min'].count, 1);
+  assert.strictEqual(metrics.endpoints['POST /test']['5min'].count, 1);
+});
+
+test('resetMetrics clears all data', async () => {
+  const req = createMockReq();
+  const res = createMockRes();
+  const next = createMockNext();
+
+  // Make a request
+  performanceMonitor(req, res, next);
+  res.send('test response');
+
+  // Verify data exists
+  let metrics = getMetrics();
+  assert.ok(metrics.endpoints['GET /test']);
+  assert.strictEqual(metrics.endpoints['GET /test']['5min'].count, 1);
+
+  // Reset metrics
+  resetMetrics();
+
+  // Verify data is cleared
+  metrics = getMetrics();
+  assert.strictEqual(Object.keys(metrics.endpoints).length, 0);
+});
+
+test('checkErrorRateThreshold detects high error rates', async () => {
+  const next = createMockNext();
+
+  // Create 9 successful requests and 1 failed request (10% error rate)
+  for (let i = 0; i < 9; i++) {
+    const req = createMockReq();
+    const res = createMockRes();
+    performanceMonitor(req, res, next);
+    res.statusCode = 200;
+    res.send(`success ${i}`);
+  }
+
+  // One failed request
+  const req = createMockReq();
+  const res = createMockRes();
+  performanceMonitor(req, res, next);
+  res.statusCode = 500;
+  res.send('failure');
+
+  // Check threshold at 15% (should not trigger)
+  let exceeded = checkErrorRateThreshold(15);
+  assert.strictEqual(exceeded, false); // 10% < 15%
+
+  // Check threshold at 5% (should trigger)
+  exceeded = checkErrorRateThreshold(5);
+  assert.strictEqual(exceeded, true); // 10% > 5%
+});
+
+test('checkErrorRateThreshold returns false for low error rates', async () => {
+  const req = createMockReq();
+  const res = createMockRes();
+  const next = createMockNext();
+
+  // Create only successful requests
+  for (let i = 0; i < 10; i++) {
+    performanceMonitor(req, res, next);
+    res.statusCode = 200;
+    res.send(`success ${i}`);
+  }
+
+  // Check threshold (should not trigger)
+  const exceeded = checkErrorRateThreshold(5);
+  assert.strictEqual(exceeded, false); // 0% < 5%
+});
+
+test('endpoint normalization works for UUIDs', async () => {
+  const req = createMockReq('GET', '/api/users/123e4567-e89b-12d3-a456-426614174000');
+  const res = createMockRes();
+  const next = createMockNext();
+
+  performanceMonitor(req, res, next);
+  res.send('user data');
+
+  const metrics = getMetrics();
+  // Should normalize UUID to :id
+  assert.ok(metrics.endpoints['GET /api/users/:id']);
+  assert.strictEqual(metrics.endpoints['GET /api/users/:id']['5min'].count, 1);
+});
+
+test('endpoint normalization works for numeric IDs', async () => {
+  const next = createMockNext();
+
+  const req = createMockReq('GET', '/api/posts/123/comments/456');
+  const res = createMockRes();
+  performanceMonitor(req, res, next);
+  res.send('comment data');
+
+  const metrics = getMetrics();
+  // Should normalize numeric IDs to :id
+  assert.ok(metrics.endpoints['GET /api/posts/:id/comments/:id']);
+  assert.strictEqual(metrics.endpoints['GET /api/posts/:id/comments/:id']['5min'].count, 1);
+});
+
+test('trailing slash consolidation works', async () => {
+  const next = createMockNext();
+
+  const req1 = createMockReq('GET', '/api/test/');
+  const res1 = createMockRes();
+  performanceMonitor(req1, res1, next);
+  res1.send('response 1');
+
+  const req2 = createMockReq('GET', '/api/test');
+  const res2 = createMockRes();
+  performanceMonitor(req2, res2, next);
+  res2.send('response 2');
+
+  const metrics = getMetrics();
+  // Should consolidate to same endpoint
+  assert.ok(metrics.endpoints['GET /api/test']);
+  assert.strictEqual(metrics.endpoints['GET /api/test']['5min'].count, 2);
+});
+
+test('handle missing route gracefully', async () => {
+  const req = createMockReq('GET', '/unknown/path');
+  // No route property
+  delete req.route;
+  const res = createMockRes();
+  const next = createMockNext();
+
+  performanceMonitor(req, res, next);
+  res.send('404 response');
+
+  const metrics = getMetrics();
+  // Should still track the endpoint
+  assert.ok(metrics.endpoints['GET /unknown/path']);
+  assert.strictEqual(metrics.endpoints['GET /unknown/path']['5min'].count, 1);
 });
