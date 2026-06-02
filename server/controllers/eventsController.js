@@ -30,7 +30,7 @@ export const listEvents = wrapAsync(async (req, res) => {
 
 export const adminListEvents = wrapAsync(async (req, res) => {
   const { page, limit } = parsePagination(req.query);
-  const { rows, total } = await eventsService.listEvents({ page, limit });
+  const { rows, total } = await eventsService.adminListEvents({ page, limit });
   return res.json({ events: rows, pagination: buildPaginationMeta(page, limit, total) });
 });
 

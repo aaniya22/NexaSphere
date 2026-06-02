@@ -19,4 +19,7 @@ export const eventsService = {
   async deleteEvent(id) {
     return eventsRepository.delete(id);
   },
+  async adminListEvents({ page = 1, limit = 20 } = {}) {
+    return eventsRepository.listAll({ page, limit });
+  },
 };
