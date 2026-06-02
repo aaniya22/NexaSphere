@@ -71,4 +71,8 @@ export function sanitizeCoreTeamMemberRecord(member = {}) {
   };
 }
 
-export { escapeHtml, sanitizeNullableText, sanitizeText, sanitizeTextArray };
+function toSafeString(value, max = 4000) {
+  return String(value ?? '').trim().slice(0, max);
+}
+
+export { escapeHtml, sanitizeNullableText, sanitizeText, sanitizeTextArray, toSafeString };
