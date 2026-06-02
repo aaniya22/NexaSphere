@@ -35,13 +35,18 @@ export default function ProjectsPage({ onBack }) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [selectedProject]);
 
-  // Prevent background scrolling when modal is open
+  // Prevent background scrolling when modal is open.
+  // Saves the original overflow value and restores it on both
+  // modal close AND component unmount to prevent the page becoming
+  // permanently unscrollable if the user navigates away while modal is open.
   useEffect(() => {
+    const originalOverflow = document.body.style.overflow;
     if (selectedProject) {
       document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'unset';
     }
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
   }, [selectedProject]);
 
   return (
