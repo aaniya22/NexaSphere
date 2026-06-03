@@ -24,7 +24,8 @@ function buildPaginationMeta(page, limit, total) {
 
 export const listEvents = wrapAsync(async (req, res) => {
   const { page, limit } = parsePagination(req.query);
-  const { rows, total } = await eventsService.listEvents({ page, limit });
+  const status = req.query.status || null;
+  const { rows, total } = await eventsService.listEvents({ page, limit, status });
   return res.json({ events: rows, pagination: buildPaginationMeta(page, limit, total) });
 });
 
