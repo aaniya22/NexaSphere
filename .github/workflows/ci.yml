@@ -1,0 +1,94 @@
+# CI/CD Build and Test Workflow (Recreated to refresh runner queue)
+name: CI — Build & Test
+
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+    branches: [main, master, develop]
+
+jobs:
+  # ── Frontend (website) build ──────────────────────────────────────────────
+  website:
+    name: Website — Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build (production)
+        run: npm run build --workspace=website
+        env:
+          NODE_ENV: production
+          VITE_API_BASE: ''
+
+      - name: Upload dist artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: website-dist
+          path: website/dist/
+          retention-days: 3
+
+  # ── Admin Dashboard ───────────────────────────────────────────────────────
+  admin-dashboard:
+    name: Admin Dashboard — Build & Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run unit tests
+        run: npm run test --workspace=admin-dashboard
+        env:
+          NODE_ENV: test
+
+      - name: Build (production)
+        run: npm run build --workspace=admin-dashboard
+        env:
+          NODE_ENV: production
+
+  # ── Server (Express API) install & smoke test ─────────────────────────────
+  server:
+    name: Server — Install & Unit Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: server/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run unit tests
+        run: npm test
+        env:
+          NODE_ENV: test
+          # Provide stub env vars so server startup helpers don't crash
+          ADMIN_USERNAME: test-admin
+          ADMIN_PASSWORD: TestPass123!ABC
+          ADMIN_EVENT_PASSWORD: EventPass123!XYZ
+          PORT: 8787
