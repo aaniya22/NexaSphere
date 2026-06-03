@@ -1,8 +1,48 @@
 import { Redis } from 'ioredis';
 import { RedisStore } from 'rate-limit-redis';
+import { MemoryStore } from 'express-rate-limit';
 import logger from '../utils/logger.js';
 
 let redisClient = null;
+
+class CappedMemoryStore {
+  constructor(maxKeys = 10000) {
+    this.store = new MemoryStore();
+    this.maxKeys = maxKeys;
+    this.options = null;
+  }
+
+  init(options) {
+    this.options = options;
+    return this.store.init(options);
+  }
+
+  async increment(key) {
+    const localKeysCount = this.store.localKeys?.length || 0;
+    if (localKeysCount >= this.maxKeys) {
+      logger.warn(
+        '[RateLimiter] Fallback memory store capacity exceeded. Purging to prevent OOM.',
+        { capacity: this.maxKeys }
+      );
+      if (this.store.shutdown) this.store.shutdown();
+      this.store = new MemoryStore();
+      if (this.options) this.store.init(this.options);
+    }
+    return this.store.increment(key);
+  }
+
+  async decrement(key) {
+    return this.store.decrement(key);
+  }
+
+  async resetKey(key) {
+    return this.store.resetKey(key);
+  }
+
+  async get(key) {
+    return this.store.get ? this.store.get(key) : undefined;
+  }
+}
 
 // Determine available Redis URL
 const redisUrl = process.env.REDIS_URL || process.env.UPSTASH_REDIS_REST_URL;
@@ -38,11 +78,11 @@ if (redisUrl) {
 
 /**
  * Creates a rate limit store. Uses Redis if configured and reachable,
- * otherwise returns undefined to force express-rate-limit to fall back
- * gracefully to its built-in memory store.
+ * otherwise returns a CappedMemoryStore to force express-rate-limit to fall back
+ * gracefully to a bounded memory store.
  *
  * @param {string} prefix The Redis key prefix to isolate limiters
- * @returns {RedisStore | undefined}
+ * @returns {RedisStore | CappedMemoryStore}
  */
 export function createRateLimitStore(prefix) {
   if (redisClient) {
@@ -52,7 +92,7 @@ export function createRateLimitStore(prefix) {
       prefix: prefix,
     });
   }
-  return undefined;
+  return new CappedMemoryStore(10000);
 }
 
 // For testing purposes
