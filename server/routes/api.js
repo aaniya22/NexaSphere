@@ -5,6 +5,9 @@ import * as adminAuthMiddleware from '../middleware/adminAuthMiddleware.js';
 import * as coreTeamController from '../controllers/coreTeamController.js';
 import * as eventRegistrationController from '../controllers/eventRegistrationController.js';
 import * as usersController from '../controllers/usersController.js';
+import { adminAuditMiddleware, attachOldState } from '../middleware/adminAuditMiddleware.js';
+import { eventsRepository } from '../repositories/eventsRepository.js';
+import { coreTeamService } from '../services/coreTeamService.js';
 
 const router = Router();
 
@@ -36,16 +39,21 @@ router.get('/api/admin/events', adminAuthMiddleware.requireAdmin, eventsControll
 router.post(
   '/api/admin/events',
   adminAuthMiddleware.requireAdmin,
+  adminAuditMiddleware,
   eventsController.adminCreateEvent
 );
 router.put(
   '/api/admin/events/:id',
   adminAuthMiddleware.requireAdmin,
+  attachOldState((req) => eventsRepository.getById(req.params.id)),
+  adminAuditMiddleware,
   eventsController.adminUpdateEvent
 );
 router.delete(
   '/api/admin/events/:id',
   adminAuthMiddleware.requireAdmin,
+  attachOldState((req) => eventsRepository.getById(req.params.id)),
+  adminAuditMiddleware,
   eventsController.adminDeleteEvent
 );
 
@@ -58,11 +66,17 @@ router.get(
 router.post(
   '/api/admin/core-team/members',
   adminAuthMiddleware.requireAdmin,
+  adminAuditMiddleware,
   coreTeamController.adminAddCoreTeamMember
 );
 router.delete(
   '/api/admin/core-team/members/:id',
   adminAuthMiddleware.requireAdmin,
+  attachOldState(async (req) => {
+    const members = await coreTeamService.listMembers();
+    return members.find((m) => String(m.id) === String(req.params.id));
+  }),
+  adminAuditMiddleware,
   coreTeamController.adminDeleteCoreTeamMember
 );
 

@@ -43,6 +43,15 @@ export const eventsRepository = {
       }
     });
   },
+
+  async getById(id) {
+    return withDb(async (client) => {
+      const { rows } = await client.query('select * from events where id = $1', [id]);
+      if (!rows.length) return null;
+      return mapRow(rows[0]);
+    });
+  },
+
   async create(event) {
     return withDb(async (client) => {
       const { rows } = await client.query(
