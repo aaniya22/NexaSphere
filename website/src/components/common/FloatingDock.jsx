@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ChevronUp, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -56,6 +56,20 @@ const DOCK_ACTIONS = [
 export default function FloatingDock() {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
+  const toggleRef = useRef(null);
+
+  // Close dock on Escape and return focus to toggle button
+  useEffect(() => {
+    if (!open) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setOpen(false);
+        toggleRef.current?.focus();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [open]);
 
   const handleAction = (item) => {
     if (item.action === 'scroll-top') {
@@ -129,6 +143,7 @@ export default function FloatingDock() {
 
       {/* Main toggle button */}
       <button
+        ref={toggleRef}
         onClick={() => setOpen((o) => !o)}
         aria-label={open ? 'Close dock' : 'Open dock'}
         aria-expanded={open}
