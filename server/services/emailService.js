@@ -12,9 +12,11 @@ const isProduction = process.env.NODE_ENV === 'production';
 // Validation logic for necessary environment variables in production
 if (isProduction) {
   const requiredEnvVars = ['SMTP_HOST', 'SMTP_PORT', 'SMTP_USER', 'SMTP_PASS'];
-  const missingVars = requiredEnvVars.filter(key => !process.env[key]);
+  const missingVars = requiredEnvVars.filter((key) => !process.env[key]);
   if (missingVars.length > 0) {
-    console.warn(`[Email Service] Warning: Missing email environment variables in production: ${missingVars.join(', ')}`);
+    console.warn(
+      `[Email Service] Warning: Missing email environment variables in production: ${missingVars.join(', ')}`
+    );
   }
 }
 

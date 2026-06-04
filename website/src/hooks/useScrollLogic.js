@@ -30,10 +30,10 @@ export function useActiveTabObserver(page, mobile, navTabs, navHeights, setActiv
     if (page) return;
 
     const navHeight = mobile ? navHeights.MOBILE : navHeights.DESKTOP;
-    
+
     const handleScroll = () => {
       const scrollY = window.scrollY + navHeight + 30;
-      
+
       for (let i = navTabs.length - 1; i >= 0; i--) {
         const section = document.getElementById(`section-${navTabs[i].toLowerCase()}`);
         if (section && section.offsetTop <= scrollY) {

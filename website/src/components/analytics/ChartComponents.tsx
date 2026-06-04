@@ -9,12 +9,12 @@ interface ChartWrapperProps {
   loading?: boolean;
 }
 
-export const ChartWrapper: React.FC<ChartWrapperProps> = ({ 
-  title, 
-  subtitle, 
-  children, 
+export const ChartWrapper: React.FC<ChartWrapperProps> = ({
+  title,
+  subtitle,
+  children,
   height = 300,
-  loading = false 
+  loading = false,
 }) => {
   return (
     <div className="bg-[#111] border border-[#222] rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow flex flex-col h-full w-full">

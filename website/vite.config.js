@@ -23,12 +23,13 @@ export default defineConfig({
       // Don't fail build if Sentry token is not set
       silent: true,
     }),
-    process.env.ANALYZE === 'true' && visualizer({
-      filename: 'bundle-report.html',
-      open: false,
-      gzipSize: true,
-      brotliSize: true,
-    }),
+    process.env.ANALYZE === 'true' &&
+      visualizer({
+        filename: 'bundle-report.html',
+        open: false,
+        gzipSize: true,
+        brotliSize: true,
+      }),
     VitePWA({
       disable: process.env.DISABLE_PWA === 'true',
       registerType: 'autoUpdate',

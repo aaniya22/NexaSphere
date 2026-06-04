@@ -10,9 +10,9 @@
  * Use useSocket.ts when you need to subscribe to a specific socket event.
  */
 
-import { useEffect, useState, useCallback } from "react";
-import socketClient from "../utils/socketClient";
-import { getSocketServerUrl } from "../utils/runtimeConfig";
+import { useEffect, useState, useCallback } from 'react';
+import socketClient from '../utils/socketClient';
+import { getSocketServerUrl } from '../utils/runtimeConfig';
 
 export function useSocket(serverUrl) {
   const [connected, setConnected] = useState(false);
@@ -43,8 +43,8 @@ export function useSocket(serverUrl) {
     };
 
     // Listen to standard connection events using socket directly
-    socket.on("connect", onConnect);
-    socket.on("disconnect", onDisconnect);
+    socket.on('connect', onConnect);
+    socket.on('disconnect', onDisconnect);
 
     // Sync initial state
     setConnected(socket.connected || false);
@@ -52,8 +52,8 @@ export function useSocket(serverUrl) {
 
     return () => {
       isMounted = false;
-      socket.off("connect", onConnect);
-      socket.off("disconnect", onDisconnect);
+      socket.off('connect', onConnect);
+      socket.off('disconnect', onDisconnect);
     };
   }, [serverUrl]);
 

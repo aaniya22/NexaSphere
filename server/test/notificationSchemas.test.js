@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { normalizeSubscription, pushSubscriptionSchema } from '../validators/notificationSchemas.js';
+import {
+  normalizeSubscription,
+  pushSubscriptionSchema,
+} from '../validators/notificationSchemas.js';
 
 const validSubscription = {
   endpoint: 'https://fcm.googleapis.com/fcm/send/abc123',
@@ -29,10 +32,7 @@ test('accepts subscription with numeric expirationTime', () => {
 });
 
 test('rejects missing subscription field', () => {
-  assert.throws(
-    () => normalizeSubscription({}),
-    /Missing subscription field/
-  );
+  assert.throws(() => normalizeSubscription({}), /Missing subscription field/);
 });
 
 test('rejects invalid endpoint', () => {
@@ -44,29 +44,24 @@ test('rejects invalid endpoint', () => {
 
 test('rejects missing keys', () => {
   const { keys, ...noKeys } = validSubscription;
-  assert.throws(
-    () => normalizeSubscription({ subscription: noKeys }),
-    /Invalid input/
-  );
+  assert.throws(() => normalizeSubscription({ subscription: noKeys }), /Invalid input/);
 });
 
 test('rejects empty p256dh key', () => {
   assert.throws(
-    () => normalizeSubscription({
-      subscription: {
-        ...validSubscription,
-        keys: { p256dh: '', auth: 'abc123' },
-      },
-    }),
+    () =>
+      normalizeSubscription({
+        subscription: {
+          ...validSubscription,
+          keys: { p256dh: '', auth: 'abc123' },
+        },
+      }),
     /p256dh key is required/
   );
 });
 
 test('rejects null body', () => {
-  assert.throws(
-    () => normalizeSubscription(null),
-    /Invalid subscription payload/
-  );
+  assert.throws(() => normalizeSubscription(null), /Invalid subscription payload/);
 });
 
 test('strips unknown fields from subscription', () => {

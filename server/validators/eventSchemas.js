@@ -34,7 +34,12 @@ const tagsSchema = z
       .map((t) => t.trim())
       .filter(Boolean);
   })
-  .transform((arr) => arr.map((t) => String(t).trim()).filter(Boolean).slice(0, 12))
+  .transform((arr) =>
+    arr
+      .map((t) => String(t).trim())
+      .filter(Boolean)
+      .slice(0, 12)
+  )
   .optional()
   .default([]);
 
@@ -57,8 +62,8 @@ export const eventSchema = z
       String(data.shortName || data.name)
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-+|-+$/g, '') || generatePrefixedId('event');
-
+        .replace(/^-+|-+$/g, '') ||
+      generatePrefixedId('event');
 
     return {
       ...data,
@@ -72,4 +77,3 @@ export const eventSchema = z
       tags: Array.isArray(data.tags) ? data.tags : [],
     };
   });
-

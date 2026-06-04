@@ -10,11 +10,17 @@ export type ProfileUpdatePayload = z.infer<typeof profileUpdateSchema>;
 
 export const coreTeamApplySchema = z.object({
   fullName: z.string().trim().min(2, 'Full name is required'),
-  collegeEmail: z.string().trim().email('Invalid email address').refine(
-    (val) => val.endsWith('@glbajajgroup.org'),
-    { message: 'Email must end with @glbajajgroup.org' }
-  ),
-  whatsapp: z.string().trim().regex(/^\d{10}$/, 'Invalid contact number (10 digits required)'),
+  collegeEmail: z
+    .string()
+    .trim()
+    .email('Invalid email address')
+    .refine((val) => val.endsWith('@glbajajgroup.org'), {
+      message: 'Email must end with @glbajajgroup.org',
+    }),
+  whatsapp: z
+    .string()
+    .trim()
+    .regex(/^\d{10}$/, 'Invalid contact number (10 digits required)'),
   year: z.string().trim().min(1, 'Year is required'),
   branch: z.string().trim().min(1, 'Branch is required'),
   section: z.string().trim().min(1, 'Section is required'),

@@ -4,29 +4,39 @@ import { NAV_HEIGHTS, SCROLL_TIMEOUT } from '../data/config';
 export function useAppActions(nav, setPage, setActiveTab, mobile) {
   const scrollTop = (behavior = 'smooth') => window.scrollTo({ top: 0, behavior });
 
-  const onNavigate = useCallback((type, title) => {
-    if (type === 'activity') nav(() => {
-      setPage({ type: 'activity', activityKey: title });
-      scrollTop();
-    });
-  }, [nav, setPage]);
+  const onNavigate = useCallback(
+    (type, title) => {
+      if (type === 'activity')
+        nav(() => {
+          setPage({ type: 'activity', activityKey: title });
+          scrollTop();
+        });
+    },
+    [nav, setPage]
+  );
 
-  const onEvent = useCallback((ev) => {
-    nav(() => {
-      setPage(p => ({ ...p, type: 'event', event: ev }));
-      scrollTop();
-    });
-  }, [nav, setPage]);
+  const onEvent = useCallback(
+    (ev) => {
+      nav(() => {
+        setPage((p) => ({ ...p, type: 'event', event: ev }));
+        scrollTop();
+      });
+    },
+    [nav, setPage]
+  );
 
-  const onKSSClick = useCallback((ev) => {
-    nav(() => {
-      setPage({ type: 'event', activityKey: 'Insight Session', event: ev });
-      scrollTop();
-    });
-  }, [nav, setPage]);
+  const onKSSClick = useCallback(
+    (ev) => {
+      nav(() => {
+        setPage({ type: 'event', activityKey: 'Insight Session', event: ev });
+        scrollTop();
+      });
+    },
+    [nav, setPage]
+  );
 
   const onBackActivity = useCallback(() => {
-    nav(() => setPage(p => ({ type: 'activity', activityKey: p.activityKey })));
+    nav(() => setPage((p) => ({ type: 'activity', activityKey: p.activityKey })));
   }, [nav, setPage]);
 
   const onBackMain = useCallback(() => {
@@ -73,6 +83,6 @@ export function useAppActions(nav, setPage, setActiveTab, mobile) {
     onBackMain,
     onBackHome,
     openApply,
-    openJoin
+    openJoin,
   };
 }

@@ -31,25 +31,33 @@ export default function JoinRequestModal({ team, onClose, onSubmit }) {
   };
 
   return (
-    <div style={{
-      position: 'fixed', inset: 0, zIndex: 9999,
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)',
-      padding: '24px'
-    }}>
-      <div 
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 9999,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'rgba(0,0,0,0.6)',
+        backdropFilter: 'blur(8px)',
+        padding: '24px',
+      }}
+    >
+      <div
         ref={modalRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-title"
         className="glass-panel pop-scale"
         style={{
-          width: '100%', maxWidth: '500px',
+          width: '100%',
+          maxWidth: '500px',
           background: 'var(--bg)',
           borderRadius: '16px',
           border: '1px solid rgba(255,255,255,0.1)',
           boxShadow: '0 24px 80px rgba(0,0,0,0.5), 0 0 40px rgba(204,17,17,0.15)',
-          overflow: 'hidden'
+          overflow: 'hidden',
         }}
       >
         <div style={{ padding: '24px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
@@ -57,10 +65,19 @@ export default function JoinRequestModal({ team, onClose, onSubmit }) {
             <h2 id="modal-title" style={{ margin: 0, fontSize: '1.5rem', color: 'var(--t1)' }}>
               Join {team?.name}
             </h2>
-            <button onClick={onClose} style={{
-              background: 'transparent', border: 'none', color: 'var(--t2)',
-              fontSize: '1.5rem', cursor: 'pointer'
-            }} aria-label="Close modal">&times;</button>
+            <button
+              onClick={onClose}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--t2)',
+                fontSize: '1.5rem',
+                cursor: 'pointer',
+              }}
+              aria-label="Close modal"
+            >
+              &times;
+            </button>
           </div>
           <p style={{ margin: '8px 0 0 0', color: 'var(--c1)', fontSize: '0.9rem' }}>
             Pitch yourself for the {team?.vacantRoles?.join(', ')} role(s)
@@ -70,84 +87,156 @@ export default function JoinRequestModal({ team, onClose, onSubmit }) {
         <div style={{ padding: '24px' }}>
           {success ? (
             <div style={{ textAlign: 'center', padding: '40px 0', color: '#4CAF50' }}>
-              <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginBottom: '16px' }}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              <svg
+                width="64"
+                height="64"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                style={{ marginBottom: '16px' }}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
               </svg>
               <h3 style={{ margin: 0 }}>Request Sent!</h3>
-              <p style={{ color: 'var(--t2)', fontSize: '0.9rem', marginTop: '8px' }}>The team leader will be notified.</p>
+              <p style={{ color: 'var(--t2)', fontSize: '0.9rem', marginTop: '8px' }}>
+                The team leader will be notified.
+              </p>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <form
+              onSubmit={handleSubmit}
+              style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}
+            >
               <div>
-                <label htmlFor="pitch" style={{ display: 'block', marginBottom: '8px', color: 'var(--t2)', fontSize: '0.9rem' }}>Why should they pick you?</label>
-                <textarea 
+                <label
+                  htmlFor="pitch"
+                  style={{
+                    display: 'block',
+                    marginBottom: '8px',
+                    color: 'var(--t2)',
+                    fontSize: '0.9rem',
+                  }}
+                >
+                  Why should they pick you?
+                </label>
+                <textarea
                   id="pitch"
                   required
                   value={pitch}
                   onChange={(e) => setPitch(e.target.value)}
                   style={{
-                    width: '100%', minHeight: '100px', padding: '12px',
-                    background: 'var(--surface)', border: '1px solid rgba(255,255,255,0.1)',
-                    borderRadius: '8px', color: 'var(--t1)', fontSize: '0.95rem',
-                    resize: 'vertical', fontFamily: 'inherit'
+                    width: '100%',
+                    minHeight: '100px',
+                    padding: '12px',
+                    background: 'var(--surface)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: '8px',
+                    color: 'var(--t1)',
+                    fontSize: '0.95rem',
+                    resize: 'vertical',
+                    fontFamily: 'inherit',
                   }}
                   placeholder="I have 2 years of React experience and..."
                 />
               </div>
 
               <div>
-                <label htmlFor="skills" style={{ display: 'block', marginBottom: '8px', color: 'var(--t2)', fontSize: '0.9rem' }}>Key Skills (comma separated)</label>
-                <input 
+                <label
+                  htmlFor="skills"
+                  style={{
+                    display: 'block',
+                    marginBottom: '8px',
+                    color: 'var(--t2)',
+                    fontSize: '0.9rem',
+                  }}
+                >
+                  Key Skills (comma separated)
+                </label>
+                <input
                   id="skills"
                   type="text"
                   required
                   value={skills}
                   onChange={(e) => setSkills(e.target.value)}
                   style={{
-                    width: '100%', padding: '12px',
-                    background: 'var(--surface)', border: '1px solid rgba(255,255,255,0.1)',
-                    borderRadius: '8px', color: 'var(--t1)', fontSize: '0.95rem'
+                    width: '100%',
+                    padding: '12px',
+                    background: 'var(--surface)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: '8px',
+                    color: 'var(--t1)',
+                    fontSize: '0.95rem',
                   }}
                   placeholder="React, Node.js, UI/UX"
                 />
               </div>
 
               <div>
-                <label htmlFor="github" style={{ display: 'block', marginBottom: '8px', color: 'var(--t2)', fontSize: '0.9rem' }}>GitHub / Portfolio Link</label>
-                <input 
+                <label
+                  htmlFor="github"
+                  style={{
+                    display: 'block',
+                    marginBottom: '8px',
+                    color: 'var(--t2)',
+                    fontSize: '0.9rem',
+                  }}
+                >
+                  GitHub / Portfolio Link
+                </label>
+                <input
                   id="github"
                   type="url"
                   required
                   value={github}
                   onChange={(e) => setGithub(e.target.value)}
                   style={{
-                    width: '100%', padding: '12px',
-                    background: 'var(--surface)', border: '1px solid rgba(255,255,255,0.1)',
-                    borderRadius: '8px', color: 'var(--t1)', fontSize: '0.95rem'
+                    width: '100%',
+                    padding: '12px',
+                    background: 'var(--surface)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: '8px',
+                    color: 'var(--t1)',
+                    fontSize: '0.95rem',
                   }}
                   placeholder="https://github.com/yourusername"
                 />
               </div>
 
               <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   onClick={onClose}
                   style={{
-                    flex: 1, padding: '12px', background: 'var(--surface-hover)',
-                    color: 'var(--t1)', border: '1px solid rgba(255,255,255,0.1)',
-                    borderRadius: '8px', cursor: 'pointer', fontWeight: 600
+                    flex: 1,
+                    padding: '12px',
+                    background: 'var(--surface-hover)',
+                    color: 'var(--t1)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    fontWeight: 600,
                   }}
                 >
                   Cancel
                 </button>
-                <button 
-                  type="submit" 
+                <button
+                  type="submit"
                   disabled={loading}
                   style={{
-                    flex: 2, padding: '12px', background: 'linear-gradient(135deg, #CC1111, #880000)',
-                    color: '#fff', border: 'none', borderRadius: '8px', cursor: loading ? 'not-allowed' : 'pointer',
-                    fontWeight: 600, opacity: loading ? 0.7 : 1
+                    flex: 2,
+                    padding: '12px',
+                    background: 'linear-gradient(135deg, #CC1111, #880000)',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '8px',
+                    cursor: loading ? 'not-allowed' : 'pointer',
+                    fontWeight: 600,
+                    opacity: loading ? 0.7 : 1,
                   }}
                 >
                   {loading ? 'Sending...' : 'Submit Request'}

@@ -6,7 +6,7 @@ name: GSSoC — Auto-Unassign Inactive Contributors
 # ─────────────────────────────────────────────────────────────────────────────
 on:
   schedule:
-    - cron: '0 2 * * *'   # Daily at 02:00 UTC
+    - cron: '0 2 * * *' # Daily at 02:00 UTC
   workflow_dispatch:
 
 concurrency:

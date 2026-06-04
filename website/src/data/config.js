@@ -7,7 +7,7 @@ export const EVENTS_API_ENDPOINT = '/api/content/events';
 
 export const NAV_HEIGHTS = {
   DESKTOP: 86,
-  MOBILE: 56
+  MOBILE: 56,
 };
 
 export const SCROLL_TIMEOUT = 50;

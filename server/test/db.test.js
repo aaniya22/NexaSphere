@@ -153,8 +153,5 @@ test('withDb throws a descriptive error when DATABASE_URL is not set', async () 
     return fn({});
   }
 
-  await assert.rejects(
-    () => withDbSimulated(() => {}),
-    /PostgreSQL not configured/,
-  );
+  await assert.rejects(() => withDbSimulated(() => {}), /PostgreSQL not configured/);
 });

@@ -150,14 +150,10 @@ export const up = (pgm) => {
     },
   });
 
-  pgm.createIndex(
-    'activity_events',
-    ['activity_key', 'created_at'],
-    {
-      name: 'idx_activity_events_key_created',
-      direction: { created_at: 'DESC' },
-    }
-  );
+  pgm.createIndex('activity_events', ['activity_key', 'created_at'], {
+    name: 'idx_activity_events_key_created',
+    direction: { created_at: 'DESC' },
+  });
 
   // Table 4: core_team_members
   pgm.createTable('core_team_members', {

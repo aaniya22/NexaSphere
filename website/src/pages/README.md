@@ -6,16 +6,16 @@ Each subdirectory is a **full-page view** rendered by `App.jsx` when navigation 
 
 ## Page Map
 
-| Folder | Component | Triggered by |
-|---|---|---|
-| `home/` | `HeroSection` | Default (no page set) |
-| `activities/` | `ActivitiesPage` · `ActivityDetailPage` | "Activities" nav tab |
-| `events/` | `EventsPage` · `EventDetailPage` | "Events" nav tab |
-| `about/` | `AboutPage` | "About" nav tab |
-| `team/` | `TeamPage` · `TeamSection` | "Team" nav tab |
-| `contact/` | `ContactPage` | "Contact" nav tab |
-| `recruitment/` | `RecruitmentPage` | "Apply for Core Team" buttons |
-| `membership/` | `MembershipPage` | "Join as Member" hero button |
+| Folder         | Component                               | Triggered by                  |
+| -------------- | --------------------------------------- | ----------------------------- |
+| `home/`        | `HeroSection`                           | Default (no page set)         |
+| `activities/`  | `ActivitiesPage` · `ActivityDetailPage` | "Activities" nav tab          |
+| `events/`      | `EventsPage` · `EventDetailPage`        | "Events" nav tab              |
+| `about/`       | `AboutPage`                             | "About" nav tab               |
+| `team/`        | `TeamPage` · `TeamSection`              | "Team" nav tab                |
+| `contact/`     | `ContactPage`                           | "Contact" nav tab             |
+| `recruitment/` | `RecruitmentPage`                       | "Apply for Core Team" buttons |
+| `membership/`  | `MembershipPage`                        | "Join as Member" hero button  |
 
 ---
 
@@ -43,9 +43,11 @@ const openExample = useCallback(() => {
 Then in the render:
 
 ```jsx
-{page?.type === 'example' && (
-  <PageIn k="pg-example">
-    <ExamplePage onBack={onBackHome} />
-  </PageIn>
-)}
+{
+  page?.type === 'example' && (
+    <PageIn k="pg-example">
+      <ExamplePage onBack={onBackHome} />
+    </PageIn>
+  );
+}
 ```

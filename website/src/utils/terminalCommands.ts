@@ -15,13 +15,13 @@ export const parseCommand = (input: string, context: CommandContext) => {
     case 'help':
       printToTerminal(
         'Available commands:\n' +
-        '  help       - Show this help message\n' +
-        '  events     - Show upcoming events\n' +
-        '  theme      - Change theme (usage: theme light|dark)\n' +
-        '  nav <page> - Navigate to a specific page\n' +
-        '  clear      - Clear terminal output\n' +
-        '  exit       - Close the terminal\n' +
-        '  sudo root  - ???'
+          '  help       - Show this help message\n' +
+          '  events     - Show upcoming events\n' +
+          '  theme      - Change theme (usage: theme light|dark)\n' +
+          '  nav <page> - Navigate to a specific page\n' +
+          '  clear      - Clear terminal output\n' +
+          '  exit       - Close the terminal\n' +
+          '  sudo root  - ???'
       );
       break;
 
@@ -50,8 +50,18 @@ export const parseCommand = (input: string, context: CommandContext) => {
       if (args.length > 1) {
         const targetPage = args[1];
         // Capitalize the first letter for the tab navigation
-        const formattedPage = targetPage.charAt(0).toUpperCase() + targetPage.slice(1).toLowerCase();
-        const validPages = ['Home', 'Activities', 'Events', 'Projects', 'Roadmaps', 'About', 'Team', 'Contact'];
+        const formattedPage =
+          targetPage.charAt(0).toUpperCase() + targetPage.slice(1).toLowerCase();
+        const validPages = [
+          'Home',
+          'Activities',
+          'Events',
+          'Projects',
+          'Roadmaps',
+          'About',
+          'Team',
+          'Contact',
+        ];
 
         if (validPages.includes(formattedPage)) {
           printToTerminal(`Navigating to ${formattedPage}...`);
@@ -60,7 +70,9 @@ export const parseCommand = (input: string, context: CommandContext) => {
             closeTerminal();
           }, 500);
         } else {
-          printToTerminal(`Error: Unknown page '${targetPage}'. Valid pages are: ${validPages.join(', ')}`);
+          printToTerminal(
+            `Error: Unknown page '${targetPage}'. Valid pages are: ${validPages.join(', ')}`
+          );
         }
       } else {
         printToTerminal('Usage: nav <page> (e.g., nav About)');

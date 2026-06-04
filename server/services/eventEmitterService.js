@@ -80,7 +80,9 @@ class RealTimeEventManager extends EventEmitter {
           message: `You're registered for ${data.eventName}`,
           link: `/events/${data.eventId}`,
         });
-      } catch (err) { logger.warn('Failed to persist notification', { err: err.message }); }
+      } catch (err) {
+        logger.warn('Failed to persist notification', { err: err.message });
+      }
 
       // Notify admin
       emitToRoom(getRoom('admin'), 'admin:new-registration', {
@@ -140,7 +142,9 @@ class RealTimeEventManager extends EventEmitter {
           message: `You've been promoted for ${data.eventName}`,
           link: `/events/${data.eventId}`,
         });
-      } catch (err) { logger.warn('Failed to persist notification', { err: err.message }); }
+      } catch (err) {
+        logger.warn('Failed to persist notification', { err: err.message });
+      }
 
       // Notify admin
       emitToRoom(getRoom('admin'), 'admin:waitlist-promotion', {
@@ -202,7 +206,9 @@ class RealTimeEventManager extends EventEmitter {
           message: `${data.eventName} is starting soon`,
           link: `/events/${data.eventId}`,
         });
-      } catch (err) { logger.warn('Failed to persist notification', { err: err.message }); }
+      } catch (err) {
+        logger.warn('Failed to persist notification', { err: err.message });
+      }
     } catch (error) {
       logger.error('Error handling event reminder', { error: error.message });
     }
@@ -252,7 +258,9 @@ class RealTimeEventManager extends EventEmitter {
           message: `Attendance for ${data.eventName} recorded. You earned ${data.points || 0} points.`,
           link: `/events/${data.eventId}`,
         });
-      } catch (err) { logger.warn('Failed to persist notification', { err: err.message }); }
+      } catch (err) {
+        logger.warn('Failed to persist notification', { err: err.message });
+      }
 
       // Notify admin
       emitToRoom(getRoom('admin'), 'admin:attendance-marked', {

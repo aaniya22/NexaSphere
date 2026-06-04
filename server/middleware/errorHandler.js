@@ -3,9 +3,9 @@
  * Handles all errors in a centralized location
  */
 
-import logger from "../utils/logger.js";
-import { captureException } from "../utils/sentry.js";
-import { sendSlackAlert } from "../utils/slack.js";
+import logger from '../utils/logger.js';
+import { captureException } from '../utils/sentry.js';
+import { sendSlackAlert } from '../utils/slack.js';
 
 function resolveUserId(req) {
   return req.user?.id || req.adminSession?.username || null;
@@ -21,7 +21,7 @@ function resolveUserId(req) {
 const errorHandler = (err, req, res, next) => {
   // Determine error status code
   const status = err.statusCode || err.status || 500;
-  const message = err.message || "Internal Server Error";
+  const message = err.message || 'Internal Server Error';
 
   // Log error details
   const errorLog = {
@@ -35,7 +35,7 @@ const errorHandler = (err, req, res, next) => {
     stack: err.stack,
   };
 
-  logger.error("Global Error Handler", errorLog);
+  logger.error('Global Error Handler', errorLog);
 
   // Capture to Sentry
   captureException(err, {
@@ -64,8 +64,8 @@ const errorHandler = (err, req, res, next) => {
     success: false,
     error: {
       status,
-      message: process.env.NODE_ENV === "production" ? "Something went wrong" : message,
-      ...(process.env.NODE_ENV !== "production" && { stack: err.stack }),
+      message: process.env.NODE_ENV === 'production' ? 'Something went wrong' : message,
+      ...(process.env.NODE_ENV !== 'production' && { stack: err.stack }),
     },
     timestamp: new Date().toISOString(),
   });
@@ -80,7 +80,7 @@ const notFoundHandler = (req, res) => {
   const status = 404;
   const message = `Route ${req.originalUrl} not found`;
 
-  logger.warn("404 Not Found", {
+  logger.warn('404 Not Found', {
     url: req.originalUrl,
     method: req.method,
     ip: req.ip,
@@ -106,11 +106,11 @@ const validationErrorHandler = (errors) => {
     value: err.value,
   }));
 
-  logger.warn("Validation Error", { errors: formattedErrors });
+  logger.warn('Validation Error', { errors: formattedErrors });
 
   return {
     status: 400,
-    message: "Validation failed",
+    message: 'Validation failed',
     errors: formattedErrors,
   };
 };
@@ -122,14 +122,9 @@ const validationErrorHandler = (errors) => {
  */
 const asyncHandler = (fn) => (req, res, next) => {
   Promise.resolve(fn(req, res, next)).catch((err) => {
-    logger.error("Async handler error", { error: err.message, stack: err.stack });
+    logger.error('Async handler error', { error: err.message, stack: err.stack });
     next(err);
   });
 };
 
-export {
-  errorHandler,
-  notFoundHandler,
-  validationErrorHandler,
-  asyncHandler,
-};
+export { errorHandler, notFoundHandler, validationErrorHandler, asyncHandler };

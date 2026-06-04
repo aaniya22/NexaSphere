@@ -14,12 +14,12 @@ import techDebate from './techDebate';
 
 // Keys must exactly match the activity title in src/data/activitiesData.js
 export const activityPages = {
-  'Hackathon':       hackathon,
-  'Codathon':        codathon,
-  'Ideathon':        ideathon,
-  'Promptathon':     promptathon,
-  'Workshop':        workshop,
+  Hackathon: hackathon,
+  Codathon: codathon,
+  Ideathon: ideathon,
+  Promptathon: promptathon,
+  Workshop: workshop,
   'Insight Session': insightSession,
   'Open Source Day': openSourceDay,
-  'Tech Debate':     techDebate,
+  'Tech Debate': techDebate,
 };

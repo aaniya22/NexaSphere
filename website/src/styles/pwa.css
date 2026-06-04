@@ -41,55 +41,74 @@
 
 @keyframes pwaPulseGlowing {
   0% {
-    box-shadow: 0 0 12px rgba(230, 57, 70, 0.25), 0 0 24px rgba(230, 57, 70, 0.1);
+    box-shadow:
+      0 0 12px rgba(230, 57, 70, 0.25),
+      0 0 24px rgba(230, 57, 70, 0.1);
   }
   50% {
-    box-shadow: 0 0 22px rgba(230, 57, 70, 0.6), 0 0 36px rgba(230, 57, 70, 0.28);
+    box-shadow:
+      0 0 22px rgba(230, 57, 70, 0.6),
+      0 0 36px rgba(230, 57, 70, 0.28);
   }
   100% {
-    box-shadow: 0 0 12px rgba(230, 57, 70, 0.25), 0 0 24px rgba(230, 57, 70, 0.1);
+    box-shadow:
+      0 0 12px rgba(230, 57, 70, 0.25),
+      0 0 24px rgba(230, 57, 70, 0.1);
   }
 }
 
 @keyframes pwaGreenPulse {
   0% {
-    box-shadow: 0 0 12px rgba(76, 175, 80, 0.2), 0 0 20px rgba(76, 175, 80, 0.08);
+    box-shadow:
+      0 0 12px rgba(76, 175, 80, 0.2),
+      0 0 20px rgba(76, 175, 80, 0.08);
   }
   50% {
-    box-shadow: 0 0 20px rgba(76, 175, 80, 0.5), 0 0 30px rgba(76, 175, 80, 0.2);
+    box-shadow:
+      0 0 20px rgba(76, 175, 80, 0.5),
+      0 0 30px rgba(76, 175, 80, 0.2);
   }
   100% {
-    box-shadow: 0 0 12px rgba(76, 175, 80, 0.2), 0 0 20px rgba(76, 175, 80, 0.08);
+    box-shadow:
+      0 0 12px rgba(76, 175, 80, 0.2),
+      0 0 20px rgba(76, 175, 80, 0.08);
   }
 }
 
 @keyframes pwa-spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes pwa-dot-blink {
-  0%, 100% { opacity: 1; }
-  50%       { opacity: 0.25; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.25;
+  }
 }
 
 /* ── Shared tokens ──────────────────────────────────────────────────────────── */
 :root {
-  --pwa-c1:          #E63946;
-  --pwa-c2:          #FF6B6B;
-  --pwa-success:     #2DD4BF;
-  --pwa-warn:        #F59E0B;
-  --pwa-glass:       rgba(15, 15, 25, 0.85);
+  --pwa-c1: #e63946;
+  --pwa-c2: #ff6b6b;
+  --pwa-success: #2dd4bf;
+  --pwa-warn: #f59e0b;
+  --pwa-glass: rgba(15, 15, 25, 0.85);
   --pwa-glass-light: rgba(255, 255, 255, 0.92);
-  --pwa-border:      rgba(255, 255, 255, 0.1);
-  --pwa-radius:      14px;
-  --pwa-shadow:      0 8px 32px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.2);
-  --pwa-z-banner:    10050;
-  --pwa-z-install:   10040;
-  --pwa-z-update:    10060;
+  --pwa-border: rgba(255, 255, 255, 0.1);
+  --pwa-radius: 14px;
+  --pwa-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.2);
+  --pwa-z-banner: 10050;
+  --pwa-z-install: 10040;
+  --pwa-z-update: 10060;
 }
 
-[data-theme="light"] {
-  --pwa-glass:  var(--pwa-glass-light);
+[data-theme='light'] {
+  --pwa-glass: var(--pwa-glass-light);
   --pwa-border: rgba(0, 0, 0, 0.08);
   --pwa-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06);
 }
@@ -180,7 +199,7 @@
 
 .pwa-banner__subtitle {
   font-size: 0.85rem;
-  color: var(--t2, #A0A0B0);
+  color: var(--t2, #a0a0b0);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -216,7 +235,9 @@
   border: 1px solid rgba(255, 255, 255, 0.15);
   background: rgba(255, 255, 255, 0.08);
   color: var(--t1, #fafafa);
-  transition: background 0.2s, transform 0.2s;
+  transition:
+    background 0.2s,
+    transform 0.2s;
   font-family: 'Rajdhani', sans-serif;
 }
 .pwa-banner__sync-btn:hover {
@@ -293,7 +314,7 @@
   width: 44px;
   height: 44px;
   border-radius: 12px;
-  background: linear-gradient(135deg, #E63946, #C0392B);
+  background: linear-gradient(135deg, #e63946, #c0392b);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -312,13 +333,13 @@
 
 .pwa-install__sub {
   font-size: 0.78rem;
-  color: var(--t2, #A0A0B0);
+  color: var(--t2, #a0a0b0);
   margin-top: 2px;
 }
 
 .pwa-install__body {
   font-size: 0.88rem;
-  color: var(--t2, #A0A0B0);
+  color: var(--t2, #a0a0b0);
   line-height: 1.6;
   margin-bottom: 16px;
 }
@@ -335,7 +356,7 @@
   align-items: center;
   gap: 8px;
   font-size: 0.83rem;
-  color: var(--t2, #A0A0B0);
+  color: var(--t2, #a0a0b0);
 }
 .pwa-install__feature-icon {
   font-size: 14px;
@@ -356,7 +377,7 @@
   font-weight: 700;
   cursor: pointer;
   border: none;
-  background: linear-gradient(135deg, var(--pwa-c1), #C0392B);
+  background: linear-gradient(135deg, var(--pwa-c1), #c0392b);
   color: #fff;
   box-shadow: 0 4px 16px rgba(230, 57, 70, 0.3);
   transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -376,8 +397,10 @@
   cursor: pointer;
   border: 1px solid var(--pwa-border);
   background: rgba(255, 255, 255, 0.05);
-  color: var(--t2, #A0A0B0);
-  transition: background 0.2s, color 0.2s;
+  color: var(--t2, #a0a0b0);
+  transition:
+    background 0.2s,
+    color 0.2s;
 }
 .pwa-btn-dismiss:hover {
   background: rgba(255, 255, 255, 0.1);
@@ -401,7 +424,9 @@
   border-radius: 50px;
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  box-shadow: var(--pwa-shadow), 0 0 0 1px rgba(45, 212, 191, 0.1);
+  box-shadow:
+    var(--pwa-shadow),
+    0 0 0 1px rgba(45, 212, 191, 0.1);
   white-space: nowrap;
   opacity: 0;
   transition:
@@ -441,8 +466,8 @@
   font-weight: 700;
   cursor: pointer;
   border: none;
-  background: linear-gradient(135deg, var(--pwa-success), #14B8A6);
-  color: #0A0A0A;
+  background: linear-gradient(135deg, var(--pwa-success), #14b8a6);
+  color: #0a0a0a;
   transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
   flex-shrink: 0;
   letter-spacing: 0.03em;
@@ -458,14 +483,16 @@
   border-radius: 50%;
   border: none;
   background: rgba(255, 255, 255, 0.08);
-  color: var(--t2, #A0A0B0);
+  color: var(--t2, #a0a0b0);
   font-size: 14px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  transition: background 0.2s, color 0.2s;
+  transition:
+    background 0.2s,
+    color 0.2s;
 }
 .pwa-btn-close:hover {
   background: rgba(255, 255, 255, 0.14);
@@ -506,20 +533,26 @@
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: var(--r2, 14px);
   padding: 16px 20px;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6), var(--shcard);
+  box-shadow:
+    0 16px 40px rgba(0, 0, 0, 0.6),
+    var(--shcard);
   animation: pwaBounceIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
   color: var(--t1, #ffffff);
   display: flex;
   flex-direction: column;
   gap: 12px;
-  transition: opacity 0.3s, transform 0.3s;
+  transition:
+    opacity 0.3s,
+    transform 0.3s;
 }
 
-[data-theme="light"] .pwa-toast-card {
+[data-theme='light'] .pwa-toast-card {
   background: rgba(255, 255, 255, 0.8);
   border: 1px solid rgba(0, 0, 0, 0.08);
   color: var(--t1, #1a1a1a);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12), var(--shcard);
+  box-shadow:
+    0 12px 32px rgba(0, 0, 0, 0.12),
+    var(--shcard);
 }
 
 .pwa-toast-header {
@@ -537,19 +570,19 @@
 .pwa-toast-icon.warning {
   background: rgba(230, 57, 70, 0.15);
   border: 1px solid rgba(230, 57, 70, 0.3);
-  color: var(--c1, #E63946);
+  color: var(--c1, #e63946);
 }
 
 .pwa-toast-icon.success {
   background: rgba(76, 175, 80, 0.15);
   border: 1px solid rgba(76, 175, 80, 0.3);
-  color: var(--success, #4CAF50);
+  color: var(--success, #4caf50);
 }
 
 .pwa-toast-icon.info {
   background: rgba(33, 150, 243, 0.15);
   border: 1px solid rgba(33, 150, 243, 0.3);
-  color: var(--info, #2196F3);
+  color: var(--info, #2196f3);
 }
 
 .pwa-toast-body {
@@ -567,7 +600,7 @@
 
 .pwa-toast-description {
   font-size: 0.88rem;
-  color: var(--t2, #B0B0B0);
+  color: var(--t2, #b0b0b0);
   line-height: 1.45;
 }
 
@@ -598,26 +631,30 @@
 
 .pwa-conn-banner.offline {
   border-color: rgba(230, 57, 70, 0.35);
-  animation: pwaSlideDown 0.48s cubic-bezier(0.22, 1, 0.36, 1) forwards, pwaPulseGlowing 3s infinite ease-in-out;
+  animation:
+    pwaSlideDown 0.48s cubic-bezier(0.22, 1, 0.36, 1) forwards,
+    pwaPulseGlowing 3s infinite ease-in-out;
 }
 
 .pwa-conn-banner.online {
   border-color: rgba(76, 175, 80, 0.35);
-  animation: pwaSlideDown 0.48s cubic-bezier(0.22, 1, 0.36, 1) forwards, pwaGreenPulse 3s infinite ease-in-out;
+  animation:
+    pwaSlideDown 0.48s cubic-bezier(0.22, 1, 0.36, 1) forwards,
+    pwaGreenPulse 3s infinite ease-in-out;
 }
 
-[data-theme="light"] .pwa-conn-banner {
+[data-theme='light'] .pwa-conn-banner {
   background: rgba(255, 255, 255, 0.85);
   color: var(--t1, #1a1a1a);
   border: 1px solid rgba(230, 57, 70, 0.15);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
 }
 
-[data-theme="light"] .pwa-conn-banner.offline {
+[data-theme='light'] .pwa-conn-banner.offline {
   border-color: rgba(230, 57, 70, 0.25);
 }
 
-[data-theme="light"] .pwa-conn-banner.online {
+[data-theme='light'] .pwa-conn-banner.online {
   border-color: rgba(76, 175, 80, 0.25);
 }
 
@@ -633,13 +670,13 @@
 }
 
 .pwa-conn-banner.offline .pwa-conn-status-dot {
-  background: var(--c1, #E63946);
-  box-shadow: 0 0 10px var(--c1, #E63946);
+  background: var(--c1, #e63946);
+  box-shadow: 0 0 10px var(--c1, #e63946);
 }
 
 .pwa-conn-banner.online .pwa-conn-status-dot {
-  background: var(--success, #4CAF50);
-  box-shadow: 0 0 10px var(--success, #4CAF50);
+  background: var(--success, #4caf50);
+  box-shadow: 0 0 10px var(--success, #4caf50);
 }
 
 .pwa-conn-message {

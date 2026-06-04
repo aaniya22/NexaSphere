@@ -1,8 +1,8 @@
 export const NOTIFICATION_TYPES = {
-  MESSAGE:    'message',
+  MESSAGE: 'message',
   CONNECTION: 'connection',
-  MENTION:    'mention',
-  SYSTEM:     'system',
+  MENTION: 'mention',
+  SYSTEM: 'system',
 };
 
 const notificationsData = [

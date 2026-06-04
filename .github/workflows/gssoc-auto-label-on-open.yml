@@ -13,7 +13,7 @@ name: GSSoC — Auto-Label Issues & PRs on Open
 on:
   issues:
     types: [opened, reopened]
-  pull_request_target:                 # ← key fix for fork PRs
+  pull_request_target: # ← key fix for fork PRs
     types: [opened, reopened]
 
 jobs:

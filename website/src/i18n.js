@@ -7,11 +7,11 @@ import translationHI from './locales/hi.json';
 
 const resources = {
   en: {
-    translation: translationEN
+    translation: translationEN,
   },
   hi: {
-    translation: translationHI
-  }
+    translation: translationHI,
+  },
 };
 
 i18n
@@ -21,12 +21,12 @@ i18n
     resources,
     fallbackLng: 'en',
     interpolation: {
-      escapeValue: false // react already escapes from xss
+      escapeValue: false, // react already escapes from xss
     },
     detection: {
       order: ['localStorage', 'navigator'],
-      caches: ['localStorage']
-    }
+      caches: ['localStorage'],
+    },
   });
 
 // Set direction based on language

@@ -68,7 +68,7 @@
   box-shadow: var(--sh1);
 }
 
-[data-theme="light"] .builder-panel {
+[data-theme='light'] .builder-panel {
   background: rgba(255, 255, 255, 0.7);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
 }
@@ -113,12 +113,26 @@
 }
 
 /* Ensure labels do not overlap input placeholders on small screens */
-.form-group { position: relative; }
-.form-label { z-index: 3; display: block; margin-bottom: 6px; }
-.form-input::placeholder { opacity: 0.7; }
-.form-input, .form-textarea { position: relative; z-index: 2; }
+.form-group {
+  position: relative;
+}
+.form-label {
+  z-index: 3;
+  display: block;
+  margin-bottom: 6px;
+}
+.form-input::placeholder {
+  opacity: 0.7;
+}
+.form-input,
+.form-textarea {
+  position: relative;
+  z-index: 2;
+}
 
-.form-input, .form-textarea, .form-select {
+.form-input,
+.form-textarea,
+.form-select {
   padding: 12px 14px;
   background: rgba(10, 10, 10, 0.6);
   border: 1px solid var(--bdr);
@@ -130,13 +144,15 @@
   transition: all 0.25s ease;
 }
 
-[data-theme="light"] .form-input, 
-[data-theme="light"] .form-textarea, 
-[data-theme="light"] .form-select {
+[data-theme='light'] .form-input,
+[data-theme='light'] .form-textarea,
+[data-theme='light'] .form-select {
   background: rgba(250, 250, 250, 0.8);
 }
 
-.form-input:focus, .form-textarea:focus, .form-select:focus {
+.form-input:focus,
+.form-textarea:focus,
+.form-select:focus {
   border-color: var(--c1b);
   box-shadow: 0 0 0 2px var(--c1g);
 }
@@ -176,22 +192,25 @@
 .slider {
   position: absolute;
   cursor: pointer;
-  top: 0; left: 0; right: 0; bottom: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   background-color: rgba(60, 60, 60, 0.5);
-  transition: .3s;
+  transition: 0.3s;
   border-radius: 24px;
   border: 1px solid var(--bdr);
 }
 
 .slider:before {
   position: absolute;
-  content: "";
+  content: '';
   height: 16px;
   width: 16px;
   left: 3px;
   bottom: 3px;
   background-color: var(--t1);
-  transition: .3s;
+  transition: 0.3s;
   border-radius: 50%;
 }
 
@@ -339,14 +358,18 @@ input:checked + .slider:before {
 
 .theme-cyberpunk .portfolio-shell {
   background: var(--bg-portfolio);
-  background-image: linear-gradient(rgba(18, 10, 36, 0.5) 1px, transparent 1px), 
-                    linear-gradient(90deg, rgba(18, 10, 36, 0.5) 1px, transparent 1px);
+  background-image:
+    linear-gradient(rgba(18, 10, 36, 0.5) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(18, 10, 36, 0.5) 1px, transparent 1px);
   background-size: 20px 20px;
   color: var(--text-portfolio);
   font-family: var(--font-portfolio);
 }
 
-.theme-cyberpunk h1, .theme-cyberpunk h2, .theme-cyberpunk h3, .theme-cyberpunk h4 {
+.theme-cyberpunk h1,
+.theme-cyberpunk h2,
+.theme-cyberpunk h3,
+.theme-cyberpunk h4 {
   color: var(--accent2-portfolio);
   text-shadow: 0 0 8px rgba(255, 0, 127, 0.6);
 }
@@ -354,7 +377,9 @@ input:checked + .slider:before {
 .theme-cyberpunk .portfolio-panel {
   border: 2px solid var(--border-portfolio);
   background: var(--panel-portfolio);
-  box-shadow: 0 0 15px rgba(63, 0, 127, 0.5), inset 0 0 10px rgba(255, 0, 127, 0.15);
+  box-shadow:
+    0 0 15px rgba(63, 0, 127, 0.5),
+    inset 0 0 10px rgba(255, 0, 127, 0.15);
   border-radius: 0px;
   position: relative;
 }
@@ -362,7 +387,8 @@ input:checked + .slider:before {
 .theme-cyberpunk .portfolio-panel::before {
   content: 'SYSTEM.ONLINE';
   position: absolute;
-  top: -8px; right: 12px;
+  top: -8px;
+  right: 12px;
   background: #3f007f;
   color: #fff;
   font-size: 0.55rem;
@@ -379,7 +405,11 @@ input:checked + .slider:before {
 
 /* 2. Glassmorphic Theme */
 .theme-glassmorphic {
-  --bg-portfolio: radial-gradient(circle at 10% 20%, rgba(4, 5, 25, 1) 0%, rgba(20, 10, 42, 1) 90.2%);
+  --bg-portfolio: radial-gradient(
+    circle at 10% 20%,
+    rgba(4, 5, 25, 1) 0%,
+    rgba(20, 10, 42, 1) 90.2%
+  );
   --panel-portfolio: rgba(255, 255, 255, 0.04);
   --border-portfolio: rgba(255, 255, 255, 0.08);
   --accent-portfolio: #e63946;
@@ -400,22 +430,28 @@ input:checked + .slider:before {
 .theme-glassmorphic .portfolio-shell::before {
   content: '';
   position: absolute;
-  width: 300px; height: 300px;
+  width: 300px;
+  height: 300px;
   background: radial-gradient(circle, rgba(230, 57, 70, 0.15) 0%, transparent 70%);
-  top: -10%; left: -10%;
+  top: -10%;
+  left: -10%;
   pointer-events: none;
 }
 
 .theme-glassmorphic .portfolio-shell::after {
   content: '';
   position: absolute;
-  width: 300px; height: 300px;
+  width: 300px;
+  height: 300px;
   background: radial-gradient(circle, rgba(0, 212, 255, 0.15) 0%, transparent 70%);
-  bottom: -10%; right: -10%;
+  bottom: -10%;
+  right: -10%;
   pointer-events: none;
 }
 
-.theme-glassmorphic h1, .theme-glassmorphic h2, .theme-glassmorphic h3 {
+.theme-glassmorphic h1,
+.theme-glassmorphic h2,
+.theme-glassmorphic h3 {
   font-family: 'Orbitron', sans-serif;
 }
 
@@ -452,7 +488,10 @@ input:checked + .slider:before {
   font-family: var(--font-portfolio);
 }
 
-.theme-minimalist-light h1, .theme-minimalist-light h2, .theme-minimalist-light h3, .theme-minimalist-light h4 {
+.theme-minimalist-light h1,
+.theme-minimalist-light h2,
+.theme-minimalist-light h3,
+.theme-minimalist-light h4 {
   font-family: 'Inter', sans-serif;
   font-weight: 800;
   color: var(--accent-portfolio);
@@ -517,8 +556,8 @@ input:checked + .slider:before {
   height: 120px;
   border-radius: 50%;
   border: 4px solid var(--border-portfolio, var(--bdr));
-  background: rgba(0,0,0,0.1);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+  background: rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
 }
 
 .portfolio-bio-col {
@@ -623,7 +662,7 @@ input:checked + .slider:before {
   justify-content: space-between;
   padding: 16px;
   border: 1px solid var(--border-portfolio, var(--bdr2));
-  background: rgba(255,255,255,0.01);
+  background: rgba(255, 255, 255, 0.01);
 }
 
 .roadmap-card-info {
@@ -717,7 +756,7 @@ input:checked + .slider:before {
     color: #000000 !important;
     font-size: 12pt !important;
   }
-  
+
   .portfolio-shell {
     border: none !important;
     box-shadow: none !important;
@@ -726,7 +765,7 @@ input:checked + .slider:before {
     padding: 0 !important;
     max-width: 100% !important;
   }
-  
+
   .action-floating-header,
   .portfolio-builder-container,
   nav,
@@ -736,20 +775,20 @@ input:checked + .slider:before {
   .ns-navbar-mobile {
     display: none !important;
   }
-  
+
   .portfolio-panel {
     background: #ffffff !important;
     border: 1px solid #cccccc !important;
     box-shadow: none !important;
     page-break-inside: avoid !important;
   }
-  
+
   .portfolio-pill {
     background: #e0e0e0 !important;
     border: 1px solid #999999 !important;
     color: #000000 !important;
   }
-  
+
   .portfolio-social-btn {
     border-color: #999999 !important;
   }

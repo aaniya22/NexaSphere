@@ -55,7 +55,9 @@ export const up = async (pgm) => {
 
 export const down = async (pgm) => {
   // Clear seeded data
-  await pgm.db.query(`DELETE FROM event_participants WHERE user_id LIKE 'user_%' OR user_id = '101';`);
+  await pgm.db.query(
+    `DELETE FROM event_participants WHERE user_id LIKE 'user_%' OR user_id = '101';`
+  );
   await pgm.db.query(`DELETE FROM "Profile" WHERE id LIKE 'user_%' OR id = '101';`);
   await pgm.db.query(`DELETE FROM "Events" WHERE id LIKE 'evt_%';`);
 };

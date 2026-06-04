@@ -8,12 +8,7 @@
  * @param yKey Key for the Y-axis value (should be numeric)
  * @returns Downsampled array of data objects
  */
-export function decimateData<T>(
-  data: T[],
-  threshold: number,
-  xKey: keyof T,
-  yKey: keyof T
-): T[] {
+export function decimateData<T>(data: T[], threshold: number, xKey: keyof T, yKey: keyof T): T[] {
   const dataLength = data.length;
   if (threshold >= dataLength || threshold === 0) {
     return data; // Nothing to do

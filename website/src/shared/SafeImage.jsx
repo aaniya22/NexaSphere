@@ -9,7 +9,7 @@ export default function SafeImage({ src, alt, fallbackType = 'project', ...props
   return (
     <Image
       src={src || fallbackSrc}
-      alt={alt || "Image"}
+      alt={alt || 'Image'}
       onError={(e) => {
         e.target.onerror = null; // prevents infinite loop
         e.target.src = fallbackSrc;

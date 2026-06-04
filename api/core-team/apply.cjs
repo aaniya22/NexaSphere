@@ -16,56 +16,76 @@ async function readJson(req) {
 
   const raw = await new Promise((resolve, reject) => {
     let data = '';
-    req.on('data', chunk => { data += chunk; });
+    req.on('data', (chunk) => {
+      data += chunk;
+    });
     req.on('end', () => resolve(data));
     req.on('error', reject);
   });
 
   if (!raw) return {};
-  try { return JSON.parse(raw); } catch { return {}; }
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return {};
+  }
 }
 
-const applySchema = z.object({
-  fullName: z.string().trim().min(1, 'fullName is required'),
-  collegeEmail: z.string().trim().email('Invalid email format').refine(
-    (email) => email.toLowerCase().endsWith('@glbajajgroup.org'),
-    { message: 'Email must end with @glbajajgroup.org.' }
-  ),
-  whatsapp: z.string().trim().regex(/^\d{10}$/, 'Invalid contact number (10 digits required).'),
-  year: z.string().trim().min(1, 'year is required'),
-  branch: z.string().trim().min(1, 'branch is required'),
-  section: z.string().trim().min(1, 'section is required'),
-  role: z.string().trim().min(1, 'role is required'),
-  skills: z.string().trim().min(1, 'skills are required'),
-  comms: z.string().trim().min(1, 'comms is required'),
-  campusExp: z.string().trim().min(1, 'campusExp is required'),
-  campusExpDetails: z.string().trim().optional().default(''),
-  links: z.string().trim().optional().default(''),
-  commitHours: z.string().trim().min(1, 'commitHours is required'),
-  attendCampus: z.string().trim().min(1, 'attendCampus is required'),
-  assessmentOk: z.string().trim().min(1, 'assessmentOk is required'),
-  whyJoin: z.string().trim().min(1, 'whyJoin is required'),
-  anythingElse: z.string().trim().optional().default(''),
-  interests: z.array(z.string()).optional(),
-  declaration: z.string().trim().optional().default(''),
-  declarationAccepted: z.boolean().optional(),
-  declarationSelected: z.array(z.string()).optional(),
-  submittedAt: z.string().trim().optional().default(''),
-  userAgent: z.string().trim().optional().default(''),
-}).refine((data) => {
-  if (data.declarationAccepted !== undefined) {
-    if (!data.declarationAccepted) return false;
-    if (Array.isArray(data.declarationSelected) && data.declarationSelected.includes('disagree')) {
-      return false;
+const applySchema = z
+  .object({
+    fullName: z.string().trim().min(1, 'fullName is required'),
+    collegeEmail: z
+      .string()
+      .trim()
+      .email('Invalid email format')
+      .refine((email) => email.toLowerCase().endsWith('@glbajajgroup.org'), {
+        message: 'Email must end with @glbajajgroup.org.',
+      }),
+    whatsapp: z
+      .string()
+      .trim()
+      .regex(/^\d{10}$/, 'Invalid contact number (10 digits required).'),
+    year: z.string().trim().min(1, 'year is required'),
+    branch: z.string().trim().min(1, 'branch is required'),
+    section: z.string().trim().min(1, 'section is required'),
+    role: z.string().trim().min(1, 'role is required'),
+    skills: z.string().trim().min(1, 'skills are required'),
+    comms: z.string().trim().min(1, 'comms is required'),
+    campusExp: z.string().trim().min(1, 'campusExp is required'),
+    campusExpDetails: z.string().trim().optional().default(''),
+    links: z.string().trim().optional().default(''),
+    commitHours: z.string().trim().min(1, 'commitHours is required'),
+    attendCampus: z.string().trim().min(1, 'attendCampus is required'),
+    assessmentOk: z.string().trim().min(1, 'assessmentOk is required'),
+    whyJoin: z.string().trim().min(1, 'whyJoin is required'),
+    anythingElse: z.string().trim().optional().default(''),
+    interests: z.array(z.string()).optional(),
+    declaration: z.string().trim().optional().default(''),
+    declarationAccepted: z.boolean().optional(),
+    declarationSelected: z.array(z.string()).optional(),
+    submittedAt: z.string().trim().optional().default(''),
+    userAgent: z.string().trim().optional().default(''),
+  })
+  .refine(
+    (data) => {
+      if (data.declarationAccepted !== undefined) {
+        if (!data.declarationAccepted) return false;
+        if (
+          Array.isArray(data.declarationSelected) &&
+          data.declarationSelected.includes('disagree')
+        ) {
+          return false;
+        }
+      } else {
+        if (data.declaration === 'I do not agree to the above declaration.') return false;
+      }
+      return true;
+    },
+    {
+      message: 'Declaration not accepted.',
+      path: ['declaration'],
     }
-  } else {
-    if (data.declaration === 'I do not agree to the above declaration.') return false;
-  }
-  return true;
-}, {
-  message: 'Declaration not accepted.',
-  path: ['declaration'],
-});
+  );
 
 async function appendToSheet(payload) {
   const clientEmail = requiredEnv('GOOGLE_SERVICE_ACCOUNT_EMAIL');
@@ -106,7 +126,7 @@ async function appendToSheet(payload) {
     payload.anythingElse || '',
     Array.isArray(payload.declarationSelected)
       ? payload.declarationSelected.join(', ')
-      : (payload.declaration || ''),
+      : payload.declaration || '',
     payload.submittedAt || '',
     payload.userAgent || '',
   ];

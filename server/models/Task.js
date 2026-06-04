@@ -1,18 +1,18 @@
-import mongoose from "mongoose";
+import mongoose from 'mongoose';
 
 const activityLogSchema = new mongoose.Schema(
   {
     fromStatus: {
       type: String,
-      enum: ["Todo", "In_Progress", "Review", "Done"],
+      enum: ['Todo', 'In_Progress', 'Review', 'Done'],
     },
     toStatus: {
       type: String,
-      enum: ["Todo", "In_Progress", "Review", "Done"],
+      enum: ['Todo', 'In_Progress', 'Review', 'Done'],
     },
     updatedBy: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      ref: 'User',
     },
     timestamp: {
       type: Date,
@@ -26,7 +26,7 @@ const taskSchema = new mongoose.Schema(
   {
     teamRoomId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "TeamRoom",
+      ref: 'TeamRoom',
       required: true,
       index: true,
     },
@@ -40,18 +40,18 @@ const taskSchema = new mongoose.Schema(
       type: String,
       trim: true,
       maxlength: 2000,
-      default: "",
+      default: '',
     },
     status: {
       type: String,
-      enum: ["Todo", "In_Progress", "Review", "Done"],
-      default: "Todo",
+      enum: ['Todo', 'In_Progress', 'Review', 'Done'],
+      default: 'Todo',
       index: true,
     },
     assignedTo: [
       {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
+        ref: 'User',
       },
     ],
     activityLog: [activityLogSchema],
@@ -61,4 +61,4 @@ const taskSchema = new mongoose.Schema(
 
 taskSchema.index({ teamRoomId: 1, status: 1 });
 
-export default mongoose.model("Task", taskSchema);
+export default mongoose.model('Task', taskSchema);

@@ -1,5 +1,7 @@
 function normalizeUrl(value) {
-  return String(value || '').trim().replace(/\/+$/, '');
+  return String(value || '')
+    .trim()
+    .replace(/\/+$/, '');
 }
 
 function isLocalHostname(hostname) {
@@ -20,19 +22,11 @@ export function getApiBase() {
 }
 
 export function getAiApiBase() {
-  return (
-    normalizeUrl(import.meta.env.VITE_AI_API_BASE) ||
-    getLocalDefaultUrl(8000) ||
-    getApiBase()
-  );
+  return normalizeUrl(import.meta.env.VITE_AI_API_BASE) || getLocalDefaultUrl(8000) || getApiBase();
 }
 
 export function getSocketServerUrl() {
-  return (
-    normalizeUrl(import.meta.env.VITE_SOCKET_URL) ||
-    getApiBase() ||
-    getLocalDefaultUrl(8787)
-  );
+  return normalizeUrl(import.meta.env.VITE_SOCKET_URL) || getApiBase() || getLocalDefaultUrl(8787);
 }
 
 export function getSocketPath() {

@@ -3,11 +3,11 @@
   width: 100%;
   height: 100%;
   border-radius: var(--radius-sm, 6px);
-  
+
   /* Glassmorphic base matching existing styles */
   background: var(--bg-card, rgba(255, 255, 255, 0.03));
   border: 1px solid var(--bdr, rgba(255, 255, 255, 0.05));
-  
+
   position: relative;
   overflow: hidden;
 }

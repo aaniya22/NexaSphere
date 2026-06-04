@@ -1,20 +1,20 @@
-import { useState, useEffect, useCallback } from "react";
-import { api } from "../services/api";
-import { useEventListener } from "../hooks/useEventListener";
-import { EVENTS } from "../services/eventEmitter";
-import { ActivityEventForm } from "../components/ActivityEventForm";
-import { Skeleton } from "../components/Skeleton";
-import { AdminIcon } from "../components/AdminIcon";
+import { useState, useEffect, useCallback } from 'react';
+import { api } from '../services/api';
+import { useEventListener } from '../hooks/useEventListener';
+import { EVENTS } from '../services/eventEmitter';
+import { ActivityEventForm } from '../components/ActivityEventForm';
+import { Skeleton } from '../components/Skeleton';
+import { AdminIcon } from '../components/AdminIcon';
 
 const ACTIVITIES = [
-  { key: "hackathon", name: "Hackathon" },
-  { key: "codathon", name: "Codathon" },
-  { key: "ideathon", name: "Ideathon" },
-  { key: "promptathon", name: "Promptathon" },
-  { key: "workshop", name: "Workshop" },
-  { key: "insight-session", name: "Insight Session" },
-  { key: "open-source-day", name: "Open Source Day" },
-  { key: "tech-debate", name: "Tech Debate" },
+  { key: 'hackathon', name: 'Hackathon' },
+  { key: 'codathon', name: 'Codathon' },
+  { key: 'ideathon', name: 'Ideathon' },
+  { key: 'promptathon', name: 'Promptathon' },
+  { key: 'workshop', name: 'Workshop' },
+  { key: 'insight-session', name: 'Insight Session' },
+  { key: 'open-source-day', name: 'Open Source Day' },
+  { key: 'tech-debate', name: 'Tech Debate' },
 ];
 
 export function ActivityEventsManager() {
@@ -24,7 +24,7 @@ export function ActivityEventsManager() {
   const [showForm, setShowForm] = useState(false);
   const [deleting, setDeleting] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
-  const [deleteError, setDeleteError] = useState("");
+  const [deleteError, setDeleteError] = useState('');
 
   const loadEvents = useCallback(async (key) => {
     setLoading(true);
@@ -57,8 +57,7 @@ export function ActivityEventsManager() {
     EVENTS.ACTIVITY_EVENT_DELETED,
     useCallback(
       ({ activityKey, eventId }) => {
-        if (activityKey === selected)
-          setEvents((prev) => prev.filter((e) => e.id !== eventId));
+        if (activityKey === selected) setEvents((prev) => prev.filter((e) => e.id !== eventId));
       },
       [selected]
     )
@@ -68,12 +67,12 @@ export function ActivityEventsManager() {
     if (!deleteTarget) return;
     const eventId = deleteTarget.id;
     setDeleting(eventId);
-    setDeleteError("");
+    setDeleteError('');
     try {
       await api.activityEvents.delete(selected, eventId);
       setDeleteTarget(null);
     } catch {
-      setDeleteError("Failed to delete activity event. Please try again.");
+      setDeleteError('Failed to delete activity event. Please try again.');
     } finally {
       setDeleting(null);
     }
@@ -94,7 +93,7 @@ export function ActivityEventsManager() {
         {ACTIVITIES.map((a) => (
           <button
             key={a.key}
-            className={`tab${selected === a.key ? " active" : ""}`}
+            className={`tab${selected === a.key ? ' active' : ''}`}
             onClick={() => setSelected(a.key)}
           >
             {a.name}
@@ -102,12 +101,7 @@ export function ActivityEventsManager() {
         ))}
       </div>
 
-      {showForm && (
-        <ActivityEventForm
-          activityKey={selected}
-          onClose={() => setShowForm(false)}
-        />
-      )}
+      {showForm && <ActivityEventForm activityKey={selected} onClose={() => setShowForm(false)} />}
 
       {loading && <Skeleton height={64} count={3} />}
 
@@ -123,8 +117,7 @@ export function ActivityEventsManager() {
                   <div className="item-name">{event.name}</div>
                   <div className="item-meta">
                     {event.date && `${event.date}`}
-                    {event.participants &&
-                      ` · ${event.participants} participants`}
+                    {event.participants && ` · ${event.participants} participants`}
                   </div>
                 </div>
               </div>
@@ -133,16 +126,12 @@ export function ActivityEventsManager() {
                   className="btn-icon danger"
                   onClick={() => {
                     setDeleteTarget(event);
-                    setDeleteError("");
+                    setDeleteError('');
                   }}
                   disabled={deleting === event.id}
                   aria-label="Delete activity event"
                 >
-                  {deleting === event.id ? (
-                    "..."
-                  ) : (
-                    <AdminIcon name="Trash" size={16} />
-                  )}
+                  {deleting === event.id ? '...' : <AdminIcon name="Trash" size={16} />}
                 </button>
               </div>
             </div>
@@ -174,8 +163,8 @@ export function ActivityEventsManager() {
             {deleteError && <div className="page-error">{deleteError}</div>}
             <div
               style={{
-                display: "flex",
-                justifyContent: "flex-end",
+                display: 'flex',
+                justifyContent: 'flex-end',
                 gap: 10,
                 marginTop: 20,
               }}
@@ -192,7 +181,7 @@ export function ActivityEventsManager() {
                 onClick={handleDelete}
                 disabled={deleting === deleteTarget.id}
               >
-                {deleting === deleteTarget.id ? "Deleting..." : "Delete Event"}
+                {deleting === deleteTarget.id ? 'Deleting...' : 'Delete Event'}
               </button>
             </div>
           </div>

@@ -8,16 +8,16 @@
 
 ## ✨ Stack
 
-| Layer | Technology |
-|---|---|
-| **Website (Frontend)** | React 18 + Vite 5 + React Router v6 |
-| **Admin Dashboard** | React 18 + Vite 5 |
-| **Backend API** | Node.js 20 + Express 4 (ESM) |
-| **Database** | PostgreSQL via Supabase (JSON file fallback for offline) |
-| **Real-time** | Socket.IO |
-| **Emails** | Nodemailer / Resend / SendGrid |
-| **Auth** | Session-based admin auth with timing-safe comparison |
-| **Deployment** | Frontend → Vercel · Backend → Render · Docker supported |
+| Layer                  | Technology                                               |
+| ---------------------- | -------------------------------------------------------- |
+| **Website (Frontend)** | React 18 + Vite 5 + React Router v6                      |
+| **Admin Dashboard**    | React 18 + Vite 5                                        |
+| **Backend API**        | Node.js 20 + Express 4 (ESM)                             |
+| **Database**           | PostgreSQL via Supabase (JSON file fallback for offline) |
+| **Real-time**          | Socket.IO                                                |
+| **Emails**             | Nodemailer / Resend / SendGrid                           |
+| **Auth**               | Session-based admin auth with timing-safe comparison     |
+| **Deployment**         | Frontend → Vercel · Backend → Render · Docker supported  |
 
 ## 📁 Project Structure
 
@@ -105,11 +105,13 @@ cp server/.env.example server/.env
 Then open each `.env` file and fill in your values. At minimum for local dev:
 
 **`website/.env.local`:**
+
 ```env
 VITE_API_BASE=http://localhost:8787
 ```
 
 **`server/.env`:**
+
 ```env
 PORT=8787
 NODE_ENV=development
@@ -135,11 +137,11 @@ npm run dev:server
 npm run dev:all
 ```
 
-| Service | URL |
-|---|---|
-| Website | http://localhost:5175 |
-| Admin Dashboard | http://localhost:5001 |
-| Backend API | http://localhost:8787 |
+| Service          | URL                          |
+| ---------------- | ---------------------------- |
+| Website          | http://localhost:5175        |
+| Admin Dashboard  | http://localhost:5001        |
+| Backend API      | http://localhost:8787        |
 | API Health Check | http://localhost:8787/health |
 
 ### 4. Running Without a Backend
@@ -216,18 +218,18 @@ docker-compose down
 
 ## 🔑 Environment Variables Reference
 
-| Variable | Where | Description |
-|---|---|---|
-| `VITE_API_BASE` | `website/.env.local` | Backend API base URL |
-| `VITE_ADMIN_DASHBOARD_URL` | `website/.env.local` | Admin dashboard URL (footer link) |
-| `PORT` | `server/.env` | Server port (default: 8787) |
-| `CORS_ORIGIN` | `server/.env` | Comma-separated allowed origins |
-| `DATABASE_URL` | `server/.env` | PostgreSQL connection string |
-| `SUPABASE_URL` | `server/.env` | Supabase project URL |
-| `SUPABASE_SERVICE_ROLE_KEY` | `server/.env` | Supabase service key |
-| `ADMIN_USERNAME` | `server/.env` | Admin login username |
-| `ADMIN_PASSWORD` | `server/.env` | Admin login password (≥12 chars) |
-| `ADMIN_EVENT_PASSWORD` | `server/.env` | Password for posting activity events |
+| Variable                    | Where                | Description                          |
+| --------------------------- | -------------------- | ------------------------------------ |
+| `VITE_API_BASE`             | `website/.env.local` | Backend API base URL                 |
+| `VITE_ADMIN_DASHBOARD_URL`  | `website/.env.local` | Admin dashboard URL (footer link)    |
+| `PORT`                      | `server/.env`        | Server port (default: 8787)          |
+| `CORS_ORIGIN`               | `server/.env`        | Comma-separated allowed origins      |
+| `DATABASE_URL`              | `server/.env`        | PostgreSQL connection string         |
+| `SUPABASE_URL`              | `server/.env`        | Supabase project URL                 |
+| `SUPABASE_SERVICE_ROLE_KEY` | `server/.env`        | Supabase service key                 |
+| `ADMIN_USERNAME`            | `server/.env`        | Admin login username                 |
+| `ADMIN_PASSWORD`            | `server/.env`        | Admin login password (≥12 chars)     |
+| `ADMIN_EVENT_PASSWORD`      | `server/.env`        | Password for posting activity events |
 
 See `server/.env.example` and `website/.env.example` for the complete list.
 

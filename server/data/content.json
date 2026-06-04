@@ -8,11 +8,7 @@
       "description": "NexaSphere's inaugural Knowledge Sharing Session focused on the impact of AI.",
       "status": "completed",
       "icon": "Brain",
-      "tags": [
-        "AI",
-        "Learning",
-        "Community"
-      ],
+      "tags": ["AI", "Learning", "Community"],
       "createdAt": "2026-06-01T12:43:38.445Z",
       "updatedAt": "2026-06-01T12:43:38.446Z"
     }

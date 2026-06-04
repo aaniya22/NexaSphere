@@ -60,7 +60,8 @@
   margin-bottom: 16px;
 }
 
-.chip-branch, .chip-section {
+.chip-branch,
+.chip-section {
   font-size: 0.65rem;
   padding: 2px 8px;
   border-radius: 10px;
@@ -108,23 +109,23 @@
 
 /* ── Team Card Brand Styling ── */
 .team-card:hover {
-  border-color: rgba(230,57,70,0.6);
-  box-shadow: 0 12px 32px rgba(230,57,70,0.3);
+  border-color: rgba(230, 57, 70, 0.6);
+  box-shadow: 0 12px 32px rgba(230, 57, 70, 0.3);
   transform: translateY(-8px);
 }
-[data-theme="light"] .team-card {
+[data-theme='light'] .team-card {
   background: #fff;
-  border: 1px solid rgba(230,57,70,0.15);
-  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  border: 1px solid rgba(230, 57, 70, 0.15);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
 }
-[data-theme="light"] .team-card:hover {
-  border-color: rgba(230,57,70,0.4);
-  box-shadow: 0 12px 32px rgba(230,57,70,0.2);
+[data-theme='light'] .team-card:hover {
+  border-color: rgba(230, 57, 70, 0.4);
+  box-shadow: 0 12px 32px rgba(230, 57, 70, 0.2);
 }
 
 /* ── Role Badges ── */
 .role-badge-organiser {
-  background: linear-gradient(135deg, #E63946 0%, #B71C1C 100%);
+  background: linear-gradient(135deg, #e63946 0%, #b71c1c 100%);
   color: #fff;
   padding: 3px 10px;
   border-radius: 20px;
@@ -132,9 +133,9 @@
   font-weight: 700;
 }
 .role-badge-core-team {
-  background: rgba(230,57,70,0.15);
-  border: 1px solid #E63946;
-  color: #FF5A5F;
+  background: rgba(230, 57, 70, 0.15);
+  border: 1px solid #e63946;
+  color: #ff5a5f;
   padding: 3px 10px;
   border-radius: 20px;
   font-size: 11px;

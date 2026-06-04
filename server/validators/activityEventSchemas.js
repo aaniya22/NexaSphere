@@ -29,4 +29,3 @@ export const activityEventSchema = z
       createdBy: data.createdBy,
     };
   });
-

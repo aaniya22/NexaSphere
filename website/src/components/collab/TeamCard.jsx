@@ -2,7 +2,7 @@ import React from 'react';
 
 export default function TeamCard({ team, onJoin }) {
   return (
-    <div 
+    <div
       className="glass-panel pop-in"
       style={{
         padding: '24px',
@@ -15,7 +15,7 @@ export default function TeamCard({ team, onJoin }) {
         flexDirection: 'column',
         gap: '16px',
         background: 'var(--surface)',
-        border: '1px solid rgba(255, 255, 255, 0.08)'
+        border: '1px solid rgba(255, 255, 255, 0.08)',
       }}
       onMouseEnter={(e) => {
         e.currentTarget.style.transform = 'translateY(-4px) scale(1.02)';
@@ -28,22 +28,34 @@ export default function TeamCard({ team, onJoin }) {
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
-          <h3 style={{ margin: 0, fontSize: '1.25rem', color: 'var(--t1)', fontWeight: 600 }}>{team.name}</h3>
-          <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: 'var(--c1)', fontWeight: 500 }}>
+          <h3 style={{ margin: 0, fontSize: '1.25rem', color: 'var(--t1)', fontWeight: 600 }}>
+            {team.name}
+          </h3>
+          <p
+            style={{
+              margin: '4px 0 0 0',
+              fontSize: '0.85rem',
+              color: 'var(--c1)',
+              fontWeight: 500,
+            }}
+          >
             {team.hackathonName}
           </p>
         </div>
         <div style={{ display: 'flex', gap: '6px' }}>
-          {team.vacantRoles?.map(role => (
-            <span key={role} style={{
-              background: 'rgba(204,17,17,0.1)',
-              color: 'var(--c1)',
-              padding: '4px 10px',
-              borderRadius: '20px',
-              fontSize: '0.75rem',
-              fontWeight: 600,
-              border: '1px solid rgba(204,17,17,0.2)'
-            }}>
+          {team.vacantRoles?.map((role) => (
+            <span
+              key={role}
+              style={{
+                background: 'rgba(204,17,17,0.1)',
+                color: 'var(--c1)',
+                padding: '4px 10px',
+                borderRadius: '20px',
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                border: '1px solid rgba(204,17,17,0.2)',
+              }}
+            >
               {role}
             </span>
           ))}
@@ -55,21 +67,24 @@ export default function TeamCard({ team, onJoin }) {
       </p>
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: 'auto' }}>
-        {team.techStack?.map(tech => (
-          <span key={tech} style={{
-            background: 'var(--surface-hover)',
-            color: 'var(--t2)',
-            padding: '4px 8px',
-            borderRadius: '6px',
-            fontSize: '0.75rem',
-            border: '1px solid rgba(255,255,255,0.05)'
-          }}>
+        {team.techStack?.map((tech) => (
+          <span
+            key={tech}
+            style={{
+              background: 'var(--surface-hover)',
+              color: 'var(--t2)',
+              padding: '4px 8px',
+              borderRadius: '6px',
+              fontSize: '0.75rem',
+              border: '1px solid rgba(255,255,255,0.05)',
+            }}
+          >
             {tech}
           </span>
         ))}
       </div>
 
-      <button 
+      <button
         onClick={() => onJoin(team)}
         style={{
           marginTop: '12px',
@@ -83,8 +98,8 @@ export default function TeamCard({ team, onJoin }) {
           cursor: 'pointer',
           transition: 'opacity 0.2s',
         }}
-        onMouseEnter={e => e.currentTarget.style.opacity = 0.9}
-        onMouseLeave={e => e.currentTarget.style.opacity = 1}
+        onMouseEnter={(e) => (e.currentTarget.style.opacity = 0.9)}
+        onMouseLeave={(e) => (e.currentTarget.style.opacity = 1)}
       >
         Request to Join
       </button>

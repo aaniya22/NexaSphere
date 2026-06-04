@@ -6,9 +6,9 @@ Activity pages — each domain's detail page with conducted and upcoming events.
 
 ## Files
 
-| File | Purpose |
-|---|---|
-| `ActivitiesPage.jsx` | Grid of all activity cards with navigation to detail pages |
+| File                     | Purpose                                                         |
+| ------------------------ | --------------------------------------------------------------- |
+| `ActivitiesPage.jsx`     | Grid of all activity cards with navigation to detail pages      |
 | `ActivityDetailPage.jsx` | Full detail page for one activity — conducted + upcoming events |
 
 ---

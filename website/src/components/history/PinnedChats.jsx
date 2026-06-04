@@ -42,23 +42,15 @@ const PinnedChats = ({ onSelectPrompt, workspace = 'default' }) => {
         <h4>📌 Pinned Conversations</h4>
         <span className="pin-count">{pinnedPrompts.length}</span>
       </div>
-      
+
       <div className="pinned-list">
         {pinnedPrompts.map((prompt) => (
-          <div
-            key={prompt.id}
-            className="pinned-item"
-            onClick={() => handleSelectPrompt(prompt)}
-          >
+          <div key={prompt.id} className="pinned-item" onClick={() => handleSelectPrompt(prompt)}>
             <div className="pinned-content">
               <p className="pinned-text">{prompt.userPrompt.substring(0, 45)}...</p>
               <span className="pinned-icon">📌</span>
             </div>
-            <button
-              className="unpin-btn"
-              title="Unpin"
-              onClick={(e) => handleUnpin(e, prompt.id)}
-            >
+            <button className="unpin-btn" title="Unpin" onClick={(e) => handleUnpin(e, prompt.id)}>
               ✕
             </button>
           </div>

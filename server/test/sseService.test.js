@@ -19,10 +19,12 @@ function buildCorsOriginOption() {
 async function withStreamServer(t) {
   const app = express();
 
-  app.use(cors({
-    origin: buildCorsOriginOption(),
-    credentials: false,
-  }));
+  app.use(
+    cors({
+      origin: buildCorsOriginOption(),
+      credentials: false,
+    })
+  );
 
   app.get('/stream', setupSSEHeaders, (req, res) => {
     res.end('ok');

@@ -47,7 +47,7 @@ export const parseStaticRoadmap = (
     if (sNode.docs) {
       resources.push({
         title: 'Official Documentation',
-        url: sNode.docs
+        url: sNode.docs,
       });
     }
     if (sNode.tutorials && Array.isArray(sNode.tutorials)) {
@@ -82,13 +82,13 @@ export const parseStaticRoadmap = (
       status: 'Not Started',
       notes,
       resources,
-      prerequisites
+      prerequisites,
     });
   });
 
   return {
     title: staticRoadmap.title,
     description: staticRoadmap.description,
-    nodes: parsedNodes
+    nodes: parsedNodes,
   };
 };

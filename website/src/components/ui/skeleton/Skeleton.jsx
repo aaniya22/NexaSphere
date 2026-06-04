@@ -18,10 +18,10 @@ export const Skeleton = ({
   height,
   className = '',
   count = 1,
-  style = {}
+  style = {},
 }) => {
   const elements = [];
-  
+
   for (let i = 0; i < count; i++) {
     elements.push(
       <span
@@ -32,7 +32,7 @@ export const Skeleton = ({
           height: height || '1em',
           borderRadius: rounded ? '50%' : undefined,
           display: 'inline-block',
-          ...style
+          ...style,
         }}
         aria-busy="true"
         aria-hidden="true"
@@ -44,7 +44,13 @@ export const Skeleton = ({
   return <>{elements}</>;
 };
 
-export const SkeletonText = ({ lines = 3, animate = true, lastLineWidth = '60%', gap = '8px', ...props }) => {
+export const SkeletonText = ({
+  lines = 3,
+  animate = true,
+  lastLineWidth = '60%',
+  gap = '8px',
+  ...props
+}) => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap }}>
       {Array.from({ length: lines }).map((_, i) => (

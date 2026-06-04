@@ -2,10 +2,10 @@
 
 ## Supported Versions
 
-| Version | Supported |
-|---|---|
-| Latest (`main` branch) | ✅ Yes |
-| Any previous release | ❌ No |
+| Version                | Supported |
+| ---------------------- | --------- |
+| Latest (`main` branch) | ✅ Yes    |
+| Any previous release   | ❌ No     |
 
 Only the current `main` branch receives security patches. Please ensure you are running the latest version before reporting.
 
@@ -21,10 +21,10 @@ Publicly disclosing a vulnerability before it is fixed puts the entire user comm
 
 Contact the maintainers privately through one of these channels:
 
-| Contact | Handle |
-|---|---|
-| Project Admin | [@S3DFX-CYBER](https://github.com/S3DFX-CYBER) |
-| Mentor | [@Ayushh-Sharmaa](https://github.com/Ayushh-Sharmaa) |
+| Contact       | Handle                                               |
+| ------------- | ---------------------------------------------------- |
+| Project Admin | [@S3DFX-CYBER](https://github.com/S3DFX-CYBER)       |
+| Mentor        | [@Ayushh-Sharmaa](https://github.com/Ayushh-Sharmaa) |
 
 Send a direct message on GitHub or reach out via the GSSoC Discord (project channel) with the subject line: **[SECURITY] NexaSphere — Vulnerability Report**.
 
@@ -42,12 +42,12 @@ Please provide as much of the following as possible:
 
 ## Response Timeline
 
-| Milestone | Target |
-|---|---|
-| Acknowledgement of report | Within **48 hours** |
-| Initial assessment and severity rating | Within **5 business days** |
-| Fix deployed to `main` | Depends on severity (Critical: 72h, High: 1 week, Medium/Low: next release) |
-| Public disclosure | After fix is confirmed deployed |
+| Milestone                              | Target                                                                      |
+| -------------------------------------- | --------------------------------------------------------------------------- |
+| Acknowledgement of report              | Within **48 hours**                                                         |
+| Initial assessment and severity rating | Within **5 business days**                                                  |
+| Fix deployed to `main`                 | Depends on severity (Critical: 72h, High: 1 week, Medium/Low: next release) |
+| Public disclosure                      | After fix is confirmed deployed                                             |
 
 We follow a **coordinated disclosure** policy. We will credit the reporter in the changelog unless they prefer to remain anonymous.
 

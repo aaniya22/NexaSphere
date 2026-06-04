@@ -58,7 +58,7 @@ export const createWorkspace = (name, color = '#6366f1') => {
   try {
     const workspaces = getWorkspaces();
     const id = `workspace_${Date.now()}`;
-    
+
     const newWorkspace = {
       id,
       name,

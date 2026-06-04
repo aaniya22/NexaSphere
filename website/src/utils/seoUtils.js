@@ -1,12 +1,15 @@
 /**
  * Generates standardized OpenGraph/SEO metadata for a user portfolio.
- * 
+ *
  * @param {Object} userData The fetched portfolio user data
  * @returns {Object} Standardized metadata fields
  */
 export function generatePortfolioMeta(userData) {
-  const defaultBase = (import.meta?.env?.VITE_API_BASE || window.location.origin).replace(/\/+$/, '');
-  
+  const defaultBase = (import.meta?.env?.VITE_API_BASE || window.location.origin).replace(
+    /\/+$/,
+    ''
+  );
+
   if (!userData) {
     return {
       title: 'NexaSphere Developer Portfolio',
@@ -16,22 +19,20 @@ export function generatePortfolioMeta(userData) {
       url: window.location.href,
       type: 'website',
       image: 'https://api.dicebear.com/7.x/pixel-art/svg?seed=fallback',
-      github: ''
+      github: '',
     };
   }
 
-  const { username, title, bio, skills, projects, customProjects, socialLinks, banner, avatar } = userData;
+  const { username, title, bio, skills, projects, customProjects, socialLinks, banner, avatar } =
+    userData;
   const name = username ? username : 'Developer';
   const jobTitle = title ? title : 'Tech Specialist & Developer';
   const fullTitle = `${name} | ${jobTitle} Portfolio | NexaSphere`;
-  
+
   // Calculate project count
-  const allProjects = [
-    ...(projects || []),
-    ...(customProjects || [])
-  ];
+  const allProjects = [...(projects || []), ...(customProjects || [])];
   const projectCount = allProjects.length;
-  
+
   // Generate description based on available data
   let desc = `Explore ${name}'s developer portfolio showcasing`;
   const parts = [];
@@ -50,14 +51,17 @@ export function generatePortfolioMeta(userData) {
   // Priority: Custom portfolio banner -> User avatar -> Generated fallback banner
   const generatedFallback = `https://api.dicebear.com/7.x/pixel-art/svg?seed=${username || 'fallback'}`;
   let bestImage = banner || avatar || generatedFallback;
-  
+
   // Ensure absolute URLs
   if (bestImage.startsWith('/')) {
     bestImage = `${defaultBase}${bestImage}`;
   }
 
   // Find keywords
-  const keywords = skills && skills.length > 0 ? skills.join(', ') : 'Developer, Portfolio, React, JavaScript, NexaSphere';
+  const keywords =
+    skills && skills.length > 0
+      ? skills.join(', ')
+      : 'Developer, Portfolio, React, JavaScript, NexaSphere';
 
   return {
     title: fullTitle,
@@ -67,6 +71,6 @@ export function generatePortfolioMeta(userData) {
     url: window.location.href,
     type: 'profile',
     image: bestImage,
-    github: socialLinks?.github || ''
+    github: socialLinks?.github || '',
   };
 }

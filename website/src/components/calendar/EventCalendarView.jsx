@@ -24,9 +24,7 @@ export default function EventCalendarView({ events = [], onEventClick }) {
         title: ev.title || ev.name || 'Event',
         date,
         backgroundColor:
-          ev.status === 'upcoming'
-            ? 'rgba(0,212,255,0.75)'
-            : 'rgba(123,111,255,0.55)',
+          ev.status === 'upcoming' ? 'rgba(0,212,255,0.75)' : 'rgba(123,111,255,0.55)',
         borderColor: 'transparent',
         textColor: '#fff',
         extendedProps: { raw: ev },

@@ -122,7 +122,7 @@ export function setupSSEHeaders(req, res, next) {
   // Do not overwrite it here, or multi-origin deployments break.
 
   res.write(': SSE connection established\n\n');
-  
+
   next();
 }
 

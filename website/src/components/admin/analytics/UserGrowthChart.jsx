@@ -60,7 +60,7 @@ const UserGrowthChart = React.memo(function UserGrowthChart({ data = [] }) {
                   border: '1px solid rgba(204, 17, 17, 0.28)',
                   borderRadius: '14px',
                   color: '#fff',
-                  boxShadow: '0 24px 60px rgba(0, 0, 0, 0.35)'
+                  boxShadow: '0 24px 60px rgba(0, 0, 0, 0.35)',
                 }}
               />
               <Area

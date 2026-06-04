@@ -33,8 +33,7 @@ const workshop = {
       shortName: 'Python Basics',
       date: 'Coming Soon',
       status: 'upcoming',
-      description:
-        'Get started with Python — the language powering AI, automation, and the web.',
+      description: 'Get started with Python — the language powering AI, automation, and the web.',
       tags: ['Python', 'Basics', 'Programming'],
     },
   ],
