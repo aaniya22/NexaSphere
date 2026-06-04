@@ -81,7 +81,7 @@ describe('Workspace Service', () => {
   it('should persist workspaces in localStorage', () => {
     initializeWorkspaces();
     const ws1 = createWorkspace('Workspace 1');
-    
+
     // Simulate page refresh
     const stored = JSON.parse(localStorage.getItem('nexasphere_workspaces'));
     expect(stored.find((w) => w.id === ws1.id)).toBeDefined();

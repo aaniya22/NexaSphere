@@ -1,17 +1,9 @@
-import React, { useState, useEffect } from "react";
-import {
-  getAllPrompts,
-  deletePrompt,
-  togglePinPrompt,
-} from "../../lib/promptStore";
-import { getWorkspaces } from "../../lib/workspaceService";
-import "./PromptHistorySidebar.css";
+import React, { useState, useEffect } from 'react';
+import { getAllPrompts, deletePrompt, togglePinPrompt } from '../../lib/promptStore';
+import { getWorkspaces } from '../../lib/workspaceService';
+import './PromptHistorySidebar.css';
 
-const PromptHistorySidebar = ({
-  isOpen,
-  onSelectPrompt,
-  currentWorkspace = "default",
-}) => {
+const PromptHistorySidebar = ({ isOpen, onSelectPrompt, currentWorkspace = 'default' }) => {
   const [prompts, setPrompts] = useState([]);
   const [workspaces, setWorkspaces] = useState([]);
   const [selectedWorkspace, setSelectedWorkspace] = useState(currentWorkspace);
@@ -31,7 +23,7 @@ const PromptHistorySidebar = ({
       const promptList = await getAllPrompts(selectedWorkspace);
       setPrompts(promptList);
     } catch (error) {
-      console.error("Error loading history:", error);
+      console.error('Error loading history:', error);
     } finally {
       setLoading(false);
     }
@@ -67,7 +59,7 @@ const PromptHistorySidebar = ({
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
 
-    if (diffMins < 1) return "just now";
+    if (diffMins < 1) return 'just now';
     if (diffMins < 60) return `${diffMins}m ago`;
     if (diffHours < 24) return `${diffHours}h ago`;
     if (diffDays < 7) return `${diffDays}d ago`;
@@ -75,13 +67,11 @@ const PromptHistorySidebar = ({
   };
 
   const getCurrentWorkspaceName = () => {
-    return (
-      workspaces.find((w) => w.id === selectedWorkspace)?.name || "General"
-    );
+    return workspaces.find((w) => w.id === selectedWorkspace)?.name || 'General';
   };
 
   return (
-    <div id="prompt-history-sidebar" className={`history-sidebar ${isOpen ? "open" : "closed"}`}>
+    <div id="prompt-history-sidebar" className={`history-sidebar ${isOpen ? 'open' : 'closed'}`}>
       <div className="sidebar-header">
         <h3>History</h3>
         <span className="workspace-badge">{getCurrentWorkspaceName()}</span>
@@ -115,24 +105,20 @@ const PromptHistorySidebar = ({
           prompts.map((prompt) => (
             <div
               key={prompt.id}
-              className={`prompt-item ${prompt.pinned ? "pinned" : ""}`}
+              className={`prompt-item ${prompt.pinned ? 'pinned' : ''}`}
               onClick={() => handleSelectPrompt(prompt)}
             >
               <div className="prompt-content">
-                <p className="prompt-text">
-                  {prompt.userPrompt.substring(0, 50)}...
-                </p>
-                <span className="prompt-time">
-                  {formatTime(prompt.timestamp)}
-                </span>
+                <p className="prompt-text">{prompt.userPrompt.substring(0, 50)}...</p>
+                <span className="prompt-time">{formatTime(prompt.timestamp)}</span>
               </div>
               <div className="prompt-actions">
                 <button
                   className="action-btn pin-btn"
-                  title={prompt.pinned ? "Unpin" : "Pin"}
+                  title={prompt.pinned ? 'Unpin' : 'Pin'}
                   onClick={(e) => handlePinPrompt(e, prompt.id)}
                 >
-                  {prompt.pinned ? "📌" : "📍"}
+                  {prompt.pinned ? '📌' : '📍'}
                 </button>
                 <button
                   className="action-btn delete-btn"

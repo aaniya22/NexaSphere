@@ -1,5 +1,22 @@
-dist
-build
-coverage
-node_modules
+# Dependency Directories
+node_modules/
+bower_components/
+
+# Build Artifacts
+dist/
+build/
+.next/
+out/
+coverage/
+.swc/
+.antigravitycli/
+
+# Public Assets
+public/
+website/public/
+admin-dashboard/public/
+
+# Configuration Files
 package-lock.json
+pnpm-lock.yaml
+yarn.lock

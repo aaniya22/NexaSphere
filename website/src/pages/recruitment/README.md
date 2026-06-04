@@ -6,23 +6,23 @@ In-website **NexaSphere Core Team Application Form** — 7-step form that collec
 
 ## Files
 
-| File | Purpose |
-|---|---|
+| File                  | Purpose                                                                  |
+| --------------------- | ------------------------------------------------------------------------ |
 | `RecruitmentPage.jsx` | Full 7-step application form + Roles & Responsibilities slide-over modal |
 
 ---
 
 ## Form Steps
 
-| Step | Title | Key Fields |
-|---|---|---|
-| 0 | About NexaSphere | Informational — no input |
-| 1 | Personal Information | Full Name, College Email, WhatsApp, Year, Branch, Section |
-| 2 | Role & Domain Preference | Role applied for, Areas of interest (multi-select) |
-| 3 | Skills & Experience | Programming skills, Communication languages, Campus experience, GitHub |
-| 4 | Commitment & Availability | Hours/week, Campus attendance, Assessment consent |
-| 5 | Motivation & Statement | Why join, Anything else |
-| 6 | Declaration & Consent | 3 agreement checkboxes + 1 disagree (blocks submission) |
+| Step | Title                     | Key Fields                                                             |
+| ---- | ------------------------- | ---------------------------------------------------------------------- |
+| 0    | About NexaSphere          | Informational — no input                                               |
+| 1    | Personal Information      | Full Name, College Email, WhatsApp, Year, Branch, Section              |
+| 2    | Role & Domain Preference  | Role applied for, Areas of interest (multi-select)                     |
+| 3    | Skills & Experience       | Programming skills, Communication languages, Campus experience, GitHub |
+| 4    | Commitment & Availability | Hours/week, Campus attendance, Assessment consent                      |
+| 5    | Motivation & Statement    | Why join, Anything else                                                |
+| 6    | Declaration & Consent     | 3 agreement checkboxes + 1 disagree (blocks submission)                |
 
 ---
 
@@ -38,10 +38,10 @@ In-website **NexaSphere Core Team Application Form** — 7-step form that collec
 
 ## Google Sheets Integration
 
-| Setting | Value |
-|---|---|
-| Constant | `APPS_SCRIPT_URL` (line ~883 in `RecruitmentPage.jsx`) |
-| Sheet tab | `Responses` |
+| Setting   | Value                                                         |
+| --------- | ------------------------------------------------------------- |
+| Constant  | `APPS_SCRIPT_URL` (line ~883 in `RecruitmentPage.jsx`)        |
+| Sheet tab | `Responses`                                                   |
 | Dedup key | College email (stored in `localStorage: ns_submitted_emails`) |
 
 The script is a **separate** Apps Script project from the Membership form.
@@ -61,5 +61,6 @@ A `RolesGuideModal` slide-over panel (renders at z-index 99999) lists all Core T
 ## Success Screen
 
 After submission, the user sees links to:
+
 - 💬 Core Team Screening Room (WhatsApp group)
 - 🌐 NexaSphere Community (WhatsApp group)

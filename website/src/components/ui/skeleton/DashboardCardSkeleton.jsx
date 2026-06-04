@@ -16,7 +16,7 @@ export const DashboardCardSkeleton = ({ count = 1 }) => {
             flexDirection: 'column',
             gap: '16px',
             marginBottom: '16px',
-            pointerEvents: 'none'
+            pointerEvents: 'none',
           }}
           aria-busy="true"
         >
@@ -27,9 +27,9 @@ export const DashboardCardSkeleton = ({ count = 1 }) => {
               <Skeleton width="40%" height="0.9em" />
             </div>
           </div>
-          
+
           <SkeletonText lines={3} gap="8px" />
-          
+
           <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
             <Skeleton width="80px" height="32px" rounded={false} style={{ borderRadius: '6px' }} />
             <Skeleton width="80px" height="32px" rounded={false} style={{ borderRadius: '6px' }} />

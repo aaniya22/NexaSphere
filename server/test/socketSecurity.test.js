@@ -18,7 +18,8 @@ const createMockSocket = (id = 'test-socket-123') => {
 };
 
 test('Security Audit & Validation: Socket Identification Hardening', async (t) => {
-  const { _onConnection, getConnectedUsersCount, getConnectedUsers, _clearConnectedUsers } = await import('../config/socket.js');
+  const { _onConnection, getConnectedUsersCount, getConnectedUsers, _clearConnectedUsers } =
+    await import('../config/socket.js');
 
   await t.test('Scenario 1: Valid user identifies and disconnects cleanly', () => {
     _clearConnectedUsers();
@@ -81,7 +82,7 @@ test('Security Audit & Validation: Socket Identification Hardening', async (t) =
     socket.emit('user:identify', { userId: 'user-1', email: 'u1@example.com' }); // 1
     socket.emit('user:identify', { userId: 'user-1', email: 'u1@example.com' }); // 2
     socket.emit('user:identify', { userId: 'user-1', email: 'u1@example.com' }); // 3
-    
+
     assert.equal(socket.disconnected, false);
 
     // 4th call triggers disconnect rate limit

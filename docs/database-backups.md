@@ -5,6 +5,7 @@ This document outlines the architecture, retention policy, and disaster recovery
 ## Backup Architecture
 
 Our backup system automates the following daily flow:
+
 1. **Schedule**: A GitHub Actions workflow (`.github/workflows/database-backup.yml`) triggers daily at 02:00 UTC.
 2. **Database Dump**: `pg_dump` is used to create a clean, timestamped SQL dump.
 3. **Compression**: The raw SQL file is compressed using `gzip`.
@@ -16,6 +17,7 @@ Our backup system automates the following daily flow:
 ## Retention Policy
 
 To manage storage costs while ensuring long-term recoverability, we implement the following retention strategy:
+
 - **Daily Backups**: Kept for 30 days.
 - **Weekly Backups**: (Sunday backups) Kept for 12 weeks.
 - **Monthly Backups**: (1st of the month) Kept for 12 months.
@@ -25,7 +27,9 @@ To manage storage costs while ensuring long-term recoverability, we implement th
 If the production database is compromised or data is lost, follow these steps to restore the latest backup.
 
 ### Prerequisites
+
 You will need:
+
 - The encrypted backup file (`.sql.gz.enc`) downloaded from the S3 bucket.
 - The `ENCRYPTION_KEY` (stored in GitHub Secrets or the team password manager).
 - The target `DATABASE_URL` for the database you are restoring to.
@@ -35,12 +39,14 @@ You will need:
 
 1. **Locate the Restore Script**
    Navigate to the root of the NexaSphere repository:
+
    ```bash
    cd scripts
    ```
 
 2. **Set Environment Variables**
    Export the required secrets in your terminal session:
+
    ```bash
    export DATABASE_URL="postgresql://user:pass@host:port/dbname"
    export ENCRYPTION_KEY="your-secure-encryption-key"
@@ -48,6 +54,7 @@ You will need:
 
 3. **Run the Restore Script**
    Pass the path to your downloaded backup file to the restore script:
+
    ```bash
    ./restore-backup.sh /path/to/downloaded-backup-2026-06-01-0200.sql.gz.enc
    ```

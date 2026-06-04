@@ -1,11 +1,11 @@
-import { useEffect } from "react";
+import { useEffect } from 'react';
 
 const MAGNETIC_DIST_THRESHOLD = 88;
 const MAGNETIC_INTENSITY = 0.32;
 const ACTIVITY_CARD_PARALLAX_MAX = 6;
 const ACTIVITY_CARD_DIST_RATIO = 0.9;
 const INTERSECTION_THRESHOLD = 0.09;
-const ROOT_MARGIN_BOTTOM = "0px 0px -36px 0px";
+const ROOT_MARGIN_BOTTOM = '0px 0px -36px 0px';
 
 export function useInteractionEffects(cinDone, page) {
   useEffect(() => {
@@ -15,7 +15,7 @@ export function useInteractionEffects(cinDone, page) {
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            entry.target.classList.add("fired");
+            entry.target.classList.add('fired');
             observer.unobserve(entry.target);
           }
         });
@@ -25,7 +25,7 @@ export function useInteractionEffects(cinDone, page) {
 
     document
       .querySelectorAll(
-        ".pop-in, .pop-left, .pop-right, .pop-scale, .pop-flip, .pop-word, .pop-num"
+        '.pop-in, .pop-left, .pop-right, .pop-scale, .pop-flip, .pop-word, .pop-num'
       )
       .forEach((el) => observer.observe(el));
 
@@ -35,8 +35,8 @@ export function useInteractionEffects(cinDone, page) {
       if (!ticking) {
         window.requestAnimationFrame(() => {
           // Query fresh elements to ensure dynamically rendered cards are included
-          const magneticButtons = document.querySelectorAll(".mag-btn");
-          const activityCards = document.querySelectorAll(".activity-card");
+          const magneticButtons = document.querySelectorAll('.mag-btn');
+          const activityCards = document.querySelectorAll('.activity-card');
 
           magneticButtons.forEach((btn) => {
             const rect = btn.getBoundingClientRect();
@@ -46,11 +46,10 @@ export function useInteractionEffects(cinDone, page) {
 
             if (dist < MAGNETIC_DIST_THRESHOLD) {
               const factor =
-                ((MAGNETIC_DIST_THRESHOLD - dist) / MAGNETIC_DIST_THRESHOLD) *
-                MAGNETIC_INTENSITY;
+                ((MAGNETIC_DIST_THRESHOLD - dist) / MAGNETIC_DIST_THRESHOLD) * MAGNETIC_INTENSITY;
               btn.style.transform = `translate(${dx * factor}px, ${dy * factor}px)`;
             } else {
-              btn.style.transform = "";
+              btn.style.transform = '';
             }
           });
 
@@ -61,23 +60,15 @@ export function useInteractionEffects(cinDone, page) {
             const dx = e.clientX - cx;
             const dy = e.clientY - cy;
             const dist = Math.sqrt(dx * dx + dy * dy);
-            const maxDist =
-              Math.max(rect.width, rect.height) * ACTIVITY_CARD_DIST_RATIO;
+            const maxDist = Math.max(rect.width, rect.height) * ACTIVITY_CARD_DIST_RATIO;
 
             if (dist < maxDist) {
-              const intensity =
-                (1 - dist / maxDist) * ACTIVITY_CARD_PARALLAX_MAX;
-              card.style.setProperty(
-                "--rx",
-                ((dx / rect.width) * intensity).toFixed(2)
-              );
-              card.style.setProperty(
-                "--ry",
-                ((-dy / rect.height) * intensity).toFixed(2)
-              );
+              const intensity = (1 - dist / maxDist) * ACTIVITY_CARD_PARALLAX_MAX;
+              card.style.setProperty('--rx', ((dx / rect.width) * intensity).toFixed(2));
+              card.style.setProperty('--ry', ((-dy / rect.height) * intensity).toFixed(2));
             } else {
-              card.style.setProperty("--rx", "0");
-              card.style.setProperty("--ry", "0");
+              card.style.setProperty('--rx', '0');
+              card.style.setProperty('--ry', '0');
             }
           });
 
@@ -87,11 +78,11 @@ export function useInteractionEffects(cinDone, page) {
       }
     };
 
-    window.addEventListener("mousemove", handleMouseMove, { passive: true });
+    window.addEventListener('mousemove', handleMouseMove, { passive: true });
 
     return () => {
       observer.disconnect();
-      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener('mousemove', handleMouseMove);
     };
   }, [cinDone, page]);
 }

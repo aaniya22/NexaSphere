@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
-import { useRegisterSW } from "virtual:pwa-register/react";
-import { Wifi, WifiOff, RefreshCw, X, Download } from "lucide-react";
-import "../../styles/pwa.css";
+import { useState, useEffect } from 'react';
+import { useRegisterSW } from 'virtual:pwa-register/react';
+import { Wifi, WifiOff, RefreshCw, X, Download } from 'lucide-react';
+import '../../styles/pwa.css';
 
 export default function PWAHandler() {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -14,10 +14,10 @@ export default function PWAHandler() {
     updateServiceWorker,
   } = useRegisterSW({
     onRegistered(r) {
-      console.log("NexaSphere Service Worker registered successfully:", r);
+      console.log('NexaSphere Service Worker registered successfully:', r);
     },
     onRegisterError(error) {
-      console.error("NexaSphere Service Worker registration failed:", error);
+      console.error('NexaSphere Service Worker registration failed:', error);
     },
   });
 
@@ -46,12 +46,12 @@ export default function PWAHandler() {
       setIsDismissingOnline(false);
     };
 
-    window.addEventListener("online", handleOnline);
-    window.addEventListener("offline", handleOffline);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
 
     return () => {
-      window.removeEventListener("online", handleOnline);
-      window.removeEventListener("offline", handleOffline);
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
     };
   }, []);
 
@@ -69,11 +69,7 @@ export default function PWAHandler() {
       <div className="pwa-toast-container top-center">
         {/* Offline Banner */}
         {!isOnline && (
-          <div
-            className="pwa-conn-banner offline"
-            role="alert"
-            aria-live="assertive"
-          >
+          <div className="pwa-conn-banner offline" role="alert" aria-live="assertive">
             <div className="pwa-conn-status-dot" />
             <WifiOff size={16} className="pwa-toast-icon-svg" />
             <span className="pwa-conn-message">
@@ -85,15 +81,13 @@ export default function PWAHandler() {
         {/* Online Restore Banner */}
         {isOnline && showOnlineRestore && (
           <div
-            className={`pwa-conn-banner online ${isDismissingOnline ? "dismissing" : ""}`}
+            className={`pwa-conn-banner online ${isDismissingOnline ? 'dismissing' : ''}`}
             role="status"
             aria-live="polite"
           >
             <div className="pwa-conn-status-dot" />
             <Wifi size={16} className="pwa-toast-icon-svg" />
-            <span className="pwa-conn-message">
-              Internet connection restored. Sync active.
-            </span>
+            <span className="pwa-conn-message">Internet connection restored. Sync active.</span>
           </div>
         )}
       </div>
@@ -110,19 +104,15 @@ export default function PWAHandler() {
           >
             <div className="pwa-toast-header">
               <div className="pwa-toast-icon warning">
-                <RefreshCw
-                  size={20}
-                  className="animate-spin"
-                  style={{ animationDuration: "6s" }}
-                />
+                <RefreshCw size={20} className="animate-spin" style={{ animationDuration: '6s' }} />
               </div>
               <div className="pwa-toast-body">
                 <h4 id="pwa-update-title" className="pwa-toast-title">
                   New Update Available!
                 </h4>
                 <p id="pwa-update-desc" className="pwa-toast-description">
-                  A premium new version of NexaSphere is ready. Refresh now to
-                  experience the latest features.
+                  A premium new version of NexaSphere is ready. Refresh now to experience the latest
+                  features.
                 </p>
               </div>
             </div>
@@ -162,18 +152,18 @@ export default function PWAHandler() {
                   Offline Ready!
                 </h4>
                 <p id="pwa-ready-desc" className="pwa-toast-description">
-                  NexaSphere has been fully cached. You can now access all core
-                  pages even without internet connection!
+                  NexaSphere has been fully cached. You can now access all core pages even without
+                  internet connection!
                 </p>
               </div>
               <button
                 onClick={closeOfflineReadyPrompt}
                 style={{
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                  padding: "4px",
-                  color: "var(--t3)",
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: '4px',
+                  color: 'var(--t3)',
                 }}
                 aria-label="Close offline notification"
               >

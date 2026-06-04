@@ -4,7 +4,11 @@
  */
 
 import express from 'express';
-import { addSSEClient, setupSSEHeaders, getConnectedSSEClientsCount } from '../services/sseService.js';
+import {
+  addSSEClient,
+  setupSSEHeaders,
+  getConnectedSSEClientsCount,
+} from '../services/sseService.js';
 import { adminAuthMiddleware } from '../middleware/adminAuthMiddleware.js';
 import logger from '../utils/logger.js';
 

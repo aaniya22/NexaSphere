@@ -37,7 +37,7 @@
 // ── CONFIG ────────────────────────────────────────────────────────────────────
 // Leave SPREADSHEET_ID empty ('') to use the spreadsheet this script is bound to.
 // If you want to write to a DIFFERENT spreadsheet, paste its ID here.
-var SPREADSHEET_ID = '';          // e.g. '1bUtbaHwA7_ooqE4pNn3B74uE3hRQi1e7...'
+var SPREADSHEET_ID = ''; // e.g. '1bUtbaHwA7_ooqE4pNn3B74uE3hRQi1e7...'
 
 var SHEET_TAB_NAME = 'Membership'; // Tab name inside the sheet
 const TURNSTILE_SECRET_KEY = 'your_cloudflare_secret_key_here';
@@ -106,7 +106,7 @@ function doGet(e) {
     service: 'NexaSphere Membership API',
     version: '1.1',
     sheet: SHEET_TAB_NAME,
-    status: 'Ready'
+    status: 'Ready',
   });
 }
 
@@ -122,7 +122,7 @@ function doPost(e) {
     }
 
     var data = JSON.parse(raw);
-    
+
     // Handle admin requests (getResponses) with token verification
     if (data.action === 'getResponses') {
       var token = data.token;
@@ -141,7 +141,9 @@ function doPost(e) {
         for (var i = 1; i < rows.length; i++) {
           var obj = {};
           for (var j = 0; j < headers.length; j++) {
-            var key = headers[j].toString().toLowerCase()
+            var key = headers[j]
+              .toString()
+              .toLowerCase()
               .replace(/[^a-z0-9]+(.)/g, (m, chr) => chr.toUpperCase())
               .replace(/[^a-z0-9]/gi, '');
             obj[key] = rows[i][j];
@@ -152,7 +154,7 @@ function doPost(e) {
         return _respond({
           ok: true,
           count: responses.length,
-          responses: responses
+          responses: responses,
         });
       } catch (err) {
         return _respond({ ok: false, error: err.message });
@@ -163,37 +165,35 @@ function doPost(e) {
     if (!verifyTurnstileToken(data.turnstileToken)) {
       return _respond({
         ok: false,
-        error: 'CAPTCHA verification failed'
+        error: 'CAPTCHA verification failed',
       });
     }
 
     // Handle form submissions (original behavior)
-    var now  = new Date().toISOString();
+    var now = new Date().toISOString();
     var sheet = getOrCreateSheet();
 
     var row = [
       now,
-      data.fullName    || '',
-      data.collegeEmail|| '',
-      data.rollNumber  || '',
-      data.course      || '',
-      data.branch      || '',
-      data.section     || '',
-      data.semester    || '',
-      data.whatsapp    || '',
-      Array.isArray(data.groups)
-        ? data.groups.join(', ')
-        : (data.groups || ''),
-      data.whyJoin     || '',
+      data.fullName || '',
+      data.collegeEmail || '',
+      data.rollNumber || '',
+      data.course || '',
+      data.branch || '',
+      data.section || '',
+      data.semester || '',
+      data.whatsapp || '',
+      Array.isArray(data.groups) ? data.groups.join(', ') : data.groups || '',
+      data.whyJoin || '',
       data.submittedAt || now,
-      data.userAgent   || '',
+      data.userAgent || '',
     ];
 
     sheet.appendRow(row);
 
     // ── Send confirmation receipt email to the applicant ──────────────────
     var recipientEmail = data.collegeEmail || '';
-    var recipientName  = data.fullName      || 'NexaSphere Member';
+    var recipientName = data.fullName || 'NexaSphere Member';
 
     if (recipientEmail && recipientEmail.indexOf('@') > -1) {
       try {
@@ -201,7 +201,7 @@ function doPost(e) {
 
         var groupsText = Array.isArray(data.groups)
           ? data.groups.join(', ')
-          : (data.groups || 'Not specified');
+          : data.groups || 'Not specified';
 
         var htmlBody = [
           '<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#0f0f1a;color:#e2e8f0;border-radius:12px;overflow:hidden;border:1px solid #1e293b;">',
@@ -211,17 +211,29 @@ function doPost(e) {
           '    <p style="margin:6px 0 0;color:rgba(255,255,255,.8);font-size:.9rem;">GL Bajaj Group of Institutions, Mathura</p>',
           '  </div>',
           '  <div style="padding:28px 32px;">',
-          '    <p style="font-size:1rem;color:#e2e8f0;margin-top:0;">Hi <strong>' + recipientName + '</strong>,</p>',
+          '    <p style="font-size:1rem;color:#e2e8f0;margin-top:0;">Hi <strong>' +
+            recipientName +
+            '</strong>,</p>',
           '    <p style="color:#94a3b8;line-height:1.7;">',
           '      Your <strong style="color:#00d4ff;">NexaSphere Membership Form</strong> has been successfully received. 🎉<br/>',
           '      Here is a summary of your submission:',
           '    </p>',
           '    <table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:.88rem;">',
-          '      <tr style="border-bottom:1px solid #1e293b;"><td style="padding:8px 4px;color:#64748b;width:42%;">Full Name</td><td style="padding:8px 4px;color:#e2e8f0;font-weight:600;">' + (data.fullName || '—') + '</td></tr>',
-          '      <tr style="border-bottom:1px solid #1e293b;"><td style="padding:8px 4px;color:#64748b;">Roll Number</td><td style="padding:8px 4px;color:#e2e8f0;font-weight:600;">' + (data.rollNumber || '—') + '</td></tr>',
-          '      <tr style="border-bottom:1px solid #1e293b;"><td style="padding:8px 4px;color:#64748b;">Branch</td><td style="padding:8px 4px;color:#e2e8f0;font-weight:600;">' + (data.branch || '—') + '</td></tr>',
-          '      <tr style="border-bottom:1px solid #1e293b;"><td style="padding:8px 4px;color:#64748b;">Semester</td><td style="padding:8px 4px;color:#e2e8f0;font-weight:600;">' + (data.semester || '—') + '</td></tr>',
-          '      <tr><td style="padding:8px 4px;color:#64748b;">Groups Selected</td><td style="padding:8px 4px;color:#e2e8f0;font-weight:600;">' + groupsText + '</td></tr>',
+          '      <tr style="border-bottom:1px solid #1e293b;"><td style="padding:8px 4px;color:#64748b;width:42%;">Full Name</td><td style="padding:8px 4px;color:#e2e8f0;font-weight:600;">' +
+            (data.fullName || '—') +
+            '</td></tr>',
+          '      <tr style="border-bottom:1px solid #1e293b;"><td style="padding:8px 4px;color:#64748b;">Roll Number</td><td style="padding:8px 4px;color:#e2e8f0;font-weight:600;">' +
+            (data.rollNumber || '—') +
+            '</td></tr>',
+          '      <tr style="border-bottom:1px solid #1e293b;"><td style="padding:8px 4px;color:#64748b;">Branch</td><td style="padding:8px 4px;color:#e2e8f0;font-weight:600;">' +
+            (data.branch || '—') +
+            '</td></tr>',
+          '      <tr style="border-bottom:1px solid #1e293b;"><td style="padding:8px 4px;color:#64748b;">Semester</td><td style="padding:8px 4px;color:#e2e8f0;font-weight:600;">' +
+            (data.semester || '—') +
+            '</td></tr>',
+          '      <tr><td style="padding:8px 4px;color:#64748b;">Groups Selected</td><td style="padding:8px 4px;color:#e2e8f0;font-weight:600;">' +
+            groupsText +
+            '</td></tr>',
           '    </table>',
           '    <div style="background:#1e293b;border-left:3px solid #7b6fff;border-radius:6px;padding:14px 18px;margin:20px 0;">',
           '      <strong style="color:#a78bfa;display:block;margin-bottom:6px;font-size:.82rem;letter-spacing:.06em;text-transform:uppercase;">What Happens Next</strong>',
@@ -281,7 +293,6 @@ function doPost(e) {
     // ─────────────────────────────────────────────────────────────────────
 
     return _respond({ ok: true, message: 'Membership response recorded.' });
-
   } catch (err) {
     return _respond({ ok: false, error: err.message });
   }
@@ -289,23 +300,23 @@ function doPost(e) {
 
 // ── Helper ────────────────────────────────────────────────────────────────────
 function _respond(obj) {
-  return ContentService
-    .createTextOutput(JSON.stringify(obj))
-    .setMimeType(ContentService.MimeType.JSON);
+  return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(
+    ContentService.MimeType.JSON
+  );
 }
 
 function verifyTurnstileToken(token) {
   if (!token) return false;
 
-  const url = "https://challenges.cloudflare.com/turnstile/v0/siteverify";
+  const url = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
   const payload = {
-    "secret": TURNSTILE_SECRET_KEY,
-    "response": token
+    secret: TURNSTILE_SECRET_KEY,
+    response: token,
   };
 
   const options = {
-    "method": "post",
-    "payload": payload
+    method: 'post',
+    payload: payload,
   };
 
   try {
@@ -313,7 +324,7 @@ function verifyTurnstileToken(token) {
     const json = JSON.parse(response.getContentText());
     return json.success === true;
   } catch (e) {
-    console.error("Turnstile verification failed: " + e.toString());
+    console.error('Turnstile verification failed: ' + e.toString());
     return false;
   }
 }

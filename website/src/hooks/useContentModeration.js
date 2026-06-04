@@ -22,6 +22,6 @@ export function useContentModeration() {
   return {
     moderateContent,
     moderating,
-    lastResult
+    lastResult,
   };
 }

@@ -3,7 +3,9 @@ import { wrapAsync } from '../middleware/asyncHandler.js';
 import { NotFoundError } from '../utils/errors.js';
 
 function toSafeString(value, max = 4000) {
-  return String(value ?? '').trim().slice(0, max);
+  return String(value ?? '')
+    .trim()
+    .slice(0, max);
 }
 
 function validateWhatsApp(str) {
@@ -13,7 +15,9 @@ function validateWhatsApp(str) {
 }
 
 function validateSection(str) {
-  const v = String(str || '').trim().toUpperCase();
+  const v = String(str || '')
+    .trim()
+    .toUpperCase();
   if (!/^[A-Z]$/.test(v)) throw new Error('Section must be a single letter (A-Z)');
   return v;
 }
@@ -51,7 +55,11 @@ export const adminAddCoreTeamMember = wrapAsync(async (req, res) => {
 
   const saved = await coreTeamService.addMember(member);
   const adminEmail = req.adminSession?.username || 'admin';
-  req.app?.emit?.('CORE_TEAM_MEMBER_ADDED', { adminEmail, member: saved, timestamp: new Date().toISOString() });
+  req.app?.emit?.('CORE_TEAM_MEMBER_ADDED', {
+    adminEmail,
+    member: saved,
+    timestamp: new Date().toISOString(),
+  });
   return res.status(201).json(saved);
 });
 
@@ -61,4 +69,3 @@ export const adminDeleteCoreTeamMember = wrapAsync(async (req, res) => {
   if (!deleted) throw new NotFoundError('Member not found');
   return res.json({ ok: true });
 });
-

@@ -15,7 +15,10 @@ function buildPaginationMeta(page, limit, total) {
 export const listActivityEvents = wrapAsync(async (req, res) => {
   const activityKey = String(req.params.activityKey || '').trim();
   const { page, limit } = parsePagination(req.query);
-  const { rows, total } = await activityEventsService.listActivityEvents(activityKey, { page, limit });
+  const { rows, total } = await activityEventsService.listActivityEvents(activityKey, {
+    page,
+    limit,
+  });
   return res.json({ events: rows, pagination: buildPaginationMeta(page, limit, total) });
 });
 

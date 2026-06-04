@@ -64,11 +64,17 @@ function makeActivityAuthStore() {
 // ---------------------------------------------------------------------------
 
 test('timingSafeStringEqual returns true for identical strings', () => {
-  assert.equal(timingSafeStringEqual('correct-horse-battery-Staple1!', 'correct-horse-battery-Staple1!'), true);
+  assert.equal(
+    timingSafeStringEqual('correct-horse-battery-Staple1!', 'correct-horse-battery-Staple1!'),
+    true
+  );
 });
 
 test('timingSafeStringEqual returns false for strings differing in last character', () => {
-  assert.equal(timingSafeStringEqual('correct-horse-battery-Staple1!', 'correct-horse-battery-Staple1@'), false);
+  assert.equal(
+    timingSafeStringEqual('correct-horse-battery-Staple1!', 'correct-horse-battery-Staple1@'),
+    false
+  );
 });
 
 test('timingSafeStringEqual returns false for strings differing in first character', () => {

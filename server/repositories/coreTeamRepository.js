@@ -7,7 +7,9 @@ function normalizePhone(value) {
 export const coreTeamRepository = {
   async listMembers() {
     return withDb(async (client) => {
-      const { rows } = await client.query('select id, name, email, phone, created_at from core_team_members order by created_at desc');
+      const { rows } = await client.query(
+        'select id, name, email, phone, created_at from core_team_members order by created_at desc'
+      );
       return rows;
     });
   },
@@ -44,4 +46,3 @@ export const coreTeamRepository = {
     });
   },
 };
-

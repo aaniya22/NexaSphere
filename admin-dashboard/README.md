@@ -12,8 +12,8 @@ npm run dev                 # runs on http://localhost:5174
 
 ## Environment Variables
 
-| Variable | Description |
-|----------|-------------|
+| Variable        | Description                                         |
+| --------------- | --------------------------------------------------- |
 | `VITE_API_BASE` | Java backend URL (e.g. `https://api.nexasphere.in`) |
 
 ## Deployment (Vercel)
@@ -33,16 +33,18 @@ Also add the admin dashboard URL to `CORS_ORIGIN` in the Java backend environmen
 - Event-driven UI — no page reloads on mutations
 - Skeleton loaders, toast notifications, accessible confirmation modals
 - Auto-redirect to login on session expiry
+
 ## 👨‍💼 NexaSphere Admin Dashboard
 
 ## Standalone React + Vite Application
 
- > **Complete admin interface** for managing NexaSphere community events,
- > activities and team members
+> **Complete admin interface** for managing NexaSphere community events,
+> activities and team members
 
 <br/>
 
 ---
+
 ## 📌 Overview
 
 <br/>
@@ -72,6 +74,7 @@ Dedicated admin application providing:
 <br/>
 
 ---
+
 ## ⚙️ Requirements
 
 <br/>
@@ -144,6 +147,7 @@ Credentials are configured via environment variables on the backend only. Set `A
 <br/>
 
 ---
+
 ## 📋 Environment Variables
 
 <br/>
@@ -239,7 +243,6 @@ admin-dashboard/
 <br/>
 
 ---
-
 
 ## 🎯 Core Features
 
@@ -451,6 +454,7 @@ DELETE /api/admin/core-team/{id}   ← Delete member
 <br/>
 
 ---
+
 ## 🧪 Testing
 
 <br/>
@@ -480,7 +484,6 @@ npm run test EventForm.test.jsx
 <br/>
 
 ---
-
 
 ## 🚀 Deployment Guide
 
@@ -738,6 +741,7 @@ export default function EventForm({ onSubmit, event }) {
 <br/>
 
 ---
+
 ## 🚀 Performance Tips
 
 <br/>

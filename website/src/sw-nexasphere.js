@@ -13,13 +13,13 @@
 // Service Worker global scope — self, clients, caches are valid SW globals
 
 import { clientsClaim } from 'workbox-core';
-import { precacheAndRoute, cleanupOutdatedCaches, createHandlerBoundToURL } from 'workbox-precaching';
-import { registerRoute, NavigationRoute } from 'workbox-routing';
 import {
-  StaleWhileRevalidate,
-  CacheFirst,
-  NetworkFirst,
-} from 'workbox-strategies';
+  precacheAndRoute,
+  cleanupOutdatedCaches,
+  createHandlerBoundToURL,
+} from 'workbox-precaching';
+import { registerRoute, NavigationRoute } from 'workbox-routing';
+import { StaleWhileRevalidate, CacheFirst, NetworkFirst } from 'workbox-strategies';
 import { ExpirationPlugin } from 'workbox-expiration';
 import { CacheableResponsePlugin } from 'workbox-cacheable-response';
 
@@ -45,9 +45,9 @@ precacheAndRoute(self.__WB_MANIFEST);
 const navigationHandler = createHandlerBoundToURL('/index.html');
 const navigationRoute = new NavigationRoute(navigationHandler, {
   denylist: [
-    /^\/api\//,       // API routes — never serve index.html
-    /^\/socket\.io/,  // WebSocket
-    /^\/_/,           // Internal paths
+    /^\/api\//, // API routes — never serve index.html
+    /^\/socket\.io/, // WebSocket
+    /^\/_/, // Internal paths
     /\/offline\.html$/, // The offline page itself
   ],
 });
@@ -175,14 +175,12 @@ registerRoute(
 self.addEventListener('sync', (event) => {
   if (event.tag === 'ns-bg-sync') {
     event.waitUntil(
-      self.clients
-        .matchAll({ type: 'window', includeUncontrolled: false })
-        .then((clients) => {
-          clients.forEach((client) => {
-            client.postMessage({ type: 'NS_TRIGGER_SYNC' });
-          });
-          console.log(`[SW] Background sync triggered — notified ${clients.length} client(s).`);
-        })
+      self.clients.matchAll({ type: 'window', includeUncontrolled: false }).then((clients) => {
+        clients.forEach((client) => {
+          client.postMessage({ type: 'NS_TRIGGER_SYNC' });
+        });
+        console.log(`[SW] Background sync triggered — notified ${clients.length} client(s).`);
+      })
     );
   }
 });

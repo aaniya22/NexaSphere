@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
 - GSSoC'26 automation suite: 39 GitHub Actions workflows covering assignment, PR validation, spam detection, mentor tracking, and leaderboards
 - `mentor:Ayushh-Sharmaa` auto-label on review request, review submission, and issue assignment
 - Mentor label fallback on merged PRs and closed issues
@@ -33,12 +34,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `server/README.md` — backend documentation
 
 ### Changed
+
 - `README.md` — complete rewrite with accurate tech stack (Vite + React 18, not Next.js), correct dev server port (5175), accurate folder structure, and proper setup instructions
 - `CONTRIBUTING.md` — expanded from 36 lines to full contributor guide
 - `.github/pull_request_template.md` — updated with DCO, pipeline stages, and GSSoC requirements
 - `.gitignore` — added entries to prevent scratch/debug files from being committed
 
 ### Fixed
+
 - README incorrectly stated Next.js, Tailwind CSS, Prisma ORM, Upstash Redis, and NextAuth.js
 - README incorrectly stated dev server port as 3000 (actual: 5175 for frontend, 8080 for backend)
 - Clone URL in README pointed to wrong repository
@@ -48,6 +51,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1.0] — 2025-12-01
 
 ### Added
+
 - Initial project scaffolding and repository setup
 - React 18 + Vite 5 frontend foundation
 - Node.js + Express backend with PostgreSQL integration

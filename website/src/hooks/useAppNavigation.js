@@ -19,23 +19,26 @@ export function useAppNavigation(setPage, setActiveTab, mobile) {
     }, 600);
   }, []);
 
-  const handleTabChange = useCallback((tab) => {
-    setActiveTab(tab);
-    if (tab === 'Home') {
-      performTransition(() => setPage(null));
-      setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 100);
-    } else {
-      const id = `section-${tab.toLowerCase()}`;
-      const element = document.getElementById(id);
-      if (element) {
-        const navHeight = mobile ? NAV_HEIGHTS.MOBILE : NAV_HEIGHTS.DESKTOP;
-        const targetY = element.offsetTop - navHeight;
-        window.scrollTo({ top: targetY, behavior: 'smooth' });
+  const handleTabChange = useCallback(
+    (tab) => {
+      setActiveTab(tab);
+      if (tab === 'Home') {
+        performTransition(() => setPage(null));
+        setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 100);
       } else {
-        performTransition(() => setPage({ type: 'section', section: tab }));
+        const id = `section-${tab.toLowerCase()}`;
+        const element = document.getElementById(id);
+        if (element) {
+          const navHeight = mobile ? NAV_HEIGHTS.MOBILE : NAV_HEIGHTS.DESKTOP;
+          const targetY = element.offsetTop - navHeight;
+          window.scrollTo({ top: targetY, behavior: 'smooth' });
+        } else {
+          performTransition(() => setPage({ type: 'section', section: tab }));
+        }
       }
-    }
-  }, [setActiveTab, setPage, mobile, performTransition]);
+    },
+    [setActiveTab, setPage, mobile, performTransition]
+  );
 
   return { wipeOn, wipePh, handleTabChange, performTransition };
 }

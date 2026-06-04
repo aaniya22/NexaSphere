@@ -5,7 +5,7 @@
   padding: 24px;
   margin: 0 auto;
   max-width: 900px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
   backdrop-filter: blur(10px);
 }
 
@@ -117,7 +117,9 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  transition: transform 0.15s ease, opacity 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    opacity 0.15s ease;
 }
 
 .calendar-event-chip:hover {
@@ -196,15 +198,15 @@
     padding: 3px;
     font-size: 0.65rem;
   }
-  
+
   .event-chip-title {
-    display: none; 
+    display: none;
   }
-  
+
   .calendar-event-chip {
     justify-content: center;
   }
-  
+
   .event-chip-dot {
     margin: 0 auto;
     width: 8px;

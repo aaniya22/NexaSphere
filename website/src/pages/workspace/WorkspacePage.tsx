@@ -14,7 +14,7 @@ export default function WorkspacePage({ roomId, onBack }: WorkspacePageProps) {
   const [user] = useState({
     name: `User-${Math.floor(Math.random() * 1000)}`,
     color: `hsl(${Math.floor(Math.random() * 360)}, 70%, 50%)`,
-    initials: 'U'
+    initials: 'U',
   });
 
   const { emitDocumentChange, emitCursorMove, emitTyping } = useSocketSync(roomId, user);
@@ -39,17 +39,22 @@ export default function WorkspacePage({ roomId, onBack }: WorkspacePageProps) {
     const rect = containerRef.current.getBoundingClientRect();
     emitCursorMove({
       x: e.clientX - rect.left,
-      y: e.clientY - rect.top
+      y: e.clientY - rect.top,
     });
   };
 
   const getStatusIcon = () => {
     switch (status) {
-      case 'Connected': return <CheckCircle2 size={16} className="text-green-500" />;
-      case 'Disconnected': return <WifiOff size={16} className="text-red-500" />;
-      case 'Reconnecting...': return <RefreshCw size={16} className="text-yellow-500 animate-spin" />;
-      case 'Syncing changes...': return <Wifi size={16} className="text-blue-500 animate-pulse" />;
-      default: return <Wifi size={16} />;
+      case 'Connected':
+        return <CheckCircle2 size={16} className="text-green-500" />;
+      case 'Disconnected':
+        return <WifiOff size={16} className="text-red-500" />;
+      case 'Reconnecting...':
+        return <RefreshCw size={16} className="text-yellow-500 animate-spin" />;
+      case 'Syncing changes...':
+        return <Wifi size={16} className="text-blue-500 animate-pulse" />;
+      default:
+        return <Wifi size={16} />;
     }
   };
 
@@ -70,8 +75,8 @@ export default function WorkspacePage({ roomId, onBack }: WorkspacePageProps) {
           <Users size={20} className="presence-icon" />
           <div className="avatar-group">
             {Object.values(users).map((u) => (
-              <div 
-                key={u.socketId} 
+              <div
+                key={u.socketId}
                 className={`avatar ${u.isTyping ? 'typing' : ''}`}
                 style={{ backgroundColor: u.user?.color || '#555' }}
                 title={`${u.user?.name || 'Anonymous'} ${u.isTyping ? '(typing...)' : ''}`}
@@ -82,17 +87,17 @@ export default function WorkspacePage({ roomId, onBack }: WorkspacePageProps) {
           </div>
         </div>
       </div>
-      
+
       <div className="workspace-editor-area" ref={containerRef} onMouseMove={handleMouseMove}>
         {Object.values(users).map((u) => {
           if (!u.cursor || u.socketId === 'local') return null; // Don't show local cursor as a fake one
           return (
-            <div 
-              key={`cursor-${u.socketId}`} 
+            <div
+              key={`cursor-${u.socketId}`}
               className="remote-cursor"
               style={{
                 transform: `translate(${u.cursor.x}px, ${u.cursor.y}px)`,
-                backgroundColor: u.user?.color || '#ff0000'
+                backgroundColor: u.user?.color || '#ff0000',
               }}
             >
               <div className="cursor-label" style={{ backgroundColor: u.user?.color || '#ff0000' }}>
@@ -101,7 +106,7 @@ export default function WorkspacePage({ roomId, onBack }: WorkspacePageProps) {
             </div>
           );
         })}
-        
+
         <textarea
           ref={editorRef}
           className="workspace-textarea"

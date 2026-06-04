@@ -22,7 +22,9 @@ export function OfflineBanner() {
 
   return (
     <div className="offline-banner" role="alert" aria-live="assertive">
-      <span className="offline-icon" aria-hidden="true">&#9888;</span>
+      <span className="offline-icon" aria-hidden="true">
+        &#9888;
+      </span>
       <span>
         <strong>Offline Mode</strong> — Changes are saved locally and will not sync to the server.
       </span>

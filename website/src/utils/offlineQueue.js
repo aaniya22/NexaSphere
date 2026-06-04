@@ -79,9 +79,7 @@ export async function enqueueRequest(config) {
     const existing = await queueGetAll();
     const now = Date.now();
     const duplicate = existing.find(
-      (entry) =>
-        entry.hash === hash &&
-        now - entry.timestamp < DEDUP_WINDOW_MS
+      (entry) => entry.hash === hash && now - entry.timestamp < DEDUP_WINDOW_MS
     );
     if (duplicate) {
       console.log(`[OfflineQueue] Duplicate request skipped: ${method} ${url}`);
@@ -96,10 +94,10 @@ export async function enqueueRequest(config) {
   const entry = {
     id,
     url,
-    method:     method.toUpperCase(),
-    body:       serializedBody,
-    headers:    sanitizeHeaders(headers),
-    timestamp:  Date.now(),
+    method: method.toUpperCase(),
+    body: serializedBody,
+    headers: sanitizeHeaders(headers),
+    timestamp: Date.now(),
     retryCount: 0,
     hash,
   };

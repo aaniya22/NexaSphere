@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo } from 'react';
 
 /**
  * Reusable React Hook for multi-step form validation, state management, and accessible error handling.
@@ -6,10 +6,7 @@ import { useState, useCallback, useMemo } from "react";
  * @param {Object} initialValues - The initial fields and values of the form.
  * @param {Object} validationRules - Map of field names to their validation constraints.
  */
-export default function useFormValidation(
-  initialValues = {},
-  validationRules = {}
-) {
+export default function useFormValidation(initialValues = {}, validationRules = {}) {
   const [values, setValues] = useState(initialValues);
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
@@ -19,74 +16,67 @@ export default function useFormValidation(
    */
   const validateField = useCallback(
     (name, value, rules = {}) => {
-      let error = "";
+      let error = '';
 
       if (rules.required) {
         if (Array.isArray(value)) {
           if (value.length === 0) {
-            error = rules.requiredMessage || "This field is required";
+            error = rules.requiredMessage || 'This field is required';
           }
-        } else if (typeof value === "object" && value !== null) {
+        } else if (typeof value === 'object' && value !== null) {
           // e.g. declarations object: all values must be true (or custom behavior)
           const allChecked = Object.values(value).every((v) => !!v);
           if (!allChecked) {
-            error = rules.requiredMessage || "Please agree to all declarations";
+            error = rules.requiredMessage || 'Please agree to all declarations';
           }
-        } else if (!String(value || "").trim()) {
-          error = rules.requiredMessage || "This field is required";
+        } else if (!String(value || '').trim()) {
+          error = rules.requiredMessage || 'This field is required';
         }
       }
 
       if (!error && rules.email) {
-        const emailStr = String(value || "").trim();
+        const emailStr = String(value || '').trim();
         if (emailStr) {
           if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailStr)) {
-            error = rules.emailMessage || "Please enter a valid email address";
+            error = rules.emailMessage || 'Please enter a valid email address';
           }
         }
       }
 
       if (!error && rules.phone) {
-        const phoneStr = String(value || "").trim();
+        const phoneStr = String(value || '').trim();
         if (phoneStr && !/^\d{10}$/.test(phoneStr)) {
-          error =
-            rules.phoneMessage || "Phone number must be exactly 10 digits";
+          error = rules.phoneMessage || 'Phone number must be exactly 10 digits';
         }
       }
 
       if (!error && rules.minLength) {
-        const strVal = String(value || "");
+        const strVal = String(value || '');
         if (strVal && strVal.length < rules.minLength) {
-          error =
-            rules.minLengthMessage ||
-            `Minimum length is ${rules.minLength} characters`;
+          error = rules.minLengthMessage || `Minimum length is ${rules.minLength} characters`;
         }
       }
 
       if (!error && rules.maxLength) {
-        const strVal = String(value || "");
+        const strVal = String(value || '');
         if (strVal && strVal.length > rules.maxLength) {
-          error =
-            rules.maxLengthMessage ||
-            `Maximum length is ${rules.maxLength} characters`;
+          error = rules.maxLengthMessage || `Maximum length is ${rules.maxLength} characters`;
         }
       }
 
       if (!error && rules.url) {
-        const urlStr = String(value || "").trim();
+        const urlStr = String(value || '').trim();
         if (urlStr) {
           try {
             new URL(urlStr);
           } catch {
-            error =
-              rules.urlMessage ||
-              "Please enter a valid URL (e.g. https://example.com)";
+            error = rules.urlMessage || 'Please enter a valid URL (e.g. https://example.com)';
           }
         }
       }
 
       if (!error && rules.custom) {
-        error = rules.custom(value, values) || "";
+        error = rules.custom(value, values) || '';
       }
 
       return error;

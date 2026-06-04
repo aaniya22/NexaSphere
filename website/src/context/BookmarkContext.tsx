@@ -47,7 +47,9 @@ export const BookmarkProvider: React.FC<{ children: ReactNode }> = ({ children }
   };
 
   return (
-    <BookmarkContext.Provider value={{ bookmarks, addBookmark, removeBookmark, isBookmarked, clearBookmarks }}>
+    <BookmarkContext.Provider
+      value={{ bookmarks, addBookmark, removeBookmark, isBookmarked, clearBookmarks }}
+    >
       {children}
     </BookmarkContext.Provider>
   );

@@ -48,15 +48,19 @@ test('activity event schema rejects missing fields and normalizes createdBy', ()
 });
 
 test('core team schema rejects invalid contact data', () => {
-  assert.throws(() => coreTeamMemberSchema.parse({
-    name: 'A',
-    role: 'R',
-    year: '3',
-    branch: 'CSE',
-    section: 'AA',
-    email: 'not-an-email',
-    whatsapp: '123',
-  }), /Invalid email format|section must be a single letter|WhatsApp must be exactly 10 digits/i);
+  assert.throws(
+    () =>
+      coreTeamMemberSchema.parse({
+        name: 'A',
+        role: 'R',
+        year: '3',
+        branch: 'CSE',
+        section: 'AA',
+        email: 'not-an-email',
+        whatsapp: '123',
+      }),
+    /Invalid email format|section must be a single letter|WhatsApp must be exactly 10 digits/i
+  );
 });
 
 test('core team schema normalizes valid member data', () => {

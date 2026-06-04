@@ -11,7 +11,8 @@ const options = {
     info: {
       title: 'NexaSphere API',
       version: '1.0.0',
-      description: 'Real-time event management platform with live updates, notifications, and team collaboration.',
+      description:
+        'Real-time event management platform with live updates, notifications, and team collaboration.',
       contact: {
         name: 'NexaSphere Team',
         email: 'support@nexasphere.com',
@@ -173,10 +174,7 @@ const options = {
       },
     ],
   },
-  apis: [
-    './server/routes/*.js',
-    './server/swagger-docs/*.js',
-  ],
+  apis: ['./server/routes/*.js', './server/swagger-docs/*.js'],
 };
 
 const specs = swaggerJsdoc(options);

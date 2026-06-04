@@ -203,10 +203,10 @@ jobs:
         run: |
           echo "Checking Node.js migrations..."
           [ -d "server/migrations" ] && echo "✓ server/migrations exists" || echo "❌ server/migrations missing"
-          
+
           echo "Checking Java migrations..."
           [ -d "server-java/src/main/resources/db/migration" ] && echo "✓ Java migration dir exists" || echo "❌ Java migration dir missing"
-          
+
           echo "Checking Python migrations..."
           [ -d "server-python/alembic/versions" ] && echo "✓ Python migration dir exists" || echo "❌ Python migration dir missing"
 
@@ -214,10 +214,10 @@ jobs:
         run: |
           echo "Checking Node.js migration config..."
           [ -f "server/.postgres_migrations_config.json" ] && echo "✓ Found" || echo "⚠ Missing"
-          
+
           echo "Checking Java pom.xml has Flyway..."
           grep -q "flyway" server-java/pom.xml && echo "✓ Flyway configured" || echo "❌ Flyway not found"
-          
+
           echo "Checking Python alembic.ini..."
           [ -f "server-python/alembic.ini" ] && echo "✓ Found" || echo "❌ Missing"
 

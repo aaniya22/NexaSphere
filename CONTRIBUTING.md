@@ -119,12 +119,12 @@ npm run dev:all
 
 ### Local Development URLs
 
-| Service | URL |
-|----------|-----|
-| Website | http://localhost:5175 |
-| Admin Dashboard | http://localhost:5001 |
-| Backend API | http://localhost:8787 |
-| Health Check | http://localhost:8787/health |
+| Service         | URL                          |
+| --------------- | ---------------------------- |
+| Website         | http://localhost:5175        |
+| Admin Dashboard | http://localhost:5001        |
+| Backend API     | http://localhost:8787        |
+| Health Check    | http://localhost:8787/health |
 
 ---
 
@@ -142,6 +142,50 @@ npx playwright test
 ```
 
 Before submitting a pull request, ensure that all relevant tests pass successfully.
+
+---
+
+## 🎨 Code Formatting (Prettier)
+
+To maintain a consistent coding style and clean git diffs, NexaSphere uses **Prettier** for automated code formatting. We enforce a unified format across the monorepo using standard rules configured in `.prettierrc.js`.
+
+### How to Format Your Code
+
+You can format your changes manually before committing or configure your editor to do it automatically:
+
+1. **Manual Command**:
+   Run the formatting script from the root directory:
+
+   ```bash
+   npm run format
+   ```
+
+   To verify if files comply with the formatting rules without changing them, run:
+
+   ```bash
+   npm run format:check
+   ```
+
+2. **Format on Save (Recommended)**:
+   We highly recommend setting up your text editor or IDE to format automatically on save:
+   - **VS Code**: Install the [Prettier - Code formatter](https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode) extension. Then, in your settings (`settings.json`), add:
+     ```json
+     "[javascript]": {
+       "editor.defaultFormatter": "esbenp.prettier-vscode",
+       "editor.formatOnSave": true
+     },
+     "[javascriptreact]": {
+       "editor.defaultFormatter": "esbenp.prettier-vscode",
+       "editor.formatOnSave": true
+     },
+     "[css]": {
+       "editor.defaultFormatter": "esbenp.prettier-vscode",
+       "editor.formatOnSave": true
+     }
+     ```
+   - **WebStorm / IntelliJ**: Enable "Run on save for files" in Settings -> Languages & Frameworks -> JavaScript -> Prettier.
+
+Please ensure that you run `npm run format` before pushing your branch and opening a pull request.
 
 ---
 
@@ -193,16 +237,14 @@ Fixes #123
 
 ## Troubleshooting
 
-| Problem | Possible Fix |
-|----------|-------------|
-| Dependencies fail to install | Verify Node.js 20+ and npm 9+ are installed |
-| Environment variables not loading | Check file names and locations |
-| CORS errors during development | Verify `CORS_ORIGIN` includes frontend URLs |
-| Backend API unavailable | Ensure `npm run dev:server` is running |
-| Port already in use | Stop the conflicting process or change the configured port |
+| Problem                           | Possible Fix                                               |
+| --------------------------------- | ---------------------------------------------------------- |
+| Dependencies fail to install      | Verify Node.js 20+ and npm 9+ are installed                |
+| Environment variables not loading | Check file names and locations                             |
+| CORS errors during development    | Verify `CORS_ORIGIN` includes frontend URLs                |
+| Backend API unavailable           | Ensure `npm run dev:server` is running                     |
+| Port already in use               | Stop the conflicting process or change the configured port |
 
 ---
 
 Thank you for contributing to NexaSphere and helping make it better for the community! 🚀
-
-

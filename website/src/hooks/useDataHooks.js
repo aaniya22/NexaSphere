@@ -2,7 +2,12 @@ import { useState, useEffect, useCallback } from 'react';
 import { API_BASE, THEME_STORAGE_KEY, DEFAULT_THEME, EVENTS_API_ENDPOINT } from '../data/config';
 
 export function useThemeManagement() {
-  const [theme, setTheme] = useState(() => document.documentElement.getAttribute('data-theme') || localStorage.getItem(THEME_STORAGE_KEY) || DEFAULT_THEME);
+  const [theme, setTheme] = useState(
+    () =>
+      document.documentElement.getAttribute('data-theme') ||
+      localStorage.getItem(THEME_STORAGE_KEY) ||
+      DEFAULT_THEME
+  );
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -10,7 +15,7 @@ export function useThemeManagement() {
   }, [theme]);
 
   const toggleTheme = useCallback(() => {
-    setTheme(prev => (prev === 'dark' ? 'light' : 'dark'));
+    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
   }, []);
 
   return { theme, toggleTheme };
@@ -24,8 +29,8 @@ export function useDynamicEvents(fallbackEvents) {
     const url = API_BASE ? `${API_BASE}${EVENTS_API_ENDPOINT}` : EVENTS_API_ENDPOINT;
 
     fetch(url)
-      .then(res => (res.ok ? res.json() : Promise.reject(new Error('Failed to load events'))))
-      .then(data => {
+      .then((res) => (res.ok ? res.json() : Promise.reject(new Error('Failed to load events'))))
+      .then((data) => {
         if (isMounted && Array.isArray(data?.events)) {
           setEventsData(data.events);
         }

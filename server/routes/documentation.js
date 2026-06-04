@@ -17,26 +17,32 @@ const router = express.Router();
  * GET /api/docs
  */
 router.use('/docs', swaggerUi.serve);
-router.get('/docs', swaggerUi.setup(specs, {
-  swaggerOptions: {
-    url: '/api/swagger.json',
-    displayOperationId: true,
-    filter: true,
-    showExtensions: true,
-    deepLinking: true,
-  },
-  customCss: '.swagger-ui .topbar { background-color: #007bff; }',
-  customSiteTitle: 'NexaSphere API Documentation',
-}));
+router.get(
+  '/docs',
+  swaggerUi.setup(specs, {
+    swaggerOptions: {
+      url: '/api/swagger.json',
+      displayOperationId: true,
+      filter: true,
+      showExtensions: true,
+      deepLinking: true,
+    },
+    customCss: '.swagger-ui .topbar { background-color: #007bff; }',
+    customSiteTitle: 'NexaSphere API Documentation',
+  })
+);
 
 /**
  * ReDoc - Alternative API documentation view
  * GET /api/redoc
  */
-router.get('/redoc', redoc({
-  title: 'NexaSphere API Documentation',
-  specUrl: '/api/swagger.json',
-}));
+router.get(
+  '/redoc',
+  redoc({
+    title: 'NexaSphere API Documentation',
+    specUrl: '/api/swagger.json',
+  })
+);
 
 /**
  * OpenAPI Spec JSON

@@ -20,7 +20,7 @@ export default function OfflineBanner() {
   // "online" means we just came back online (green variant)
   const [showOnline, setShowOnline] = useState(false);
   const onlineTimerRef = useRef(null);
-  const prevOnlineRef  = useRef(navigator.onLine);
+  const prevOnlineRef = useRef(navigator.onLine);
 
   useEffect(() => {
     if (!isOnline) {
@@ -63,11 +63,7 @@ export default function OfflineBanner() {
       role="status"
       aria-live="polite"
       aria-label={
-        showOnline
-          ? 'Connection restored'
-          : isOnline
-          ? 'Network status'
-          : 'You are offline'
+        showOnline ? 'Connection restored' : isOnline ? 'Network status' : 'You are offline'
       }
     >
       <div className="pwa-banner__left">
@@ -76,11 +72,7 @@ export default function OfflineBanner() {
         </div>
         <div className="pwa-banner__text">
           <span className="pwa-banner__title">
-            {showOnline
-              ? 'Back Online'
-              : isSyncing
-              ? 'Syncing…'
-              : "You're Offline"}
+            {showOnline ? 'Back Online' : isSyncing ? 'Syncing…' : "You're Offline"}
           </span>
           <span className="pwa-banner__subtitle">
             {showOnline
@@ -88,16 +80,14 @@ export default function OfflineBanner() {
                 ? `${syncStats.synced} synced, ${syncStats.failed} failed — check your actions`
                 : 'All changes have been synced successfully'
               : isSyncing
-              ? `Syncing ${queuedCount} queued action${queuedCount !== 1 ? 's' : ''}…`
-              : 'Changes will sync when you reconnect'}
+                ? `Syncing ${queuedCount} queued action${queuedCount !== 1 ? 's' : ''}…`
+                : 'Changes will sync when you reconnect'}
           </span>
         </div>
       </div>
 
       <div className="pwa-banner__right">
-        {isSyncing && (
-          <span className="pwa-spinner" aria-hidden="true" />
-        )}
+        {isSyncing && <span className="pwa-spinner" aria-hidden="true" />}
 
         {!isOnline && queuedCount > 0 && (
           <span className="pwa-banner__badge" aria-label={`${queuedCount} actions queued`}>

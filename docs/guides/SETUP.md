@@ -117,6 +117,7 @@ npm run dev
 ```
 
 Expected output:
+
 ```
   VITE v5.x.x  ready in 400ms
 
@@ -188,6 +189,7 @@ npm run migrate:latest
 ```
 
 Expected output:
+
 ```
 > node-pg-migrate -f .postgres_migrations_config.json up
 ...
@@ -210,30 +212,30 @@ psql -U postgres -d nexasphere -f seed_recommendation_data.sql
 
 ### Frontend Variables (`.env.local`)
 
-| Variable | Example Value | What it does |
-|---|---|---|
-| `VITE_APP_URL` | `http://localhost:5175` | The URL the frontend is served from |
-| `VITE_API_BASE` | `http://localhost:8080` | Where the Express backend is running |
-| `VITE_AI_API_BASE` | `http://localhost:8000` | Python AI microservice (optional) |
-| `VITE_SOCKET_URL` | `http://localhost:8080` | Socket.io server URL |
-| `VITE_SOCKET_PATH` | `/socket.io` | Socket.io mount path |
-| `VITE_GEMINI_API_KEY` | `AIza...` | Google Generative AI key (AI features) |
-| `VITE_SENTRY_DSN` | `https://...@sentry.io/...` | Sentry frontend error tracking |
-| `VITE_TURNSTILE_SITE_KEY` | `0x4AAA...` | Cloudflare Turnstile CAPTCHA |
-| `VITE_BASE_PATH` | `/` or `/NexaSphere/` | Base URL path for deployment |
+| Variable                  | Example Value               | What it does                           |
+| ------------------------- | --------------------------- | -------------------------------------- |
+| `VITE_APP_URL`            | `http://localhost:5175`     | The URL the frontend is served from    |
+| `VITE_API_BASE`           | `http://localhost:8080`     | Where the Express backend is running   |
+| `VITE_AI_API_BASE`        | `http://localhost:8000`     | Python AI microservice (optional)      |
+| `VITE_SOCKET_URL`         | `http://localhost:8080`     | Socket.io server URL                   |
+| `VITE_SOCKET_PATH`        | `/socket.io`                | Socket.io mount path                   |
+| `VITE_GEMINI_API_KEY`     | `AIza...`                   | Google Generative AI key (AI features) |
+| `VITE_SENTRY_DSN`         | `https://...@sentry.io/...` | Sentry frontend error tracking         |
+| `VITE_TURNSTILE_SITE_KEY` | `0x4AAA...`                 | Cloudflare Turnstile CAPTCHA           |
+| `VITE_BASE_PATH`          | `/` or `/NexaSphere/`       | Base URL path for deployment           |
 
 ### Backend Variables (`server/.env`)
 
-| Variable | Example Value | What it does |
-|---|---|---|
-| `DATABASE_URL` | `postgresql://user:pass@localhost:5432/nexasphere` | PostgreSQL connection |
-| `PORT` | `8080` | Server listening port (default 8080) |
-| `CORS_ORIGIN` | `http://localhost:5175` | Comma-separated allowed origins |
-| `FIREBASE_PROJECT_ID` | `nexasphere-xxx` | Firebase project ID |
-| `FIREBASE_CLIENT_EMAIL` | `firebase-adminsdk-xxx@...` | Firebase service account email |
-| `FIREBASE_PRIVATE_KEY` | `"-----BEGIN PRIVATE KEY-----\n..."` | Firebase service account private key |
-| `SENDGRID_API_KEY` | `SG.xxx` | SendGrid email API key |
-| `SENTRY_DSN` | `https://...@sentry.io/...` | Sentry backend error tracking |
+| Variable                | Example Value                                      | What it does                         |
+| ----------------------- | -------------------------------------------------- | ------------------------------------ |
+| `DATABASE_URL`          | `postgresql://user:pass@localhost:5432/nexasphere` | PostgreSQL connection                |
+| `PORT`                  | `8080`                                             | Server listening port (default 8080) |
+| `CORS_ORIGIN`           | `http://localhost:5175`                            | Comma-separated allowed origins      |
+| `FIREBASE_PROJECT_ID`   | `nexasphere-xxx`                                   | Firebase project ID                  |
+| `FIREBASE_CLIENT_EMAIL` | `firebase-adminsdk-xxx@...`                        | Firebase service account email       |
+| `FIREBASE_PRIVATE_KEY`  | `"-----BEGIN PRIVATE KEY-----\n..."`               | Firebase service account private key |
+| `SENDGRID_API_KEY`      | `SG.xxx`                                           | SendGrid email API key               |
+| `SENTRY_DSN`            | `https://...@sentry.io/...`                        | Sentry backend error tracking        |
 
 > ⚠️ **Never commit `.env` or `.env.local` files.** They are already in `.gitignore`.
 
@@ -244,6 +246,7 @@ psql -U postgres -d nexasphere -f seed_recommendation_data.sql
 You need **two terminal windows** running simultaneously:
 
 **Terminal 1 — Frontend:**
+
 ```bash
 cd NexaSphere-GSSOc
 npm run dev
@@ -251,6 +254,7 @@ npm run dev
 ```
 
 **Terminal 2 — Backend:**
+
 ```bash
 cd NexaSphere-GSSOc/server
 npm run dev
@@ -387,4 +391,4 @@ If all four pass, your environment is set up correctly. 🎉
 
 ---
 
-*Need more help? Ask in the issue you're working on or ping [@Ayushh-Sharmaa](https://github.com/Ayushh-Sharmaa).*
+_Need more help? Ask in the issue you're working on or ping [@Ayushh-Sharmaa](https://github.com/Ayushh-Sharmaa)._
