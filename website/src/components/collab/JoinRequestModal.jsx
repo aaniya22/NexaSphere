@@ -16,6 +16,16 @@ export default function JoinRequestModal({ team, onClose, onSubmit }) {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
 
+  useEffect(() => {
+  if (modalRef.current) {
+    const firstFocusable = modalRef.current.querySelector(
+      'button, input, textarea, select, a[href]'
+    );
+
+    firstFocusable?.focus();
+  }
+}, []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -44,11 +54,12 @@ export default function JoinRequestModal({ team, onClose, onSubmit }) {
       }}
     >
       <div
-        ref={modalRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="modal-title"
-        className="glass-panel pop-scale"
+  ref={modalRef}
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="modal-title"
+  aria-describedby="modal-description"
+  className="glass-panel pop-scale"
         style={{
           width: '100%',
           maxWidth: '500px',
@@ -78,9 +89,12 @@ export default function JoinRequestModal({ team, onClose, onSubmit }) {
               &times;
             </button>
           </div>
-          <p style={{ margin: '8px 0 0 0', color: 'var(--c1)', fontSize: '0.9rem' }}>
-            Pitch yourself for the {team?.vacantRoles?.join(', ')} role(s)
-          </p>
+          <p
+  id="modal-description"
+  style={{ margin: '8px 0 0 0', color: 'var(--c1)', fontSize: '0.9rem' }}
+>
+  Pitch yourself for the {team?.vacantRoles?.join(', ')} role(s)
+</p>
         </div>
 
         <div style={{ padding: '24px' }}>

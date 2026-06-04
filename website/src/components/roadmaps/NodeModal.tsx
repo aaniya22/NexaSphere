@@ -192,10 +192,11 @@ export const NodeModal: React.FC<NodeModalProps> = ({ theme }) => {
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.9, opacity: 0, y: 20 }}
         transition={{ type: 'spring', damping: 25, stiffness: 260 }}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="node-modal-title"
-      >
+      role="dialog"
+aria-modal="true"
+aria-labelledby="node-modal-title"
+aria-describedby="node-modal-description"
+>
         {/* Close Button */}
         <button
           className="modal-close-trigger action-btn"
@@ -213,13 +214,24 @@ export const NodeModal: React.FC<NodeModalProps> = ({ theme }) => {
 
         {/* Modal Header */}
         <div style={{ marginBottom: '28px' }}>
-          <span className="text-xxs uppercase tracking-widest text-brand-red font-black">
-            Interactive Editor
-          </span>
-          <h2 id="node-modal-title" className="text-2xl font-black text-t1 mt-1 font-orbitron">
-            Modify Learning Node
-          </h2>
-        </div>
+  <span className="text-xxs uppercase tracking-widest text-brand-red font-black">
+    Interactive Editor
+  </span>
+
+  <h2
+    id="node-modal-title"
+    className="text-2xl font-black text-t1 mt-1 font-orbitron"
+  >
+    Modify Learning Node
+  </h2>
+
+  <p
+    id="node-modal-description"
+    className="text-sm text-t2 mt-2"
+  >
+    Edit node details, resources, prerequisites, notes, and learning progress.
+  </p>
+</div>
 
         {/* Form Grid */}
         <div
