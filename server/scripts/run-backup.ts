@@ -2,10 +2,14 @@
 import { exec } from 'child_process';
 import util from 'util';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import { BackupStorageService } from '../services/backupStorage';
 import { BackupVerifierService } from '../services/backupVerifier';
 
 const execAsync = util.promisify(exec);
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 async function run() {
   console.log('Starting automated backup process...');
