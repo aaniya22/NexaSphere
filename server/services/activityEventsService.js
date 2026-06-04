@@ -18,8 +18,9 @@ export const activityEventsService = {
   },
 
   async deleteActivityEvent(activityKey, eventId, input) {
-    const parsed = activityEventSchema.parse(input);
-    await this.assertCanManage(parsed);
+    // Auth check uses only the gate credentials (coreTeamName/Email/Phone + password).
+    // The full event schema is not required for deletion.
+    await this.assertCanManage(input);
     return activityEventsRepository.delete(activityKey, eventId);
   },
 };
