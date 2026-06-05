@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { getApiBase } from '../../utils/runtimeConfig';
 import {
   Calendar,
   Award,
@@ -105,7 +106,7 @@ const MOCK_METRICS = {
   longestStreak: 12,
 };
 
-const getApiBase = () => ((import.meta as any).env?.VITE_API_BASE || '').replace(/\/+$/, '');
+// getApiBase imported from runtimeConfig — avoids as any cast and duplicated URL logic
 
 export default function UserDashboard() {
   // No auth system exists yet — userId is hardcoded as a placeholder meaning
