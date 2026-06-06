@@ -12,6 +12,24 @@ const links = [
   { to: '/dashboard', label: 'Dashboard', icon: 'Dashboard' },
   { to: '/dashboard/events', label: 'Events', icon: 'Calendar', requiredScope: 'events:read' },
   {
+    to: '/dashboard/event-registrations',
+    label: 'Registrations',
+    icon: 'FileText',
+    requiredScope: 'events:read',
+  },
+  {
+    to: '/dashboard/event-scanner',
+    label: 'Scanner',
+    icon: 'Camera',
+    requiredScope: 'events:write',
+  },
+  {
+    to: '/dashboard/event-analytics',
+    label: 'Analytics',
+    icon: 'BarChart',
+    requiredScope: 'events:read',
+  },
+  {
     to: '/dashboard/activity-events',
     label: 'Activity Events',
     icon: 'Target',

@@ -13,6 +13,9 @@ import { MembershipResponsesManager } from './pages/MembershipResponsesManager';
 import { RecruitmentResponsesManager } from './pages/RecruitmentResponsesManager';
 import { CertificateManager } from './pages/CertificateManager';
 import { AnnouncementsManager } from './pages/AnnouncementsManager';
+import { EventRegistrations } from './pages/EventRegistrations';
+import { EventScanner } from './pages/EventScanner';
+import { EventAnalytics } from './pages/EventAnalytics';
 import './styles/admin.css';
 
 function RequireAuth() {
@@ -61,6 +64,9 @@ export default function App() {
             <Route path="/dashboard/recruitment" element={<RecruitmentResponsesManager />} />
             <Route path="/dashboard/certificates" element={<CertificateManager />} />
             <Route path="/dashboard/announcements" element={<AnnouncementsManager />} />
+            <Route path="/dashboard/event-registrations" element={<EventRegistrations />} />
+            <Route path="/dashboard/event-scanner" element={<EventScanner />} />
+            <Route path="/dashboard/event-analytics" element={<EventAnalytics />} />
           </Route>
         </Route>
         <Route path="*" element={<Navigate to="/login" replace />} />

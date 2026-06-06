@@ -5,6 +5,8 @@ import * as adminAuthMiddleware from '../middleware/adminAuthMiddleware.js';
 import * as coreTeamController from '../controllers/coreTeamController.js';
 import * as eventRegistrationController from '../controllers/eventRegistrationController.js';
 import * as usersController from '../controllers/usersController.js';
+import * as attendanceController from '../controllers/attendanceController.js';
+import * as eventAnalyticsController from '../controllers/eventAnalyticsController.js';
 import { adminAuditMiddleware, attachOldState } from '../middleware/adminAuditMiddleware.js';
 import { eventsRepository } from '../repositories/eventsRepository.js';
 import { coreTeamService } from '../services/coreTeamService.js';
@@ -15,6 +17,7 @@ const router = Router();
 router.get('/api/users', usersController.getPublicUsers);
 router.get('/api/content/events', eventsController.listEvents);
 router.post('/api/content/events/:eventId/register', eventRegistrationController.registerForEvent);
+router.get('/api/content/events/:eventId/calendar', eventRegistrationController.getEventCalendar);
 router.get(
   '/api/content/activity-events/:activityKey',
   activityEventsController.listActivityEvents
@@ -82,6 +85,23 @@ router.delete(
   }),
   adminAuditMiddleware,
   coreTeamController.adminDeleteCoreTeamMember
+);
+
+// Registration management APIs
+router.get(
+  '/api/admin/events/:eventId/registrations',
+  adminAuthMiddleware.requireScope('events:read'),
+  attendanceController.getAttendanceList
+);
+router.post(
+  '/api/admin/events/:eventId/attendance',
+  adminAuthMiddleware.requireScope('events:write'),
+  attendanceController.markAttendance
+);
+router.get(
+  '/api/admin/events/:eventId/analytics',
+  adminAuthMiddleware.requireScope('events:read'),
+  eventAnalyticsController.getEventStats
 );
 
 export default router;

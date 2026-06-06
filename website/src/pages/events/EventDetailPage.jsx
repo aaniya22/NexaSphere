@@ -1,5 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { DynamicIcon } from '../../shared/Icons';
+import { API_BASE } from '../../data/config';
+import apiClient from '../../utils/apiClient';
 
 function hexToRgb(hex) {
   if (!hex || !hex.startsWith('#')) return '0,212,255';
@@ -456,6 +458,18 @@ function MediaBtn({ href, icon, label, color }) {
 export default function EventDetailPage({ event, activityColor, activityIcon, onBack }) {
   const [mounted, setMounted] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
+  const [regForm, setRegForm] = useState({
+    fullName: '',
+    email: '',
+    department: '',
+    year: '',
+    teamName: '',
+    teamSize: '',
+  });
+  const [regStatus, setRegStatus] = useState('idle');
+  const [regError, setRegError] = useState('');
+  const [regTicket, setRegTicket] = useState(null);
+  const [regSubmitting, setRegSubmitting] = useState(false);
   useEffect(() => {
     window.scrollTo({ top: 0 });
     setTimeout(() => setMounted(true), 60);
@@ -480,6 +494,44 @@ export default function EventDetailPage({ event, activityColor, activityIcon, on
     return () => obs.disconnect();
   }, []);
 
+  const isUpcoming = event.status === 'upcoming';
+  const canRegister = isUpcoming && event.capacity > 0;
+
+  const handleRegField = (field) => (e) => setRegForm((f) => ({ ...f, [field]: e.target.value }));
+  const handleRegistration = async (e) => {
+    e.preventDefault();
+    if (regSubmitting) return;
+    setRegError('');
+    setRegSubmitting(true);
+    try {
+      const base = API_BASE || '';
+      const url = `${base}/api/content/events/${event.id}/register`;
+      const data = await apiClient(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(regForm),
+      });
+      if (data.ticket) {
+        setRegTicket(data.ticket);
+        setRegStatus('confirmed');
+      }
+    } catch (err) {
+      if (err.message?.includes('waitlist')) {
+        setRegStatus('waitlisted');
+      } else {
+        setRegError(err.message || 'Registration failed');
+      }
+    } finally {
+      setRegSubmitting(false);
+    }
+  };
+
+  const handleCalendarDownload = () => {
+    const base = API_BASE || '';
+    const url = `${base}/api/content/events/${event.id}/calendar`;
+    window.open(url, '_blank');
+  };
+
   const color = activityColor || '#a855f7';
   const rgb = hexToRgb(color);
   const status = event.status === 'upcoming' ? 'upcoming' : 'completed';
@@ -497,6 +549,7 @@ export default function EventDetailPage({ event, activityColor, activityIcon, on
     ...(hasVolunteers ? [{ id: 'volunteers', label: 'Volunteers' }] : []),
     ...(hasAcknowledgements ? [{ id: 'acknowledgements', label: 'Acknowledgements' }] : []),
     { id: 'media', label: 'Media' },
+    ...(canRegister ? [{ id: 'register', label: 'Register' }] : []),
   ];
 
   return (
@@ -865,6 +918,33 @@ export default function EventDetailPage({ event, activityColor, activityIcon, on
                   label="Watch Recording"
                   color={color}
                 />
+                {isUpcoming && (
+                  <button
+                    onClick={handleCalendarDownload}
+                    style={{
+                      flex: 1,
+                      minWidth: 140,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: 8,
+                      padding: '20px 28px',
+                      borderRadius: 12,
+                      background: 'var(--bg-card)',
+                      border: `1px solid var(--border-subtle)`,
+                      color: 'var(--text-primary)',
+                      cursor: 'pointer',
+                      fontFamily: 'Rajdhani,sans-serif',
+                      fontWeight: 700,
+                      fontSize: '0.9rem',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.06em',
+                    }}
+                  >
+                    <DynamicIcon name="Calendar" size={32} />
+                    Add to Calendar
+                  </button>
+                )}
               </div>
               {!event.photoLink && !event.videoLink && (
                 <p
@@ -937,6 +1017,255 @@ export default function EventDetailPage({ event, activityColor, activityIcon, on
                   <DynamicIcon name="Star" size={12} style={{ verticalAlign: 'middle' }} />
                 </p>
               </div>
+            </section>
+          )}
+
+          {activeTab === 'register' && canRegister && (
+            <section>
+              <SectionHeader icon="UserPlus" title="Register for this Event" color={color} />
+              {regStatus === 'confirmed' && regTicket ? (
+                <div
+                  style={{
+                    textAlign: 'center',
+                    background: 'var(--bg-card)',
+                    border: `1px solid rgba(${rgb},0.25)`,
+                    borderRadius: 16,
+                    padding: 32,
+                  }}
+                >
+                  <div
+                    style={{
+                      fontFamily: 'Orbitron,monospace',
+                      fontSize: '1.2rem',
+                      fontWeight: 700,
+                      color: '#22c55e',
+                      marginBottom: 8,
+                    }}
+                  >
+                    ✓ Registered!
+                  </div>
+                  <p style={{ color: 'var(--text-secondary)', marginBottom: 16 }}>
+                    {regTicket.ticketData.fullName} · {regTicket.ticketData.email}
+                  </p>
+                  {regTicket.qrDataUrl && (
+                    <img
+                      src={regTicket.qrDataUrl}
+                      alt="Entry QR Code"
+                      style={{
+                        width: 180,
+                        height: 180,
+                        borderRadius: 12,
+                        border: `2px solid rgba(${rgb},0.3)`,
+                        marginBottom: 16,
+                      }}
+                    />
+                  )}
+                  <div
+                    style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: 16 }}
+                  >
+                    Show this QR code at the event entrance.
+                  </div>
+                  <button
+                    onClick={handleCalendarDownload}
+                    style={{
+                      padding: '8px 20px',
+                      borderRadius: 999,
+                      border: `1px solid ${color}`,
+                      background: `rgba(${rgb},0.12)`,
+                      color,
+                      cursor: 'pointer',
+                      fontFamily: 'Rajdhani,sans-serif',
+                      fontWeight: 700,
+                    }}
+                  >
+                    <DynamicIcon name="Calendar" size={12} style={{ marginRight: 6 }} />
+                    Add to Calendar
+                  </button>
+                </div>
+              ) : regStatus === 'waitlisted' ? (
+                <div
+                  style={{
+                    textAlign: 'center',
+                    background: 'var(--bg-card)',
+                    border: `1px solid rgba(${rgb},0.25)`,
+                    borderRadius: 16,
+                    padding: 32,
+                  }}
+                >
+                  <div
+                    style={{
+                      fontFamily: 'Orbitron,monospace',
+                      fontSize: '1.2rem',
+                      fontWeight: 700,
+                      color: '#f59e0b',
+                      marginBottom: 8,
+                    }}
+                  >
+                    Waitlisted
+                  </div>
+                  <p style={{ color: 'var(--text-secondary)' }}>
+                    The event is full. You have been added to the waitlist. We'll notify you if a
+                    spot opens up.
+                  </p>
+                </div>
+              ) : (
+                <form
+                  onSubmit={handleRegistration}
+                  style={{
+                    background: 'var(--bg-card)',
+                    border: `1px solid rgba(${rgb},0.15)`,
+                    borderRadius: 12,
+                    padding: 28,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 14,
+                  }}
+                >
+                  <input
+                    type="text"
+                    placeholder="Full Name *"
+                    value={regForm.fullName}
+                    onChange={handleRegField('fullName')}
+                    required
+                    style={{
+                      padding: '10px 14px',
+                      borderRadius: 8,
+                      border: '1px solid var(--border-subtle)',
+                      background: 'var(--bg)',
+                      color: 'var(--text-primary)',
+                      fontFamily: 'Rajdhani,sans-serif',
+                    }}
+                  />
+                  <input
+                    type="email"
+                    placeholder="Email *"
+                    value={regForm.email}
+                    onChange={handleRegField('email')}
+                    required
+                    style={{
+                      padding: '10px 14px',
+                      borderRadius: 8,
+                      border: '1px solid var(--border-subtle)',
+                      background: 'var(--bg)',
+                      color: 'var(--text-primary)',
+                      fontFamily: 'Rajdhani,sans-serif',
+                    }}
+                  />
+                  <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                    <select
+                      value={regForm.department}
+                      onChange={handleRegField('department')}
+                      style={{
+                        flex: 1,
+                        minWidth: 140,
+                        padding: '10px 14px',
+                        borderRadius: 8,
+                        border: '1px solid var(--border-subtle)',
+                        background: 'var(--bg)',
+                        color: 'var(--text-primary)',
+                        fontFamily: 'Rajdhani,sans-serif',
+                      }}
+                    >
+                      <option value="">Department</option>
+                      <option value="CSE">CSE</option>
+                      <option value="CSE (AI & ML)">CSE (AI & ML)</option>
+                      <option value="CS">CS</option>
+                      <option value="CST">CST</option>
+                      <option value="ECE">ECE</option>
+                      <option value="ME">ME</option>
+                      <option value="CE">CE</option>
+                      <option value="Other">Other</option>
+                    </select>
+                    <select
+                      value={regForm.year}
+                      onChange={handleRegField('year')}
+                      style={{
+                        flex: 1,
+                        minWidth: 100,
+                        padding: '10px 14px',
+                        borderRadius: 8,
+                        border: '1px solid var(--border-subtle)',
+                        background: 'var(--bg)',
+                        color: 'var(--text-primary)',
+                        fontFamily: 'Rajdhani,sans-serif',
+                      }}
+                    >
+                      <option value="">Year</option>
+                      <option value="1st">1st</option>
+                      <option value="2nd">2nd</option>
+                      <option value="3rd">3rd</option>
+                      <option value="4th">4th</option>
+                    </select>
+                  </div>
+                  <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                    <input
+                      type="text"
+                      placeholder="Team Name (optional)"
+                      value={regForm.teamName}
+                      onChange={handleRegField('teamName')}
+                      style={{
+                        flex: 1,
+                        minWidth: 140,
+                        padding: '10px 14px',
+                        borderRadius: 8,
+                        border: '1px solid var(--border-subtle)',
+                        background: 'var(--bg)',
+                        color: 'var(--text-primary)',
+                        fontFamily: 'Rajdhani,sans-serif',
+                      }}
+                    />
+                    <input
+                      type="number"
+                      placeholder="Team Size"
+                      value={regForm.teamSize}
+                      onChange={handleRegField('teamSize')}
+                      min="1"
+                      max="20"
+                      style={{
+                        flex: 0,
+                        width: 100,
+                        padding: '10px 14px',
+                        borderRadius: 8,
+                        border: '1px solid var(--border-subtle)',
+                        background: 'var(--bg)',
+                        color: 'var(--text-primary)',
+                        fontFamily: 'Rajdhani,sans-serif',
+                      }}
+                    />
+                  </div>
+                  {regError && (
+                    <div
+                      style={{
+                        color: '#ef4444',
+                        fontSize: '0.85rem',
+                        padding: '8px 12px',
+                        background: 'rgba(239,68,68,0.1)',
+                        borderRadius: 8,
+                      }}
+                    >
+                      {regError}
+                    </div>
+                  )}
+                  <button
+                    type="submit"
+                    disabled={regSubmitting}
+                    style={{
+                      padding: '12px 24px',
+                      borderRadius: 999,
+                      border: 'none',
+                      background: `linear-gradient(135deg, ${color}, rgba(${rgb},0.7))`,
+                      color: '#fff',
+                      cursor: regSubmitting ? 'not-allowed' : 'pointer',
+                      fontFamily: 'Rajdhani,sans-serif',
+                      fontWeight: 700,
+                      fontSize: '1rem',
+                      opacity: regSubmitting ? 0.6 : 1,
+                    }}
+                  >
+                    {regSubmitting ? 'Registering…' : 'Register Now'}
+                  </button>
+                </form>
+              )}
             </section>
           )}
 

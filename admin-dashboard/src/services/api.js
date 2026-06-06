@@ -412,11 +412,77 @@ async function fetchWithAuth(url, options = {}) {
           resolve({ success: true });
         }
       }
+
+      // /api/admin/events/:eventId/registrations
+      else if (url.match(/\/api\/admin\/events\/[^\/]+\/registrations/)) {
+        const eventId = url.split('/')[4];
+        let regDb = getDb('event_registrations', {});
+        let regs = regDb[eventId] || [];
+        if (method === 'GET') resolve({ registrations: regs });
+        if (method === 'POST') {
+          const newReg = {
+            ...body,
+            id: Date.now().toString(),
+            created_at: new Date().toISOString(),
+          };
+          regs = [newReg, ...regs];
+          regDb[eventId] = regs;
+          setDb('event_registrations', regDb);
+          resolve(newReg);
+        }
+      }
+
+      // /api/admin/events/:eventId/attendance
+      else if (url.match(/\/api\/admin\/events\/[^\/]+\/attendance/)) {
+        const eventId = url.split('/')[4];
+        let regDb = getDb('event_registrations', {});
+        let regs = regDb[eventId] || [];
+        if (method === 'POST' && body) {
+          const idx = regs.findIndex(
+            (r) => r.email === body.email || r.ticket_token === body.token
+          );
+          if (idx >= 0) {
+            regs[idx] = { ...regs[idx], attended: true, attended_at: new Date().toISOString() };
+            regDb[eventId] = regs;
+            setDb('event_registrations', regDb);
+            resolve({ ...regs[idx], already_attended: false });
+          } else {
+            resolve({ error: 'Registration not found' });
+          }
+        }
+      }
+
+      // /api/admin/events/:eventId/analytics
+      else if (url.match(/\/api\/admin\/events\/[^\/]+\/analytics/)) {
+        const eventId = url.split('/')[4];
+        let regDb = getDb('event_registrations', {});
+        let regs = regDb[eventId] || [];
+        const total = regs.length;
+        const confirmed = regs.filter((r) => r.status === 'confirmed').length;
+        const attended = regs.filter((r) => r.attended).length;
+        resolve({
+          eventId,
+          stats: { total, confirmed, waitlisted: total - confirmed, attended },
+          attendanceRate: confirmed > 0 ? Math.round((attended / confirmed) * 100) : 0,
+          departmentBreakdown: [],
+          yearBreakdown: [],
+          waitlist: [],
+        });
+      }
     }, 300); // simulate slight network delay
   });
 }
 
 export const api = {
+  eventRegistrations: {
+    list: (eventId) => fetchWithAuth(`/api/admin/events/${eventId}/registrations`),
+    markAttendance: (eventId, payload) =>
+      fetchWithAuth(`/api/admin/events/${eventId}/attendance`, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      }),
+    analytics: (eventId) => fetchWithAuth(`/api/admin/events/${eventId}/analytics`),
+  },
   events: {
     getAll: () => fetchWithAuth('/api/admin/events'),
     create: async (event) => {
