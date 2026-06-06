@@ -12,7 +12,7 @@
  * it is non-null.
  */
 
-const SAFE_URL_PATTERN = /^(https?:\/|\/[^\/])/i;
+const SAFE_URL_PATTERN = /^(https?:\/|\/[^/])/i;
 const UNSAFE_PROTOCOL_PATTERN = /^\s*(javascript|data|vbscript|file|about|chrome|jar|mocha):/i;
 const URL_MAX = 2048;
 
