@@ -76,6 +76,18 @@ export default function SearchBar({ open, onClose, activities, events, onNavigat
     setFocusIdx(-1);
   }, [results]);
 
+  const handleClick = useCallback(
+    (result) => {
+      if (result.type === 'activity') onNavigate('activity', result.key || result.id);
+      else if (result.type === 'event')
+        onEventClick(result.event || { id: result.id, name: result.title });
+      else if (result.type === 'member') window.location.href = result.url || '/team';
+      onClose();
+      clearSearch();
+    },
+    [onNavigate, onEventClick, onClose, clearSearch]
+  );
+
   useEffect(() => {
     const fn = (e) => {
       if (e.key === 'Escape') onClose();
@@ -103,18 +115,6 @@ export default function SearchBar({ open, onClose, activities, events, onNavigat
       if (el) el.scrollIntoView?.({ block: 'nearest' });
     }
   }, [focusIdx]);
-
-  const handleClick = useCallback(
-    (result) => {
-      if (result.type === 'activity') onNavigate('activity', result.key || result.id);
-      else if (result.type === 'event')
-        onEventClick(result.event || { id: result.id, name: result.title });
-      else if (result.type === 'member') window.location.href = result.url || '/team';
-      onClose();
-      clearSearch();
-    },
-    [onNavigate, onEventClick, onClose, clearSearch]
-  );
 
   return (
     <AnimatePresence>
