@@ -6,10 +6,6 @@ const PinnedChats = ({ onSelectPrompt, workspace = 'default' }) => {
   const [pinnedPrompts, setPinnedPrompts] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    loadPinnedPrompts();
-  }, [workspace]);
-
   const loadPinnedPrompts = async () => {
     setLoading(true);
     try {
@@ -21,6 +17,10 @@ const PinnedChats = ({ onSelectPrompt, workspace = 'default' }) => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    loadPinnedPrompts();
+  }, [workspace]);
 
   const handleUnpin = async (e, id) => {
     e.stopPropagation();
