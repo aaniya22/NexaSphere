@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
   moderationService,
-  MODERATION_CATEGORIES,
-  SEVERITY,
   REPUTATION,
 } from '../../services/moderationService';
 
