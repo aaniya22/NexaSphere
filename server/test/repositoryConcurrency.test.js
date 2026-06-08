@@ -16,17 +16,21 @@ class MockPool {
     this.config = config;
   }
 
+  on(event, listener) {
+    // mock event emitter
+  }
+
   async connect() {
     clientsCheckedOut++;
-    
+
     // Per-client concurrency tracker!
     let activeQueriesOnThisClient = 0;
-    
+
     return {
       query: async (sql, params) => {
         totalQueriesExecuted++;
         activeQueriesOnThisClient++;
-        
+
         if (activeQueriesOnThisClient > peakConcurrentQueries) {
           peakConcurrentQueries = activeQueriesOnThisClient;
         }
@@ -95,68 +99,91 @@ const { eventsRepository } = await import('../repositories/eventsRepository.js')
 const { activityEventsRepository } = await import('../repositories/activityEventsRepository.js');
 
 test('Database Repository Concurrency & Sequential Query Safety Audit', async (t) => {
-  
   t.beforeEach(() => {
     peakConcurrentQueries = 0;
     totalQueriesExecuted = 0;
     clientsCheckedOut = 0;
   });
 
-  await t.test('eventsRepository.list executes queries strictly sequentially on the checked-out client', async () => {
-    const result = await eventsRepository.list({ page: 2, limit: 10 });
+  await t.test(
+    'eventsRepository.list executes queries strictly sequentially on the checked-out client',
+    async () => {
+      const result = await eventsRepository.list({ page: 2, limit: 10 });
 
-    // Assert return schema correctness
-    assert.equal(result.total, 150);
-    assert.equal(result.rows.length, 1);
-    const row = result.rows[0];
-    assert.equal(row.id, 'event-1');
-    assert.equal(row.name, 'GSSoC 2026 Kickoff');
-    assert.equal(row.shortName, 'kickoff');
-    assert.deepEqual(row.tags, ['oss', 'gssoc']);
+      // Assert return schema correctness
+      assert.equal(result.total, 150);
+      assert.equal(result.rows.length, 1);
+      const row = result.rows[0];
+      assert.equal(row.id, 'event-1');
+      assert.equal(row.name, 'GSSoC 2026 Kickoff');
+      assert.equal(row.shortName, 'kickoff');
+      assert.deepEqual(row.tags, ['oss', 'gssoc']);
 
-    // Assert that exactly 2 queries were executed
-    assert.equal(totalQueriesExecuted, 2);
+      // Assert that exactly 4 queries were executed (BEGIN, SELECT, SELECT COUNT, COMMIT)
+      assert.equal(totalQueriesExecuted, 4);
 
-    // CRITICAL: Peak concurrent queries on any client must be exactly 1.
-    // If it was Promise.all, peakConcurrentQueries would be 2.
-    assert.equal(peakConcurrentQueries, 1, 'Client query concurrency violation! Queries executed concurrently.');
-  });
+      // CRITICAL: Peak concurrent queries on any client must be exactly 1.
+      // If it was Promise.all, peakConcurrentQueries would be 2.
+      assert.equal(
+        peakConcurrentQueries,
+        1,
+        'Client query concurrency violation! Queries executed concurrently.'
+      );
+    }
+  );
 
-  await t.test('activityEventsRepository.listByActivityKey executes queries strictly sequentially on the checked-out client', async () => {
-    const result = await activityEventsRepository.listByActivityKey('contributions', { page: 1, limit: 5 });
+  await t.test(
+    'activityEventsRepository.listByActivityKey executes queries strictly sequentially on the checked-out client',
+    async () => {
+      const result = await activityEventsRepository.listByActivityKey('contributions', {
+        page: 1,
+        limit: 5,
+      });
 
-    // Assert return schema correctness
-    assert.equal(result.total, 150);
-    assert.equal(result.rows.length, 1);
-    const row = result.rows[0];
-    assert.equal(row.id, 'act-1');
-    assert.equal(row.name, 'Pull Request Open');
-    assert.equal(row.tagline, 'PR is opened');
+      // Assert return schema correctness
+      assert.equal(result.total, 150);
+      assert.equal(result.rows.length, 1);
+      const row = result.rows[0];
+      assert.equal(row.id, 'act-1');
+      assert.equal(row.name, 'Pull Request Open');
+      assert.equal(row.tagline, 'PR is opened');
 
-    // Assert that exactly 2 queries were executed
-    assert.equal(totalQueriesExecuted, 2);
+      // Assert that exactly 4 queries were executed (BEGIN, SELECT, SELECT COUNT, COMMIT)
+      assert.equal(totalQueriesExecuted, 4);
 
-    // CRITICAL: Peak concurrent queries on any client must be exactly 1.
-    assert.equal(peakConcurrentQueries, 1, 'Client query concurrency violation! Queries executed concurrently.');
-  });
+      // CRITICAL: Peak concurrent queries on any client must be exactly 1.
+      assert.equal(
+        peakConcurrentQueries,
+        1,
+        'Client query concurrency violation! Queries executed concurrently.'
+      );
+    }
+  );
 
-  await t.test('Simultaneous concurrent API requests run sequentially on individual client connections (no connection collision)', async () => {
-    // Replicate high-frequency concurrent traffic in autoscaling / production environments.
-    // Five list requests are initiated at the same time.
-    const promises = Array.from({ length: 5 }).map(() =>
-      eventsRepository.list({ page: 1, limit: 20 })
-    );
+  await t.test(
+    'Simultaneous concurrent API requests run sequentially on individual client connections (no connection collision)',
+    async () => {
+      // Replicate high-frequency concurrent traffic in autoscaling / production environments.
+      // Five list requests are initiated at the same time.
+      const promises = Array.from({ length: 5 }).map(() =>
+        eventsRepository.list({ page: 1, limit: 20 })
+      );
 
-    const results = await Promise.all(promises);
+      const results = await Promise.all(promises);
 
-    // Verify all 5 completed successfully
-    assert.equal(results.length, 5);
-    results.forEach((res) => {
-      assert.equal(res.total, 150);
-      assert.equal(res.rows[0].id, 'event-1');
-    });
+      // Verify all 5 completed successfully
+      assert.equal(results.length, 5);
+      results.forEach((res) => {
+        assert.equal(res.total, 150);
+        assert.equal(res.rows[0].id, 'event-1');
+      });
 
-    // Verify that individual clients checked out executed sequentially (no query collisions inside a single checked-out connection).
-    assert.equal(peakConcurrentQueries, 1, 'Concurrency hazard detected under simultaneous parallel requests!');
-  });
+      // Verify that individual clients checked out executed sequentially (no query collisions inside a single checked-out connection).
+      assert.equal(
+        peakConcurrentQueries,
+        1,
+        'Concurrency hazard detected under simultaneous parallel requests!'
+      );
+    }
+  );
 });

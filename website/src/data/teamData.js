@@ -32,7 +32,7 @@ export const teamMembers = [
     achievements: ['Hackathon Winner', 'Best Organizer Award'],
     testimonials: [
       { text: 'Ayush is a fantastic leader!', author: 'Tanishk Bansal' },
-      { text: 'Always ready to help the team.', author: 'Tushar Goswami' }
+      { text: 'Always ready to help the team.', author: 'Tushar Goswami' },
     ],
   },
   {

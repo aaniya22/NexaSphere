@@ -33,14 +33,15 @@ test('recruitment submissions normalize aliases and strip unknown fields', () =>
 
 test('core team application rejects missing required fields', () => {
   assert.throws(
-    () => normalizeFormSubmission('core_team', {
-      fullName: 'Jane Doe',
-      collegeEmail: 'jane@example.com',
-      whatsapp: '9876543210',
-      branch: 'CSE',
-      section: 'A',
-      whyJoin: 'Interested',
-    }),
+    () =>
+      normalizeFormSubmission('core_team', {
+        fullName: 'Jane Doe',
+        collegeEmail: 'jane@example.com',
+        whatsapp: '9876543210',
+        branch: 'CSE',
+        section: 'A',
+        whyJoin: 'Interested',
+      }),
     /Year is required/
   );
 });
@@ -71,14 +72,15 @@ test('membership submissions validate membership-specific fields and strip unkno
 
 test('membership submissions require reason text', () => {
   assert.throws(
-    () => normalizeFormSubmission('membership', {
-      fullName: 'John Smith',
-      collegeEmail: 'john.smith@glbajajgroup.org',
-      whatsapp: '1234567890',
-      branch: 'IT',
-      section: 'C',
-      semester: '3rd Semester',
-    }),
+    () =>
+      normalizeFormSubmission('membership', {
+        fullName: 'John Smith',
+        collegeEmail: 'john.smith@glbajajgroup.org',
+        whatsapp: '1234567890',
+        branch: 'IT',
+        section: 'C',
+        semester: '3rd Semester',
+      }),
     /Reason is required/
   );
 });

@@ -46,4 +46,3 @@ const hackathon = {
 };
 
 export default hackathon;
-

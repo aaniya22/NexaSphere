@@ -80,6 +80,9 @@ async function ensureReady() {
   if (!schemaReady) {
     schemaReady = withDb(async (client) => {
       await ensureSchema(client);
+    }).catch((err) => {
+      schemaReady = null;
+      throw err;
     });
   }
 
@@ -158,7 +161,7 @@ export async function getAdminSession(token) {
       // Async non-blocking deferred persistence: execute outside the request query thread context
       withDb(async (dbClient) => {
         await dbClient.query(
-          'update admin_sessions set last_seen_at = now() where token_hash = $1',
+          "update admin_sessions set last_seen_at = now() where token_hash = $1 and last_seen_at < now() - interval '1 minute'",
           [tokenHash]
         );
       }).catch((error) => {
@@ -166,9 +169,11 @@ export async function getAdminSession(token) {
       });
     }
 
-    // Bounded memory defense: safeguard map from unbounded growth in extreme production environments
+    // Bounded memory defense: evict oldest entry instead of clearing the entire map,
+    // which would cause a thundering herd of UPDATE queries from the next 1000+ requests
     if (lastSeenThrottleMap.size > 1000) {
-      lastSeenThrottleMap.clear();
+      const oldestKey = lastSeenThrottleMap.keys().next().value;
+      if (oldestKey) lastSeenThrottleMap.delete(oldestKey);
     }
 
     return {

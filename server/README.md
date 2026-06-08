@@ -37,24 +37,24 @@ The `server/` directory contains the **Node.js / Express** backend API that powe
 
 ## 2. Tech Stack
 
-| Package | Version | Purpose |
-|---|---|---|
-| `express` | ^4.19 | HTTP framework |
-| `pg` | ^8.21 | PostgreSQL driver |
-| `node-pg-migrate` | ^8.0 | Schema migration runner |
-| `socket.io` | ^4.7 | WebSocket server |
-| `firebase-admin` | ^12.0 | Authentication (token verify) |
-| `@sendgrid/mail` | ^8.1 | Email delivery |
-| `nodemailer` | ^8.0 | SMTP email alternative |
-| `zod` | ^4.4 | Request schema validation |
-| `express-validator` | ^7.0 | Additional input validation |
-| `winston` | ^3.11 | Structured logging |
-| `morgan` | ^1.10 | HTTP request logging |
-| `cors` | ^2.8 | CORS header management |
-| `swagger-jsdoc` | ^6.2 | OpenAPI spec generation |
-| `swagger-ui-express` | ^5.0 | Swagger UI serving |
-| `redoc-express` | ^1.0 | ReDoc alternative UI |
-| `@sentry/node` | ^7.84 | Error tracking |
+| Package              | Version | Purpose                       |
+| -------------------- | ------- | ----------------------------- |
+| `express`            | ^4.19   | HTTP framework                |
+| `pg`                 | ^8.21   | PostgreSQL driver             |
+| `node-pg-migrate`    | ^8.0    | Schema migration runner       |
+| `socket.io`          | ^4.7    | WebSocket server              |
+| `firebase-admin`     | ^12.0   | Authentication (token verify) |
+| `@sendgrid/mail`     | ^8.1    | Email delivery                |
+| `nodemailer`         | ^8.0    | SMTP email alternative        |
+| `zod`                | ^4.4    | Request schema validation     |
+| `express-validator`  | ^7.0    | Additional input validation   |
+| `winston`            | ^3.11   | Structured logging            |
+| `morgan`             | ^1.10   | HTTP request logging          |
+| `cors`               | ^2.8    | CORS header management        |
+| `swagger-jsdoc`      | ^6.2    | OpenAPI spec generation       |
+| `swagger-ui-express` | ^5.0    | Swagger UI serving            |
+| `redoc-express`      | ^1.0    | ReDoc alternative UI          |
+| `@sentry/node`       | ^7.84   | Error tracking                |
 
 ---
 
@@ -163,37 +163,37 @@ curl http://localhost:8080/healthz
 
 ### Core API (`/api`)
 
-| Method | Path | Description |
-|---|---|---|
-| `GET` | `/api/events` | List all events |
-| `GET` | `/api/events/:id` | Get event by ID |
-| `POST` | `/api/events` | Create event (admin) |
-| `PUT` | `/api/events/:id` | Update event (admin) |
-| `DELETE` | `/api/events/:id` | Delete event (admin) |
-| `GET` | `/api/team` | List core team members |
-| `GET` | `/api/activity` | Get activity event log |
-| `POST` | `/api/forms` | Submit a form |
+| Method   | Path              | Description            |
+| -------- | ----------------- | ---------------------- |
+| `GET`    | `/api/events`     | List all events        |
+| `GET`    | `/api/events/:id` | Get event by ID        |
+| `POST`   | `/api/events`     | Create event (admin)   |
+| `PUT`    | `/api/events/:id` | Update event (admin)   |
+| `DELETE` | `/api/events/:id` | Delete event (admin)   |
+| `GET`    | `/api/team`       | List core team members |
+| `GET`    | `/api/activity`   | Get activity event log |
+| `POST`   | `/api/forms`      | Submit a form          |
 
 ### Analytics (`/api/analytics`)
 
-| Method | Path | Description |
-|---|---|---|
-| `GET` | `/api/analytics/overview` | Dashboard overview stats |
-| `GET` | `/api/analytics/events` | Event engagement metrics |
+| Method | Path                      | Description              |
+| ------ | ------------------------- | ------------------------ |
+| `GET`  | `/api/analytics/overview` | Dashboard overview stats |
+| `GET`  | `/api/analytics/events`   | Event engagement metrics |
 
 ### Monitoring (`/api/monitoring`)
 
-| Method | Path | Description |
-|---|---|---|
-| `GET` | `/healthz` | Health check |
-| `GET` | `/api/monitoring/metrics` | Performance metrics |
+| Method | Path                      | Description         |
+| ------ | ------------------------- | ------------------- |
+| `GET`  | `/healthz`                | Health check        |
+| `GET`  | `/api/monitoring/metrics` | Performance metrics |
 
 ### Documentation
 
-| URL | Description |
-|---|---|
-| `/api-docs` | Interactive Swagger UI |
-| `/redoc` | ReDoc API documentation |
+| URL         | Description             |
+| ----------- | ----------------------- |
+| `/api-docs` | Interactive Swagger UI  |
+| `/redoc`    | ReDoc API documentation |
 
 ---
 
@@ -207,13 +207,13 @@ Route → Middleware → Controller → Service → Repository → PostgreSQL
 
 ### Rules
 
-| Layer | Rule |
-|---|---|
-| **Routes** | Only define the path + HTTP method, call controller function |
-| **Controllers** | Parse request params/body, call service, format response |
-| **Services** | All business logic, orchestration, calls to external APIs |
+| Layer            | Rule                                                               |
+| ---------------- | ------------------------------------------------------------------ |
+| **Routes**       | Only define the path + HTTP method, call controller function       |
+| **Controllers**  | Parse request params/body, call service, format response           |
+| **Services**     | All business logic, orchestration, calls to external APIs          |
 | **Repositories** | All SQL queries via `pg`. Never put SQL in controllers or services |
-| **Middleware** | Cross-cutting concerns only (auth, logging, validation) |
+| **Middleware**   | Cross-cutting concerns only (auth, logging, validation)            |
 
 ### Adding a New Feature
 
@@ -262,10 +262,10 @@ npm run migrate:create -- <descriptive-name>
 // migrations/TIMESTAMP_add-notifications-table.js
 export const up = (pgm) => {
   pgm.createTable('notifications', {
-    id:         { type: 'serial', primaryKey: true },
-    user_id:    { type: 'text', notNull: true },
-    message:    { type: 'text', notNull: true },
-    read:       { type: 'boolean', default: false },
+    id: { type: 'serial', primaryKey: true },
+    user_id: { type: 'text', notNull: true },
+    message: { type: 'text', notNull: true },
+    read: { type: 'boolean', default: false },
     created_at: { type: 'timestamp', default: pgm.func('current_timestamp') },
   });
 };
@@ -310,6 +310,7 @@ router.post('/events', verifyAdmin, eventsController.create);
 ```
 
 The middleware:
+
 1. Reads `Authorization: Bearer <token>` header
 2. Calls `firebase-admin.auth().verifyIdToken(token)`
 3. Sets `req.user` with decoded token claims
@@ -323,9 +324,9 @@ The middleware:
 
 Two email delivery options are configured:
 
-| Provider | Service | Config |
-|---|---|---|
-| **SendGrid** | `server/services/emailService.js` | `SENDGRID_API_KEY` |
+| Provider            | Service                           | Config                                             |
+| ------------------- | --------------------------------- | -------------------------------------------------- |
+| **SendGrid**        | `server/services/emailService.js` | `SENDGRID_API_KEY`                                 |
 | **SMTP/Nodemailer** | `server/services/emailService.js` | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` |
 
 Email templates live in `server/services/templates/`.
@@ -336,8 +337,8 @@ import { sendEmail } from './services/emailService.js';
 await sendEmail({
   to: 'user@example.com',
   subject: 'Welcome to NexaSphere',
-  template: 'welcome',        // matches a file in services/templates/
-  variables: { name: 'Alex' }
+  template: 'welcome', // matches a file in services/templates/
+  variables: { name: 'Alex' },
 });
 ```
 
@@ -382,26 +383,26 @@ All errors pass through `server/middleware/errorHandler.js` and return:
 
 ## 12. Testing
 
-Tests use **Jest** with coverage reporting.
+Tests use the **Node.js built-in test runner** (`node:test`).
 
 ```bash
-# Run all tests with coverage
+# Run all tests
 npm run test
 
 # Run in watch mode
 npm run test:watch
 ```
 
-Test files live in `server/test/`. Follow the naming convention: `*.test.js`.
+Test files live in `server/test/`. Follow the naming convention: `*.test.js`.  
+All `test/**/*.test.js` files are automatically discovered and executed via glob pattern.
 
 ```js
 // server/test/events.test.js
-import { describe, it, expect, beforeAll } from '@jest/globals';
+import test from 'node:test';
+import assert from 'node:assert/strict';
 
-describe('Events API', () => {
-  it('GET /api/events returns array', async () => {
-    // ...
-  });
+test('GET /api/events returns array', async () => {
+  // ...
 });
 ```
 
@@ -438,5 +439,5 @@ SENTRY_DSN=https://xxx@oXXXXXX.ingest.sentry.io/XXXXXX
 
 ---
 
-*For frontend documentation, see the [main README](../README.md).*  
-*For full architecture details, see [docs/ARCHITECTURE.md](../docs/ARCHITECTURE.md).*
+_For frontend documentation, see the [main README](../README.md)._  
+_For full architecture details, see [docs/ARCHITECTURE.md](../docs/ARCHITECTURE.md)._

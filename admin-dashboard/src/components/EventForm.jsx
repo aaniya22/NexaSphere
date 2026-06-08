@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { api } from '../services/api';
 import { AdminIcon } from './AdminIcon';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 
 const STATUSES = ['upcoming', 'ongoing', 'completed', 'cancelled'];
 
@@ -63,6 +64,8 @@ const empty = {
 };
 
 export function EventForm({ event, onClose }) {
+  const handleClose = useCallback(() => onClose(), [onClose]);
+  const modalRef = useFocusTrap(true, handleClose);
   const [form, setForm] = useState(
     event
       ? {
@@ -149,7 +152,11 @@ export function EventForm({ event, onClose }) {
   };
 
   return (
-    <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
+    <div
+      className="modal-overlay"
+      ref={modalRef}
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
       <div className="modal" style={{ maxWidth: 600, maxHeight: '90vh', overflowY: 'auto' }}>
         <div className="modal-header">
           <h3>{event?.id ? 'Edit Event' : 'New Event'}</h3>

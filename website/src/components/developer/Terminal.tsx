@@ -19,12 +19,12 @@ interface OutputLine {
 export default function Terminal({ isOpen, onClose, theme, setTheme, onNavigate }: TerminalProps) {
   const [history, setHistory] = useState<OutputLine[]>([
     { id: 0, text: 'NexaSphere Developer Mode Terminal v1.0.0', type: 'system' },
-    { id: 1, text: 'Type "help" for a list of available commands.', type: 'system' }
+    { id: 1, text: 'Type "help" for a list of available commands.', type: 'system' },
   ]);
   const [inputValue, setInputValue] = useState('');
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [inputHistory, setInputHistory] = useState<string[]>([]);
-  
+
   const endOfOutputRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -46,17 +46,20 @@ export default function Terminal({ isOpen, onClose, theme, setTheme, onNavigate 
     }
   }, [isOpen]);
 
-  const printToTerminal = (output: string | React.ReactNode, type: 'output' | 'error' | 'system' = 'output') => {
-    setHistory(prev => [...prev, { id: Date.now(), text: output, type }]);
+  const printToTerminal = (
+    output: string | React.ReactNode,
+    type: 'output' | 'error' | 'system' = 'output'
+  ) => {
+    setHistory((prev) => [...prev, { id: Date.now(), text: output, type }]);
   };
 
   const handleKeyDown = (e: ReactKeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       const command = inputValue.trim();
-      
+
       if (command) {
-        setHistory(prev => [...prev, { id: Date.now(), text: `> ${command}`, type: 'input' }]);
-        setInputHistory(prev => [...prev, command]);
+        setHistory((prev) => [...prev, { id: Date.now(), text: `> ${command}`, type: 'input' }]);
+        setInputHistory((prev) => [...prev, command]);
         setHistoryIndex(-1);
 
         if (command.toLowerCase() === 'clear') {
@@ -111,7 +114,7 @@ export default function Terminal({ isOpen, onClose, theme, setTheme, onNavigate 
             right: 0,
             zIndex: 99999, // Super high z-index to stay above everything
             padding: '1.5rem',
-            pointerEvents: 'none'
+            pointerEvents: 'none',
           }}
         >
           <div
@@ -127,9 +130,10 @@ export default function Terminal({ isOpen, onClose, theme, setTheme, onNavigate 
               WebkitBackdropFilter: 'blur(16px)',
               border: `1px solid ${theme === 'dark' ? 'rgba(204, 17, 17, 0.4)' : 'rgba(204, 17, 17, 0.2)'}`,
               borderRadius: '12px',
-              boxShadow: theme === 'dark' 
-                ? '0 10px 40px rgba(0, 0, 0, 0.5), 0 0 20px rgba(204, 17, 17, 0.2) inset' 
-                : '0 10px 40px rgba(0, 0, 0, 0.1), 0 0 20px rgba(204, 17, 17, 0.1) inset',
+              boxShadow:
+                theme === 'dark'
+                  ? '0 10px 40px rgba(0, 0, 0, 0.5), 0 0 20px rgba(204, 17, 17, 0.2) inset'
+                  : '0 10px 40px rgba(0, 0, 0, 0.1), 0 0 20px rgba(204, 17, 17, 0.1) inset',
               display: 'flex',
               flexDirection: 'column',
               fontFamily: "'Fira Code', 'Consolas', monospace",
@@ -138,28 +142,53 @@ export default function Terminal({ isOpen, onClose, theme, setTheme, onNavigate 
             }}
           >
             {/* Terminal Header */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '0.75rem 1rem',
-              background: theme === 'dark' ? 'rgba(0, 0, 0, 0.4)' : 'rgba(240, 240, 240, 0.6)',
-              borderBottom: `1px solid ${theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`,
-            }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '0.75rem 1rem',
+                background: theme === 'dark' ? 'rgba(0, 0, 0, 0.4)' : 'rgba(240, 240, 240, 0.6)',
+                borderBottom: `1px solid ${theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`,
+              }}
+            >
               <div style={{ display: 'flex', gap: '8px' }}>
-                <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#ff5f56' }} />
-                <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#ffbd2e' }} />
-                <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#27c93f' }} />
+                <div
+                  style={{
+                    width: '12px',
+                    height: '12px',
+                    borderRadius: '50%',
+                    background: '#ff5f56',
+                  }}
+                />
+                <div
+                  style={{
+                    width: '12px',
+                    height: '12px',
+                    borderRadius: '50%',
+                    background: '#ffbd2e',
+                  }}
+                />
+                <div
+                  style={{
+                    width: '12px',
+                    height: '12px',
+                    borderRadius: '50%',
+                    background: '#27c93f',
+                  }}
+                />
               </div>
-              <div style={{ 
-                fontSize: '0.8rem', 
-                color: theme === 'dark' ? '#888' : '#666',
-                fontWeight: 600,
-                letterSpacing: '1px'
-              }}>
+              <div
+                style={{
+                  fontSize: '0.8rem',
+                  color: theme === 'dark' ? '#888' : '#666',
+                  fontWeight: 600,
+                  letterSpacing: '1px',
+                }}
+              >
                 NEXA_TERMINAL
               </div>
-              <button 
+              <button
                 onClick={onClose}
                 style={{
                   background: 'none',
@@ -170,7 +199,7 @@ export default function Terminal({ isOpen, onClose, theme, setTheme, onNavigate 
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  padding: 0
+                  padding: 0,
                 }}
                 aria-label="Close Terminal"
               >
@@ -179,7 +208,7 @@ export default function Terminal({ isOpen, onClose, theme, setTheme, onNavigate 
             </div>
 
             {/* Terminal Body */}
-            <div 
+            <div
               style={{
                 flex: 1,
                 overflowY: 'auto',
@@ -192,15 +221,20 @@ export default function Terminal({ isOpen, onClose, theme, setTheme, onNavigate 
               }}
             >
               {history.map((line) => (
-                <div 
-                  key={line.id} 
+                <div
+                  key={line.id}
                   style={{
-                    color: line.type === 'input' 
-                      ? (theme === 'dark' ? '#ff4444' : '#cc1111')
-                      : line.type === 'system'
-                        ? (theme === 'dark' ? '#888' : '#666')
-                        : 'inherit',
-                    wordBreak: 'break-all'
+                    color:
+                      line.type === 'input'
+                        ? theme === 'dark'
+                          ? '#ff4444'
+                          : '#cc1111'
+                        : line.type === 'system'
+                          ? theme === 'dark'
+                            ? '#888'
+                            : '#666'
+                          : 'inherit',
+                    wordBreak: 'break-all',
                   }}
                 >
                   {line.text}
@@ -210,18 +244,22 @@ export default function Terminal({ isOpen, onClose, theme, setTheme, onNavigate 
             </div>
 
             {/* Terminal Input Form */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              padding: '0.75rem 1rem',
-              borderTop: `1px solid ${theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`,
-              background: theme === 'dark' ? 'rgba(0, 0, 0, 0.2)' : 'rgba(255, 255, 255, 0.4)',
-            }}>
-              <span style={{ 
-                color: theme === 'dark' ? '#ff4444' : '#cc1111', 
-                marginRight: '0.5rem',
-                fontWeight: 'bold'
-              }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                padding: '0.75rem 1rem',
+                borderTop: `1px solid ${theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`,
+                background: theme === 'dark' ? 'rgba(0, 0, 0, 0.2)' : 'rgba(255, 255, 255, 0.4)',
+              }}
+            >
+              <span
+                style={{
+                  color: theme === 'dark' ? '#ff4444' : '#cc1111',
+                  marginRight: '0.5rem',
+                  fontWeight: 'bold',
+                }}
+              >
                 $
               </span>
               <input

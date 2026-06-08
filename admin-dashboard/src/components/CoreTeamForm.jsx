@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { api } from '../services/api';
 import { AdminIcon } from './AdminIcon';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 
 const ROLES = [
   'President',
@@ -27,6 +28,8 @@ export function CoreTeamForm({ member, onClose }) {
   const [error, setError] = useState('');
 
   const isEdit = !!member;
+  const handleClose = useCallback(() => onClose(), [onClose]);
+  const modalRef = useFocusTrap(true, handleClose);
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -49,7 +52,11 @@ export function CoreTeamForm({ member, onClose }) {
   };
 
   return (
-    <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
+    <div
+      className="modal-overlay"
+      ref={modalRef}
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
       <div className="modal">
         <div className="modal-header">
           <h3>{isEdit ? 'Edit Core Team Member' : 'Add Core Team Member'}</h3>

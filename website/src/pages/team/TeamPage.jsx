@@ -129,14 +129,18 @@ export default function TeamPage({ onBack, onApply }) {
     };
 
     fetchTeam();
-    const interval = setInterval(fetchTeam, 4000);
-
+    // Removed unconditional 4s polling — socket event handles live updates.
+    // Re-fetch once when the tab becomes visible again after being backgrounded.
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') fetchTeam();
+    };
     // Socket: refetch immediately when admin updates team
     const onContentUpdated = (data) => {
       if (data?.type === 'team') {
         fetchTeam();
       }
     };
+    document.addEventListener('visibilitychange', onVisibilityChange);
     on('content:updated', onContentUpdated);
 
     return () => {

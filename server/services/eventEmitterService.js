@@ -5,7 +5,7 @@
 
 import EventEmitter from 'events';
 import logger from '../utils/logger.js';
-import { emitToRoom, getRoom } from '../config/socket.js';
+import { emitToRoom, getRoom, emitToRole } from '../config/socket.js';
 import notificationsService from './notificationsService.js';
 import {
   sendRegistrationConfirmationEmail,
@@ -33,6 +33,21 @@ class RealTimeEventManager extends EventEmitter {
 
     // Attendance marked event
     this.on('attendance-marked', this.handleAttendanceMarked.bind(this));
+
+    // New event published
+    this.on('new-event-published', this.handleNewEventPublished.bind(this));
+
+    // Team invitation
+    this.on('team-invitation', this.handleTeamInvitation.bind(this));
+
+    // Club/activity update
+    this.on('club-update', this.handleClubUpdate.bind(this));
+
+    // Admin announcement
+    this.on('admin-announcement', this.handleAdminAnnouncement.bind(this));
+
+    // Deadline reminder
+    this.on('deadline-reminder', this.handleDeadlineReminder.bind(this));
   }
 
   /**
@@ -80,10 +95,12 @@ class RealTimeEventManager extends EventEmitter {
           message: `You're registered for ${data.eventName}`,
           link: `/events/${data.eventId}`,
         });
-      } catch (err) { logger.warn('Failed to persist notification', { err: err.message }); }
+      } catch (err) {
+        logger.warn('Failed to persist notification', { err: err.message });
+      }
 
       // Notify admin
-      emitToRoom(getRoom('admin'), 'admin:new-registration', {
+      emitToRole('membership_admin', 'admin:new-registration', {
         userId: data.userId,
         userName: data.userName,
         eventName: data.eventName,
@@ -140,17 +157,19 @@ class RealTimeEventManager extends EventEmitter {
           message: `You've been promoted for ${data.eventName}`,
           link: `/events/${data.eventId}`,
         });
-      } catch (err) { logger.warn('Failed to persist notification', { err: err.message }); }
+      } catch (err) {
+        logger.warn('Failed to persist notification', { err: err.message });
+      }
 
       // Notify admin
-      emitToRoom(getRoom('admin'), 'admin:waitlist-promotion', {
+      emitToRole('events_admin', 'admin:waitlist-promotion', {
         userId: data.userId,
         userName: data.userName,
         eventName: data.eventName,
         timestamp: new Date(),
       });
     } catch (error) {
-      logger.error('Error handling waitlist promotion', { error: error.message });
+      logger.error('Error handling waitlist promotion event', { error: error.message });
     }
   }
 
@@ -202,7 +221,9 @@ class RealTimeEventManager extends EventEmitter {
           message: `${data.eventName} is starting soon`,
           link: `/events/${data.eventId}`,
         });
-      } catch (err) { logger.warn('Failed to persist notification', { err: err.message }); }
+      } catch (err) {
+        logger.warn('Failed to persist notification', { err: err.message });
+      }
     } catch (error) {
       logger.error('Error handling event reminder', { error: error.message });
     }
@@ -252,10 +273,12 @@ class RealTimeEventManager extends EventEmitter {
           message: `Attendance for ${data.eventName} recorded. You earned ${data.points || 0} points.`,
           link: `/events/${data.eventId}`,
         });
-      } catch (err) { logger.warn('Failed to persist notification', { err: err.message }); }
+      } catch (err) {
+        logger.warn('Failed to persist notification', { err: err.message });
+      }
 
       // Notify admin
-      emitToRoom(getRoom('admin'), 'admin:attendance-marked', {
+      emitToRole('events_admin', 'admin:attendance-marked', {
         userId: data.userId,
         userName: data.userName,
         eventName: data.eventName,
@@ -264,6 +287,147 @@ class RealTimeEventManager extends EventEmitter {
       });
     } catch (error) {
       logger.error('Error handling attendance event', { error: error.message });
+    }
+  }
+
+  /**
+   * Handle new event published
+   */
+  async handleNewEventPublished(data) {
+    try {
+      logger.info('Event: New event published', {
+        eventId: data.eventId,
+        eventName: data.eventName,
+      });
+      emitToRoom(getRoom('notifications'), 'new-event', {
+        eventId: data.eventId,
+        eventName: data.eventName,
+        eventDate: data.eventDate,
+        timestamp: new Date(),
+      });
+      try {
+        notificationsService.addNotification('global', {
+          type: 'system',
+          title: `New Event: ${data.eventName}`,
+          message: `Registration is now open for ${data.eventName}`,
+          link: `/events/${data.eventId}`,
+        });
+      } catch (err) {
+        logger.warn('Failed to persist new-event notification', { err: err.message });
+      }
+      emitToRole('events_admin', 'admin:event-published', {
+        eventId: data.eventId,
+        eventName: data.eventName,
+        timestamp: new Date(),
+      });
+    } catch (error) {
+      logger.error('Error handling new event published', { error: error.message });
+    }
+  }
+
+  /**
+   * Handle team invitation
+   */
+  async handleTeamInvitation(data) {
+    try {
+      logger.info('Event: Team invitation', { userId: data.userId, teamName: data.teamName });
+      if (data.userId) {
+        emitToRoom(`user-${data.userId}`, 'team-invitation', {
+          teamName: data.teamName,
+          inviterName: data.inviterName,
+          timestamp: new Date(),
+        });
+        try {
+          notificationsService.addNotification(data.userId, {
+            type: 'message',
+            title: `Team Invitation: ${data.teamName}`,
+            message: `${data.inviterName || 'Someone'} invited you to join ${data.teamName}`,
+            link: `/team/${data.teamId}`,
+          });
+        } catch (err) {
+          logger.warn('Failed to persist team-invite notification', { err: err.message });
+        }
+      }
+    } catch (error) {
+      logger.error('Error handling team invitation', { error: error.message });
+    }
+  }
+
+  /**
+   * Handle club/activity update
+   */
+  async handleClubUpdate(data) {
+    try {
+      logger.info('Event: Club update', { clubName: data.clubName });
+      emitToRoom(getRoom('notifications'), 'club-update', {
+        clubName: data.clubName,
+        message: data.message,
+        timestamp: new Date(),
+      });
+      try {
+        notificationsService.addNotification('global', {
+          type: 'system',
+          title: `${data.clubName} Update`,
+          message: data.message || 'New update from your club',
+          link: data.link || null,
+        });
+      } catch (err) {
+        logger.warn('Failed to persist club-update notification', { err: err.message });
+      }
+    } catch (error) {
+      logger.error('Error handling club update', { error: error.message });
+    }
+  }
+
+  /**
+   * Handle admin announcement
+   */
+  async handleAdminAnnouncement(data) {
+    try {
+      logger.info('Event: Admin announcement', { title: data.title });
+      emitToRoom(getRoom('notifications'), 'admin-announcement', {
+        title: data.title,
+        message: data.message,
+        timestamp: new Date(),
+      });
+      try {
+        notificationsService.addNotification('global', {
+          type: 'system',
+          title: data.title || 'Announcement',
+          message: data.message || '',
+          link: data.link || null,
+        });
+      } catch (err) {
+        logger.warn('Failed to persist announcement notification', { err: err.message });
+      }
+    } catch (error) {
+      logger.error('Error handling admin announcement', { error: error.message });
+    }
+  }
+
+  /**
+   * Handle deadline reminder
+   */
+  async handleDeadlineReminder(data) {
+    try {
+      logger.info('Event: Deadline reminder', { eventName: data.eventName });
+      emitToRoom(getRoom('notifications'), 'deadline-reminder', {
+        eventName: data.eventName,
+        deadline: data.deadline,
+        timestamp: new Date(),
+      });
+      try {
+        notificationsService.addNotification(data.userId || 'global', {
+          type: 'system',
+          title: `Deadline Reminder: ${data.eventName}`,
+          message: `Registration for ${data.eventName} closes ${data.deadline || 'soon'}`,
+          link: `/events/${data.eventId}`,
+        });
+      } catch (err) {
+        logger.warn('Failed to persist deadline-reminder notification', { err: err.message });
+      }
+    } catch (error) {
+      logger.error('Error handling deadline reminder', { error: error.message });
     }
   }
 

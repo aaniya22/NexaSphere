@@ -10,7 +10,7 @@ afterEach(() => {
 // Mock window.matchMedia
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
-  value: vi.fn().mockImplementation(query => ({
+  value: vi.fn().mockImplementation((query) => ({
     matches: false,
     media: query,
     onchange: null,
@@ -46,11 +46,13 @@ if (typeof window.localStorage?.getItem !== 'function') {
 }
 
 // Mock IntersectionObserver
-global.IntersectionObserver = vi.fn(() => ({
-  observe: vi.fn(),
-  unobserve: vi.fn(),
-  disconnect: vi.fn(),
-})) as any;
+class MockIntersectionObserver {
+  constructor() {}
+  observe = vi.fn();
+  unobserve = vi.fn();
+  disconnect = vi.fn();
+}
+global.IntersectionObserver = MockIntersectionObserver as any;
 
 // Suppress console errors in tests unless explicitly checking them
 const originalError = console.error;
@@ -58,7 +60,8 @@ beforeAll(() => {
   console.error = (...args: any[]) => {
     if (
       typeof args[0] === 'string' &&
-      (args[0].includes('Warning: ReactDOM.render') || args[0].includes('Not implemented: HTMLFormElement'))
+      (args[0].includes('Warning: ReactDOM.render') ||
+        args[0].includes('Not implemented: HTMLFormElement'))
     ) {
       return;
     }

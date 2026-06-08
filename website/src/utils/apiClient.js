@@ -25,7 +25,8 @@ function getIDBCacheKey(url) {
     if (pathname.includes('/dashboard')) return CACHE_KEYS.DASHBOARD;
     if (pathname.includes('/analytics')) return CACHE_KEYS.ANALYTICS;
     if (pathname.includes('/notifications')) return CACHE_KEYS.NOTIFICATIONS;
-    if (pathname.includes('/profile') || pathname.includes('/user/me')) return CACHE_KEYS.USER_PROFILE;
+    if (pathname.includes('/profile') || pathname.includes('/user/me'))
+      return CACHE_KEYS.USER_PROFILE;
     if (pathname.includes('/events')) return CACHE_KEYS.EVENTS;
   } catch {
     // URL parse failed — no IDB key
@@ -79,9 +80,7 @@ export const apiClient = async (url, options = {}) => {
       // Queue the mutation for later replay
       let body;
       try {
-        body = fetchOptions.body
-          ? JSON.parse(fetchOptions.body)
-          : undefined;
+        body = fetchOptions.body ? JSON.parse(fetchOptions.body) : undefined;
       } catch {
         body = fetchOptions.body;
       }
@@ -98,7 +97,8 @@ export const apiClient = async (url, options = {}) => {
           queued: true,
           id,
           offline: true,
-          message: 'You are offline. Your changes have been saved and will sync when you reconnect.',
+          message:
+            'You are offline. Your changes have been saved and will sync when you reconnect.',
         };
       } else if (reason === 'duplicate') {
         return {
@@ -115,13 +115,13 @@ export const apiClient = async (url, options = {}) => {
 
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), timeout);
-  
+
   try {
     const response = await fetch(url, {
       ...fetchOptions,
-      signal: controller.signal
+      signal: controller.signal,
     });
-    
+
     clearTimeout(id);
 
     if (response.type === 'opaque') {
@@ -135,13 +135,13 @@ export const apiClient = async (url, options = {}) => {
       } catch {
         // Not JSON
       }
-      
+
       const message = errorDetail?.message || response.statusText || 'API Request Failed';
       const code = errorDetail?.code || 'API_ERROR';
-      
+
       throw new ApiError(message, response.status, code);
     }
-    
+
     const contentType = response.headers.get('content-type');
     if (contentType && contentType.includes('application/json')) {
       try {
@@ -150,11 +150,11 @@ export const apiClient = async (url, options = {}) => {
         throw new ApiError('Malformed JSON response', 500, 'MALFORMED_JSON', e);
       }
     }
-    
+
     return await response.text();
   } catch (error) {
     clearTimeout(id);
-    
+
     let standardError;
     if (error instanceof ApiError) {
       standardError = error;
@@ -166,17 +166,17 @@ export const apiClient = async (url, options = {}) => {
     } else {
       standardError = new ApiError(error.message || 'Network failure', 0, 'NETWORK_ERROR', error);
     }
-    
+
     // Only report genuine errors to Sentry (not offline / timeout)
     if (!['OFFLINE_NO_CACHE', 'NETWORK_ERROR', 'TIMEOUT'].includes(standardError.code)) {
       Sentry.captureException(standardError, {
         tags: {
           api_url: url,
-          api_method: method
-        }
+          api_method: method,
+        },
       });
     }
-    
+
     throw standardError;
   }
 };

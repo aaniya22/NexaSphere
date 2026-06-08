@@ -53,7 +53,7 @@ describe('Core Team Service', () => {
     mockCoreTeamService.addMember.mockRejectedValue(
       new Error('Invalid member data')
     );
-    expect(() => mockCoreTeamService.addMember({})).rejects.toThrow(
+    await expect(mockCoreTeamService.addMember({})).rejects.toThrow(
       'Invalid member data'
     );
   });
@@ -67,7 +67,7 @@ describe('Core Team Service', () => {
     mockCoreTeamService.getMembers.mockResolvedValue(allMembers);
 
     const result = await mockCoreTeamService.getMembers();
-    const coreMembers = result.filter(m => m.role === 'Core Team Member');
+    const coreMembers = result.filter((m) => m.role === 'Core Team Member');
     expect(coreMembers).toHaveLength(2);
   });
 });

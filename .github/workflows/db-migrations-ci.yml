@@ -37,10 +37,10 @@ jobs:
           - 5432:5432
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '20'
           cache: 'npm'
@@ -90,10 +90,10 @@ jobs:
           - 5432:5432
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Setup Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: '17'
           distribution: 'temurin'
@@ -141,10 +141,10 @@ jobs:
           - 5432:5432
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v6
         with:
           python-version: '3.11'
           cache: 'pip'
@@ -184,25 +184,29 @@ jobs:
     name: Check Migration Documentation
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Verify DATABASE_MIGRATIONS.md exists
         run: |
-          if [ ! -f DATABASE_MIGRATIONS.md ]; then
+          if [ -f DATABASE_MIGRATIONS.md ]; then
+            echo "✓ DATABASE_MIGRATIONS.md found at root"
+            wc -l DATABASE_MIGRATIONS.md
+          elif [ -f docs/DATABASE_MIGRATIONS.md ]; then
+            echo "✓ DATABASE_MIGRATIONS.md found in docs/"
+            wc -l docs/DATABASE_MIGRATIONS.md
+          else
             echo "❌ DATABASE_MIGRATIONS.md not found"
             exit 1
           fi
-          echo "✓ DATABASE_MIGRATIONS.md found"
-          wc -l DATABASE_MIGRATIONS.md
 
       - name: Verify migration directories exist
         run: |
           echo "Checking Node.js migrations..."
           [ -d "server/migrations" ] && echo "✓ server/migrations exists" || echo "❌ server/migrations missing"
-          
+
           echo "Checking Java migrations..."
           [ -d "server-java/src/main/resources/db/migration" ] && echo "✓ Java migration dir exists" || echo "❌ Java migration dir missing"
-          
+
           echo "Checking Python migrations..."
           [ -d "server-python/alembic/versions" ] && echo "✓ Python migration dir exists" || echo "❌ Python migration dir missing"
 
@@ -210,10 +214,10 @@ jobs:
         run: |
           echo "Checking Node.js migration config..."
           [ -f "server/.postgres_migrations_config.json" ] && echo "✓ Found" || echo "⚠ Missing"
-          
+
           echo "Checking Java pom.xml has Flyway..."
           grep -q "flyway" server-java/pom.xml && echo "✓ Flyway configured" || echo "❌ Flyway not found"
-          
+
           echo "Checking Python alembic.ini..."
           [ -f "server-python/alembic.ini" ] && echo "✓ Found" || echo "❌ Missing"
 

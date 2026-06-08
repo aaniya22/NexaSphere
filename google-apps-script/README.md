@@ -6,8 +6,8 @@ Google Apps Script source files. These are **not bundled by Vite** — they must
 
 ## Files
 
-| File | Purpose | Apps Script Project |
-|---|---|---|
+| File      | Purpose                                               | Apps Script Project     |
+| --------- | ----------------------------------------------------- | ----------------------- |
 | `Code.gs` | **Membership Form** handler — writes to Google Sheets | "NexaSphere Membership" |
 
 > The **Core Team Recruitment** form uses a separate Apps Script project (not stored in this folder).
@@ -20,14 +20,14 @@ Receives a `POST` request from `MembershipPage.jsx` and appends a row to the `Me
 
 ### Deployment Details
 
-| Setting | Value |
-|---|---|
-| Project name | NexaSphere Membership |
-| Execute as | Me |
-| Who can access | Anyone |
-| Deployment ID | `AKfycbyRQOW3Xjv13vXvft8ezD9sJdvjV3kf-VHm1l_mImHRDUAEqsilK0wb5QBD5GOkixwe` |
-| Web App URL | `https://script.google.com/macros/s/AKfycbyRQOW3Xjv13vXvft8ezD9sJdvjV3kf-VHm1l_mImHRDUAEqsilK0wb5QBD5GOkixwe/exec` |
-| Deployed | Apr 21, 2026 · Version 1 |
+| Setting        | Value                                                                                                              |
+| -------------- | ------------------------------------------------------------------------------------------------------------------ |
+| Project name   | NexaSphere Membership                                                                                              |
+| Execute as     | Me                                                                                                                 |
+| Who can access | Anyone                                                                                                             |
+| Deployment ID  | `AKfycbyRQOW3Xjv13vXvft8ezD9sJdvjV3kf-VHm1l_mImHRDUAEqsilK0wb5QBD5GOkixwe`                                         |
+| Web App URL    | `https://script.google.com/macros/s/AKfycbyRQOW3Xjv13vXvft8ezD9sJdvjV3kf-VHm1l_mImHRDUAEqsilK0wb5QBD5GOkixwe/exec` |
+| Deployed       | Apr 21, 2026 · Version 1                                                                                           |
 
 ### Sheet columns written per submission
 
@@ -52,9 +52,9 @@ Google Apps Script does not support CORS preflight for `application/json`. The f
 fetch(url, {
   method: 'POST',
   mode: 'no-cors',
-  headers: { 'Content-Type': 'text/plain' },   // ← must be text/plain
+  headers: { 'Content-Type': 'text/plain' }, // ← must be text/plain
   body: JSON.stringify(payload),
-})
+});
 ```
 
 The script receives the raw text in `e.postData.contents` and parses it as JSON. The response is opaque (no response body visible to the browser) — this is expected and correct behaviour.

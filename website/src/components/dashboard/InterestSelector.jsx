@@ -1,20 +1,31 @@
 import React from 'react';
 
 const DOMAINS = [
-  'Web Dev', 'AI/ML', 'Cloud', 'Cybersecurity', 'Mobile Dev', 'DevOps', 'UI/UX', 'Data Science', 'Blockchain'
+  'Web Dev',
+  'AI/ML',
+  'Cloud',
+  'Cybersecurity',
+  'Mobile Dev',
+  'DevOps',
+  'UI/UX',
+  'Data Science',
+  'Blockchain',
 ];
 
 export default function InterestSelector({ selectedInterests, onToggleInterest }) {
   return (
     <div className="interest-selector">
-      <h3 style={{ marginBottom: '16px', color: 'var(--t1)', fontSize: '1.2rem' }}>Your Tech Interests</h3>
+      <h3 style={{ marginBottom: '16px', color: 'var(--t1)', fontSize: '1.2rem' }}>
+        Your Tech Interests
+      </h3>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-        {DOMAINS.map(domain => {
+        {DOMAINS.map((domain) => {
           const isActive = selectedInterests.includes(domain);
           return (
             <button
               key={domain}
               onClick={() => onToggleInterest(domain)}
+              aria-pressed={isActive}
               style={{
                 padding: '8px 16px',
                 borderRadius: '20px',

@@ -15,15 +15,15 @@ describe('Roadmap Utility Tests', () => {
             label: 'React Basics',
             description: 'Introduction to JSX.',
             concepts: ['JSX', 'Props'],
-            docs: 'https://react.dev'
+            docs: 'https://react.dev',
           },
           {
             id: 'react-hooks',
             label: 'Hooks',
             description: 'Learn state hooks.',
-            concepts: ['useState', 'useEffect']
-          }
-        ]
+            concepts: ['useState', 'useEffect'],
+          },
+        ],
       };
 
       const result = parseStaticRoadmap('react-track', mockStaticRoadmap);
@@ -45,7 +45,7 @@ describe('Roadmap Utility Tests', () => {
       // Verify resources mapping
       expect(result.nodes[0].resources[0]).toEqual({
         title: 'Official Documentation',
-        url: 'https://react.dev'
+        url: 'https://react.dev',
       });
 
       // Verify personal notes mapping
@@ -69,7 +69,7 @@ describe('Roadmap Utility Tests', () => {
             status: 'Completed',
             notes: 'Completed notes',
             resources: [{ title: 'MDN', url: 'https://developer.mozilla.org' }],
-            prerequisites: []
+            prerequisites: [],
           },
           {
             id: 'css',
@@ -80,9 +80,9 @@ describe('Roadmap Utility Tests', () => {
             status: 'In Progress',
             notes: 'Grid notes',
             resources: [],
-            prerequisites: ['html']
-          }
-        ]
+            prerequisites: ['html'],
+          },
+        ],
       };
 
       const result = validateRoadmapJSON(mockValidJSON);
@@ -99,14 +99,12 @@ describe('Roadmap Utility Tests', () => {
             id: 'html',
             // title parameter missing
             x: 200,
-            y: 100
-          }
-        ]
+            y: 100,
+          },
+        ],
       };
 
-      expect(() => validateRoadmapJSON(mockBadJSON)).toThrow(
-        /title.*missing/i
-      );
+      expect(() => validateRoadmapJSON(mockBadJSON)).toThrow(/title.*missing/i);
     });
 
     it('raises validation error for cyclic prerequisite loops', () => {
@@ -121,7 +119,7 @@ describe('Roadmap Utility Tests', () => {
             x: 200,
             y: 100,
             status: 'Not Started',
-            prerequisites: ['node-b']
+            prerequisites: ['node-b'],
           },
           {
             id: 'node-b',
@@ -130,14 +128,12 @@ describe('Roadmap Utility Tests', () => {
             x: 350,
             y: 250,
             status: 'Not Started',
-            prerequisites: ['node-a']
-          }
-        ]
+            prerequisites: ['node-a'],
+          },
+        ],
       };
 
-      expect(() => validateRoadmapJSON(mockCircularJSON)).toThrow(
-        /circular prerequisite/i
-      );
+      expect(() => validateRoadmapJSON(mockCircularJSON)).toThrow(/circular prerequisite/i);
     });
   });
 });

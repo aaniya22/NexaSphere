@@ -320,6 +320,7 @@ function RolesGuideModal({ onClose }) {
 const WHATSAPP_SCREENING = 'https://chat.whatsapp.com/EFbDGo6awGP2L0laESg3lq';
 const WHATSAPP_COMMUNITY = 'https://chat.whatsapp.com/FhpJEaod2g419jFMfqrhGZ';
 const LINKEDIN_PAGE = 'https://www.linkedin.com/showcase/glbajaj-nexasphere/';
+const RECRUITMENT_SCRIPT_URL = import.meta.env.VITE_RECRUITMENT_SCRIPT_URL;
 
 const ROLE_OPTIONS = [
   'Technical Lead',
@@ -1228,10 +1229,7 @@ export default function RecruitmentPage({ onBack }) {
         whyJoin: form.whyJoin.trim(),
       };
 
-      const base = (import.meta?.env?.VITE_API_BASE || '').replace(/\/+$/, '');
-      const url = base ? `${base}/api/submissions/recruitment` : '/api/submissions/recruitment';
-
-      const data = await apiClient(url, {
+      const data = await apiClient(RECRUITMENT_SCRIPT_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

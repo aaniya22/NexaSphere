@@ -34,24 +34,24 @@ export function useOfflineSync() {
   // ── Event listeners ──────────────────────────────────────────────────────────
   useEffect(() => {
     // Network status
-    const handleOnline  = () => setIsOnline(true);
+    const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
-    window.addEventListener('online',  handleOnline);
+    window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
 
     // Sync lifecycle events
-    const handleSyncStart    = () => setIsSyncing(true);
+    const handleSyncStart = () => setIsSyncing(true);
     const handleSyncComplete = (e) => {
       setIsSyncing(false);
       setLastSyncAt(new Date());
       setSyncStats(e.detail || { synced: 0, failed: 0 });
       refreshCount();
     };
-    const handleSyncFailed   = () => setIsSyncing(false);
+    const handleSyncFailed = () => setIsSyncing(false);
 
-    window.addEventListener('nexasphere:sync-start',    handleSyncStart);
+    window.addEventListener('nexasphere:sync-start', handleSyncStart);
     window.addEventListener('nexasphere:sync-complete', handleSyncComplete);
-    window.addEventListener('nexasphere:sync-failed',   handleSyncFailed);
+    window.addEventListener('nexasphere:sync-failed', handleSyncFailed);
 
     // Queue change events (enqueue / dequeue)
     window.addEventListener('nexasphere:queue-change', refreshCount);
@@ -60,12 +60,12 @@ export function useOfflineSync() {
     refreshCount();
 
     return () => {
-      window.removeEventListener('online',  handleOnline);
+      window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
-      window.removeEventListener('nexasphere:sync-start',    handleSyncStart);
+      window.removeEventListener('nexasphere:sync-start', handleSyncStart);
       window.removeEventListener('nexasphere:sync-complete', handleSyncComplete);
-      window.removeEventListener('nexasphere:sync-failed',   handleSyncFailed);
-      window.removeEventListener('nexasphere:queue-change',  refreshCount);
+      window.removeEventListener('nexasphere:sync-failed', handleSyncFailed);
+      window.removeEventListener('nexasphere:queue-change', refreshCount);
     };
   }, [refreshCount]);
 

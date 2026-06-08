@@ -4,7 +4,7 @@ import '../styles/chatbot.css';
 import PromptHistorySidebar from '../components/history/PromptHistorySidebar';
 import SearchBar from '../components/history/SearchBar';
 import PinnedChats from '../components/history/PinnedChats';
-import { savePrompt } from '../lib/promptStore';
+import { savePrompt, exportPrompts } from '../lib/promptStore';
 import { initializeWorkspaces } from '../lib/workspaceService';
 import { buildUrl, getAiApiBase } from '../utils/runtimeConfig';
 
@@ -15,8 +15,16 @@ const knowledgeBase = [
       'NexaSphere is the official technology and developer community at GL Bajaj Group of Institutions.',
   },
   {
-    keywords: ['event', 'workshop', 'hackathon'],
-    answer: 'NexaSphere regularly organizes workshops, hackathons, and technical events.',
+    keywords: ['hackathon'],
+    answer: 'NexaSphere hosts hackathons that encourage innovation and problem solving.',
+  },
+  {
+    keywords: ['workshop'],
+    answer: 'NexaSphere conducts workshops on emerging technologies and practical skills.',
+  },
+  {
+    keywords: ['event'],
+    answer: 'NexaSphere organizes technical events and community activities throughout the year.',
   },
   {
     keywords: ['team', 'mentor', 'leader'],
@@ -46,6 +54,7 @@ const Chatbot = () => {
   const [isSending, setIsSending] = useState(false);
   const [messages, setMessages] = useState([
     {
+      id: `msg-init`,
       role: 'bot',
       text: 'Nexa-Intelligence Online. How can I assist your journey?',
     },
@@ -86,9 +95,22 @@ const Chatbot = () => {
     }
   }, [messages, currentWorkspace]);
 
+  const sendFallbackResponse = (query) => {
+    const fallbackResponse = queryLocalKnowledge(query);
+
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: `msg-${Date.now()}-bot`,
+        role: 'bot',
+        text: fallbackResponse,
+      },
+    ]);
+  };
+
   const handleSend = async () => {
     if (!input.trim() || isSending) return;
-    const userMsg = { role: 'user', text: input };
+    const userMsg = { id: `msg-${Date.now()}-user`, role: 'user', text: input };
     setMessages((prev) => [...prev, userMsg]);
     const currentInput = input;
     setInput('');
@@ -97,17 +119,10 @@ const Chatbot = () => {
     const aiChatUrl = buildUrl(getAiApiBase(), '/ai/chat');
 
     if (!aiChatUrl) {
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: 'bot',
-          text: 'Nexa-AI is offline right now. The AI service URL is not configured for this deployment.',
-        },
-      ]);
+      sendFallbackResponse(currentInput);
       setIsSending(false);
       return;
     }
-
     try {
       const data = await apiClient(aiChatUrl, {
         method: 'POST',
@@ -115,19 +130,13 @@ const Chatbot = () => {
         body: JSON.stringify({ message: currentInput }),
         signal: controller.signal,
       });
-      setMessages((prev) => [...prev, { role: 'bot', text: data.reply }]);
-    } catch (e) {
-      console.error('AI chat request failed', e);
-
-      const fallbackResponse = queryLocalKnowledge(currentInput);
-
       setMessages((prev) => [
         ...prev,
-        {
-          role: 'bot',
-          text: fallbackResponse,
-        },
+        { id: `msg-${Date.now()}-bot`, role: 'bot', text: data.reply },
       ]);
+    } catch (e) {
+      console.error('AI chat request failed', e);
+      sendFallbackResponse(currentInput);
     } finally {
       setIsSending(false);
     }
@@ -136,11 +145,12 @@ const Chatbot = () => {
   const handleSelectPrompt = (prompt) => {
     setMessages([
       {
+        id: 'msg-init',
         role: 'bot',
         text: 'Nexa-Intelligence Online. How can I assist your journey?',
       },
-      { role: 'user', text: prompt.userPrompt },
-      { role: 'bot', text: prompt.botResponse },
+      { id: `msg-${Date.now()}-user`, role: 'user', text: prompt.userPrompt },
+      { id: `msg-${Date.now() + 1}-bot`, role: 'bot', text: prompt.botResponse },
     ]);
     setShowSidebar(false);
   };
@@ -198,8 +208,8 @@ const Chatbot = () => {
               <SearchBar onSelectPrompt={handleSelectPrompt} workspace={currentWorkspace} />
 
               <div className="chat-messages" ref={scrollRef}>
-                {messages.map((m, i) => (
-                  <div key={i} className={`msg-bubble ${m.role}`}>
+                {messages.map((m) => (
+                  <div key={m.id} className={`msg-bubble ${m.role}`}>
                     {m.text}
                   </div>
                 ))}

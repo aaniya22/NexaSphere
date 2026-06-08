@@ -12,8 +12,8 @@ import { useState } from 'react';
 import '../../styles/pwa.css';
 
 export default function UpdatePrompt({ updateSW }) {
-  const [visible, setVisible]   = useState(true);
-  const [loading, setLoading]   = useState(false);
+  const [visible, setVisible] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   const handleUpdate = async () => {
     setLoading(true);
@@ -37,7 +37,9 @@ export default function UpdatePrompt({ updateSW }) {
       aria-live="polite"
       aria-label="App update available"
     >
-      <span className="pwa-update__icon" aria-hidden="true">🎉</span>
+      <span className="pwa-update__icon" aria-hidden="true">
+        🎉
+      </span>
       <span className="pwa-update__text">
         <strong>New version</strong> of NexaSphere is ready
       </span>

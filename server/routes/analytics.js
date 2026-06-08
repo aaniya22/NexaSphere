@@ -36,14 +36,14 @@ router.get('/stats', async (_req, res) => {
         supabaseRequest('form_submissions?select=id,college_email'),
       ]);
 
-      upcomingEvents = events.filter(e => e.status === 'upcoming').length;
+      upcomingEvents = events.filter((e) => e.status === 'upcoming').length;
       activeRegistrations = submissions.length;
 
-      const uniqueEmails = new Set(submissions.map(s => s.college_email).filter(Boolean));
+      const uniqueEmails = new Set(submissions.map((s) => s.college_email).filter(Boolean));
       totalUsers = uniqueEmails.size > 0 ? uniqueEmails.size : submissions.length;
     } else {
       const content = await readContentSafe();
-      upcomingEvents = (content.events || []).filter(e => e.status === 'upcoming').length;
+      upcomingEvents = (content.events || []).filter((e) => e.status === 'upcoming').length;
     }
 
     res.json({ totalUsers, activeRegistrations, upcomingEvents, conversionRate });
@@ -57,7 +57,9 @@ router.get('/growth', async (_req, res) => {
     let growth = [];
 
     if (HAS_SUPABASE) {
-      const submissions = await supabaseRequest('form_submissions?select=created_at&order=created_at.asc');
+      const submissions = await supabaseRequest(
+        'form_submissions?select=created_at&order=created_at.asc'
+      );
       const dailyCounts = {};
 
       for (const sub of submissions) {
@@ -66,10 +68,12 @@ router.get('/growth', async (_req, res) => {
         dailyCounts[date] = (dailyCounts[date] || 0) + 1;
       }
 
-      growth = Object.keys(dailyCounts).sort().map(date => ({
-        date,
-        registrations: dailyCounts[date],
-      }));
+      growth = Object.keys(dailyCounts)
+        .sort()
+        .map((date) => ({
+          date,
+          registrations: dailyCounts[date],
+        }));
     }
 
     res.json(growth);
@@ -94,7 +98,7 @@ router.get('/events', async (_req, res) => {
         countsByFormType[sub.form_type] = (countsByFormType[sub.form_type] || 0) + 1;
       }
 
-      eventStats = events.map(e => ({
+      eventStats = events.map((e) => ({
         name: e.name,
         capacity: null,
         attendance: countsByFormType[e.id] || 0,

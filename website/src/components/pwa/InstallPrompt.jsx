@@ -11,15 +11,15 @@ import { useState, useEffect, useRef } from 'react';
 import { PREF_KEYS } from '../../utils/indexedDB.js';
 import '../../styles/pwa.css';
 
-const SHOW_DELAY_MS   = 30 * 1000; // 30 seconds
-const OPEN_COUNT_KEY  = PREF_KEYS.INSTALL_COUNT;
-const DISMISSED_KEY   = PREF_KEYS.INSTALL_DISMISSED;
+const SHOW_DELAY_MS = 30 * 1000; // 30 seconds
+const OPEN_COUNT_KEY = PREF_KEYS.INSTALL_COUNT;
+const DISMISSED_KEY = PREF_KEYS.INSTALL_DISMISSED;
 const SHOW_AFTER_OPENS = 3;
 
 export default function InstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
-  const [visible, setVisible]               = useState(false);
-  const timerRef                             = useRef(null);
+  const [visible, setVisible] = useState(false);
+  const timerRef = useRef(null);
 
   useEffect(() => {
     // Don't show if already installed (standalone mode)
@@ -95,7 +95,9 @@ export default function InstallPrompt() {
       aria-modal="false"
     >
       <div className="pwa-install__header">
-        <div className="pwa-install__icon" aria-hidden="true">🌐</div>
+        <div className="pwa-install__icon" aria-hidden="true">
+          🌐
+        </div>
         <div>
           <div className="pwa-install__title">Install NexaSphere</div>
           <div className="pwa-install__sub">Add to your home screen</div>

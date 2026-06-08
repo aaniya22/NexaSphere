@@ -2,11 +2,20 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { activityEventsService } from '../services/activityEventsService.js';
 import { activityEventsRepository } from '../repositories/activityEventsRepository.js';
+import { coreTeamService } from '../services/coreTeamService.js';
 import { UnauthorizedError } from '../utils/errors.js';
 
 // Mock the repository database operations to avoid hitting a real DB/file
 const originalCreate = activityEventsRepository.create;
 const originalDelete = activityEventsRepository.delete;
+const originalListMembers = coreTeamService.listMembers;
+
+// Fictional test member — no real PII committed to source (fixes #840)
+const TEST_MEMBER = {
+  name: 'Test Member',
+  email: 'testmember@example.com',
+  whatsapp: '9000000001',
+};
 
 test.before(() => {
   // Set up mock implementations
@@ -16,13 +25,16 @@ test.before(() => {
   activityEventsRepository.delete = async (key, id) => {
     return true;
   };
+  // Mock coreTeamService.listMembers so tests do not depend on a live data store
+  coreTeamService.listMembers = async () => [TEST_MEMBER];
   process.env.ADMIN_EVENT_PASSWORD = 'TestPassword123';
 });
 
 test.after(() => {
-  // Restore original repository methods
+  // Restore original implementations
   activityEventsRepository.create = originalCreate;
   activityEventsRepository.delete = originalDelete;
+  coreTeamService.listMembers = originalListMembers;
   delete process.env.ADMIN_EVENT_PASSWORD;
 });
 
@@ -54,10 +66,10 @@ test('activityEventsService.addActivityEvent accepts authorized requests', async
     date: '2026-06-01',
     description: 'A test event description',
     password: 'TestPassword123', // Matches process.env.ADMIN_EVENT_PASSWORD
-    // Matching one of the core team fallback members defined in coreTeamService.js
-    coreTeamName: 'Ayush Sharma', 
-    coreTeamEmail: 'ayush@example.com',
-    coreTeamPhone: '9876543210',
+    // Matching the fictional TEST_MEMBER returned by the mocked coreTeamService.listMembers
+    coreTeamName: TEST_MEMBER.name,
+    coreTeamEmail: TEST_MEMBER.email,
+    coreTeamPhone: TEST_MEMBER.whatsapp,
   };
 
   const result = await activityEventsService.addActivityEvent('hackathons', authorizedInput);
@@ -84,11 +96,15 @@ test('activityEventsService.deleteActivityEvent rejects unauthorized requests', 
 test('activityEventsService.deleteActivityEvent accepts authorized requests', async () => {
   const authorizedInput = {
     password: 'TestPassword123',
-    coreTeamName: 'Ayush Sharma',
-    coreTeamEmail: 'ayush@example.com',
-    coreTeamPhone: '9876543210',
+    coreTeamName: TEST_MEMBER.name,
+    coreTeamEmail: TEST_MEMBER.email,
+    coreTeamPhone: TEST_MEMBER.whatsapp,
   };
 
-  const result = await activityEventsService.deleteActivityEvent('hackathons', 'mock-id', authorizedInput);
+  const result = await activityEventsService.deleteActivityEvent(
+    'hackathons',
+    'mock-id',
+    authorizedInput
+  );
   assert.equal(result, true);
 });

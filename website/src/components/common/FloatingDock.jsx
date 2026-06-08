@@ -1,8 +1,28 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ChevronUp, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const DOCK_ACTIONS = [
+  {
+    id: 'explore',
+    label: 'Explore',
+    icon: (
+      <svg
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <circle cx="12" cy="12" r="10" />
+        <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" />
+      </svg>
+    ),
+    path: '/explore',
+  },
   {
     id: 'back-to-top',
     label: 'Back to top',
@@ -56,6 +76,20 @@ const DOCK_ACTIONS = [
 export default function FloatingDock() {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
+  const toggleRef = useRef(null);
+
+  // Close dock on Escape and return focus to toggle button
+  useEffect(() => {
+    if (!open) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setOpen(false);
+        toggleRef.current?.focus();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [open]);
 
   const handleAction = (item) => {
     if (item.action === 'scroll-top') {
@@ -129,6 +163,7 @@ export default function FloatingDock() {
 
       {/* Main toggle button */}
       <button
+        ref={toggleRef}
         onClick={() => setOpen((o) => !o)}
         aria-label={open ? 'Close dock' : 'Open dock'}
         aria-expanded={open}

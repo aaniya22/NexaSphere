@@ -6,7 +6,7 @@ name: GSSoC — Auto-Unassign Inactive Contributors
 # ─────────────────────────────────────────────────────────────────────────────
 on:
   schedule:
-    - cron: '0 2 * * *'   # Daily at 02:00 UTC
+    - cron: '0 2 * * *' # Daily at 02:00 UTC
   workflow_dispatch:
 
 concurrency:
@@ -23,7 +23,7 @@ jobs:
 
     steps:
       - name: Check and unassign inactive contributors
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |

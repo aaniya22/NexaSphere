@@ -25,20 +25,40 @@ public class AdminController {
 
     private final AdminAuthService adminAuthService;
     private final LoginRateLimitService rateLimitService;
+    private final org.nexasphere.service.LoginAttemptService loginAttemptService;
 
-    public AdminController(AdminAuthService adminAuthService, LoginRateLimitService rateLimitService) {
+    public AdminController(AdminAuthService adminAuthService, LoginRateLimitService rateLimitService, org.nexasphere.service.LoginAttemptService loginAttemptService) {
         this.adminAuthService = adminAuthService;
         this.rateLimitService = rateLimitService;
+        this.loginAttemptService = loginAttemptService;
     }
 
     @PostMapping("/login")
     public LoginResponse login(@Valid @RequestBody LoginRequest request, HttpServletRequest servletRequest) {
         String clientIp = getClientIp(servletRequest);
+        
+        // 1. IP-level sheer volume rate limiting
         if (!rateLimitService.tryConsume(clientIp)) {
-            throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "Too many login attempts. Please try again later.");
+            throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "Too many requests. Please try again later.");
         }
-        TokenSession session = adminAuthService.login(request.email().trim(), request.password());
-        return new LoginResponse(session.token(), session.sessionInfo().email());
+        
+        // 2. Brute-force failure lockout protection
+        if (loginAttemptService.isBlocked(clientIp)) {
+            throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "Too many failed login attempts. Please try again later.");
+        }
+
+        try {
+            TokenSession session = adminAuthService.login(request.email().trim(), request.password());
+            // Clear failed attempts on success
+            loginAttemptService.loginSucceeded(clientIp);
+            return new LoginResponse(session.token(), session.sessionInfo().email());
+        } catch (ResponseStatusException e) {
+            // Track failed attempts for invalid credentials
+            if (e.getStatusCode() == HttpStatus.UNAUTHORIZED) {
+                loginAttemptService.loginFailed(clientIp);
+            }
+            throw e;
+        }
     }
 
     private String getClientIp(HttpServletRequest request) {
@@ -61,6 +81,9 @@ public class AdminController {
     @GetMapping("/me")
     public Map<String, String> me() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || auth.getName() == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Not authenticated");
+        }
         return Collections.singletonMap("email", auth.getName());
     }
 

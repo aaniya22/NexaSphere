@@ -3,18 +3,114 @@
  * Tracks response times, error rates, and other metrics
  */
 
-import logger from "../utils/logger.js";
-import { captureMessage, addBreadcrumb } from "../utils/sentry.js";
+import logger from '../utils/logger.js';
+import { captureMessage, addBreadcrumb } from '../utils/sentry.js';
+
+/**
+ * Simple time-windowed metrics tracker
+ * Accumulates counts and times within a time window
+ */
+class TimeWindowMetrics {
+  constructor({ windowSizeMs }) {
+    this.windowSizeMs = windowSizeMs;
+    this.buckets = [];
+    this.lastReset = Date.now();
+  }
+
+  addRequest(durationMs, isError = false) {
+    const now = Date.now();
+    // Reset if window has passed
+    if (now - this.lastReset > this.windowSizeMs) {
+      this.buckets = [];
+      this.lastReset = now;
+    }
+    this.buckets.push({
+      durationMs,
+      isError,
+      timestamp: now,
+    });
+  }
+
+  getCount() {
+    const now = Date.now();
+    this.buckets = this.buckets.filter((b) => now - b.timestamp <= this.windowSizeMs);
+    return this.buckets.length;
+  }
+
+  getErrorCount() {
+    const now = Date.now();
+    this.buckets = this.buckets.filter((b) => now - b.timestamp <= this.windowSizeMs);
+    return this.buckets.filter((b) => b.isError).length;
+  }
+
+  getTotalTime() {
+    const now = Date.now();
+    this.buckets = this.buckets.filter((b) => now - b.timestamp <= this.windowSizeMs);
+    return this.buckets.reduce((sum, b) => sum + b.durationMs, 0);
+  }
+
+  getAverageTime() {
+    const count = this.getCount();
+    return count > 0 ? this.getTotalTime() / count : 0;
+  }
+
+  getErrorRate() {
+    const count = this.getCount();
+    return count > 0 ? (this.getErrorCount() / count) * 100 : 0;
+  }
+}
+
+/**
+ * Endpoint-specific metrics with multiple time windows
+ */
+class EndpointMetrics {
+  constructor() {
+    this.fiveMin = new TimeWindowMetrics({ windowSizeMs: 5 * 60 * 1000 });
+    this.oneHour = new TimeWindowMetrics({ windowSizeMs: 60 * 60 * 1000 });
+    this.twentyFourHour = new TimeWindowMetrics({ windowSizeMs: 24 * 60 * 60 * 1000 });
+  }
+
+  addRequest(durationMs, isError = false) {
+    this.fiveMin.addRequest(durationMs, isError);
+    this.oneHour.addRequest(durationMs, isError);
+    this.twentyFourHour.addRequest(durationMs, isError);
+  }
+
+  getMetrics(window) {
+    let metrics;
+    switch (window) {
+      case '5min':
+        metrics = this.fiveMin;
+        break;
+      case '1hr':
+        metrics = this.oneHour;
+        break;
+      case '24hr':
+        metrics = this.twentyFourHour;
+        break;
+      default:
+        metrics = this.fiveMin;
+    }
+    return {
+      count: metrics.getCount(),
+      errorCount: metrics.getErrorCount(),
+      totalTime: metrics.getTotalTime(),
+      avgTime: metrics.getAverageTime(),
+      errorRate: metrics.getErrorRate(),
+    };
+  }
+}
 
 // Store metrics in memory (consider using Redis in production)
-const metrics = {
-  endpoints: {},
-  errorRate: 0,
-  totalRequests: 0,
-  totalErrors: 0,
-};
+const endpointMetrics = new Map();
 
-const MAX_TRACKED_ENDPOINTS = parsePositiveInteger(process.env.MONITORING_MAX_TRACKED_ENDPOINTS, 1000);
+// Configuration
+const MAX_TRACKED_ENDPOINTS = parsePositiveInteger(
+  process.env.MONITORING_MAX_TRACKED_ENDPOINTS,
+  1000
+);
+
+let lastEndpointCleanup = Date.now();
 
 function parsePositiveInteger(val, defaultVal) {
   const parsed = parseInt(val, 10);
@@ -23,219 +119,125 @@ function parsePositiveInteger(val, defaultVal) {
 
 function normalizePathPattern(path) {
   if (!path || typeof path !== 'string') return 'unknown';
-  
-  // Split path into segments
-  const segments = path.split('/').map(segment => {
-    // 1. UUID check
+  const segments = path.split('/').map((segment) => {
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (uuidRegex.test(segment)) {
-      return ':id';
-    }
-    
-    // 2. MongoDB ObjectID check (24 hex characters)
+    if (uuidRegex.test(segment)) return ':id';
     const mongoIdRegex = /^[0-9a-f]{24}$/i;
-    if (mongoIdRegex.test(segment)) {
-      return ':id';
-    }
-    
-    // 3. Numeric ID check
+    if (mongoIdRegex.test(segment)) return ':id';
     const numericRegex = /^\d+$/;
-    if (numericRegex.test(segment)) {
-      return ':id';
-    }
-    
-    // 4. Return original segment if no dynamic pattern matches
+    if (numericRegex.test(segment)) return ':id';
     return segment;
   });
-  
-  return segments.join('/');
+  let result = segments.join('/');
+  if (result.length > 1 && result.endsWith('/')) {
+    result = result.slice(0, -1);
+  }
+  return result;
 }
 
-/**
- * Performance monitoring middleware
- * @param {Object} req - Express request
- * @param {Object} res - Express response
- * @param {Function} next - Express next
- */
-const performanceMonitor = (req, res, next) => {
-  const startTime = Date.now();
-  const originalSend = res.send;
+function getRoutePath(req) {
+  if (req.route) {
+    if (typeof req.route.path === 'string') {
+      return req.route.path;
+    } else if (Array.isArray(req.route.path)) {
+      return req.route.path.join('|');
+    } else if (req.route.path instanceof RegExp) {
+      return req.route.path.toString();
+    }
+  }
+  return normalizePathPattern(req.path);
+}
 
-  // Override send to capture response
+const RES_SEND_WRAPPED = Symbol('performanceMonitor.sendWrapped');
+
+function isAlreadyWrapped(res) {
+  return res[RES_SEND_WRAPPED] === true;
+}
+
+function markWrapped(res) {
+  res[RES_SEND_WRAPPED] = true;
+}
+
+function cleanupExpiredEndpoints() {
+  const now = Date.now();
+  if (now - lastEndpointCleanup < 5 * 60 * 1000) return;
+  lastEndpointCleanup = now;
+  if (endpointMetrics.size > MAX_TRACKED_ENDPOINTS) {
+    const entries = Array.from(endpointMetrics.entries());
+    const excess = endpointMetrics.size - MAX_TRACKED_ENDPOINTS;
+    for (let i = 0; i < excess; i++) {
+      endpointMetrics.delete(entries[i][0]);
+    }
+  }
+}
+
+const performanceMonitor = (req, res, next) => {
+  if (isAlreadyWrapped(res)) {
+    return next();
+  }
+  markWrapped(res);
+
+  const startTime = Date.now();
+
+  const originalSend = res.send;
   res.send = function (data) {
     const duration = Date.now() - startTime;
     const statusCode = res.statusCode;
 
-    // 1. Resolve to route pattern (if matched by router) or normalize raw path (for 404s/early middleware issues)
-    let routePath = '';
-    if (req.route) {
-      if (typeof req.route.path === 'string') {
-        routePath = req.route.path;
-      } else if (Array.isArray(req.route.path)) {
-        routePath = req.route.path.join('|');
-      } else if (req.route.path instanceof RegExp) {
-        routePath = req.route.path.toString();
-      }
+    const routePath = getRoutePath(req);
+    const baseUrl = req.baseUrl || '';
+    const fullPath = `${baseUrl}${routePath}`;
+    const endpoint = `${req.method} ${normalizePathPattern(fullPath)}`;
+
+    cleanupExpiredEndpoints();
+
+    if (!endpointMetrics.has(endpoint)) {
+      endpointMetrics.set(endpoint, new EndpointMetrics());
     }
+    const metrics = endpointMetrics.get(endpoint);
 
-    let endpoint = '';
-    if (req.route) {
-      endpoint = `${req.method} ${req.baseUrl || ''}${routePath}`;
-    } else {
-      const normalizedPath = normalizePathPattern(req.path);
-      endpoint = `${req.method} ${normalizedPath}`;
-    }
+    const isError = statusCode >= 400;
+    metrics.addRequest(duration, isError);
 
-    // Trailing slash consolidation
-    if (endpoint.length > 1 && endpoint.endsWith('/')) {
-      endpoint = endpoint.slice(0, -1);
-    }
-
-    // Update metrics
-    metrics.totalRequests++;
-    if (statusCode >= 400) {
-      metrics.totalErrors++;
-    }
-
-    // Update endpoint-specific metrics with upper bound validation
-    if (!metrics.endpoints[endpoint]) {
-      const currentKeys = Object.keys(metrics.endpoints);
-      if (currentKeys.length >= MAX_TRACKED_ENDPOINTS) {
-        // Safe FIFO eviction: delete the oldest inserted key (O(1) operation due to V8 key insertion ordering)
-        const oldestKey = currentKeys[0];
-        if (oldestKey) {
-          delete metrics.endpoints[oldestKey];
-        }
-      }
-
-      metrics.endpoints[endpoint] = {
-        count: 0,
-        totalTime: 0,
-        errors: 0,
-        avgTime: 0,
-        maxTime: 0,
-        minTime: Infinity,
-      };
-    }
-
-    const endpointMetrics = metrics.endpoints[endpoint];
-    endpointMetrics.count++;
-    endpointMetrics.totalTime += duration;
-    endpointMetrics.avgTime = endpointMetrics.totalTime / endpointMetrics.count;
-    endpointMetrics.maxTime = Math.max(endpointMetrics.maxTime, duration);
-    endpointMetrics.minTime = Math.min(endpointMetrics.minTime, duration);
-
-    if (statusCode >= 400) {
-      endpointMetrics.errors++;
-    }
-
-    // Calculate error rate
-    metrics.errorRate = (metrics.totalErrors / metrics.totalRequests) * 100;
-
-    // Log slow requests
-    if (duration > 1000) {
-      logger.warn("Slow Request Detected", {
-        endpoint,
-        duration,
-        status: statusCode,
-      });
-
-      addBreadcrumb({
-        category: "performance",
-        message: `Slow request: ${endpoint} took ${duration}ms`,
-        level: "warning",
-        data: { duration, endpoint, status: statusCode },
-      });
-
-      // Alert if request took more than 5 seconds
-      if (duration > 5000) {
-        captureMessage(`Critical slow request: ${endpoint} took ${duration}ms`, "warning", {
-          tags: { type: "performance", endpoint },
-          extra: { duration, statusCode },
-        });
-      }
-    }
-
-    // Log response
-    logger.http("HTTP Response", {
-      method: req.method,
-      url: req.originalUrl,
-      status: statusCode,
-      duration: `${duration}ms`,
-      userId: req.user?.id,
-    });
-
-    // Add breadcrumb for Sentry
-    addBreadcrumb({
-      category: "http",
-      message: `${req.method} ${req.path} - ${statusCode}`,
-      level: statusCode >= 400 ? "error" : "info",
-      data: { duration, statusCode, method: req.method, path: req.path },
-    });
-
-    // Call original send
     return originalSend.call(this, data);
   };
 
   next();
 };
 
-/**
- * Get current metrics
- */
 const getMetrics = () => {
-  return {
-    totalRequests: metrics.totalRequests,
-    totalErrors: metrics.totalErrors,
-    errorRate: metrics.errorRate.toFixed(2) + "%",
-    endpoints: Object.entries(metrics.endpoints).map(([endpoint, data]) => ({
-      endpoint,
-      count: data.count,
-      avgTime: data.avgTime.toFixed(2) + "ms",
-      maxTime: data.maxTime + "ms",
-      minTime: data.minTime === Infinity ? 0 : data.minTime + "ms",
-      errorCount: data.errors,
-      errorRate: ((data.errors / data.count) * 100).toFixed(2) + "%",
-    })),
-  };
+  const result = { endpoints: {} };
+  endpointMetrics.forEach((metrics, endpoint) => {
+    result.endpoints[endpoint] = {
+      '5min': metrics.getMetrics('5min'),
+      '1hr': metrics.getMetrics('1hr'),
+      '24hr': metrics.getMetrics('24hr'),
+    };
+  });
+  return result;
 };
 
-/**
- * Reset metrics
- */
 const resetMetrics = () => {
-  metrics.endpoints = {};
-  metrics.errorRate = 0;
-  metrics.totalRequests = 0;
-  metrics.totalErrors = 0;
+  endpointMetrics.clear();
 };
 
-/**
- * Alert if error rate exceeds threshold
- */
 const checkErrorRateThreshold = (threshold = 5) => {
-  if (metrics.errorRate > threshold) {
-    captureMessage(`Alert: Error rate exceeded ${threshold}%! Current: ${metrics.errorRate.toFixed(2)}%`, "error", {
-      tags: { type: "performance", alert: "error_rate" },
-      extra: { errorRate: metrics.errorRate, totalRequests: metrics.totalRequests },
-    });
+  let exceeded = false;
+  endpointMetrics.forEach((metrics) => {
+    const fiveMinMetrics = metrics.getMetrics('5min');
+    if (fiveMinMetrics.errorRate > threshold) {
+      exceeded = true;
+    }
+  });
 
-    logger.error("Error Rate Threshold Exceeded", {
-      threshold,
-      current: metrics.errorRate,
-      totalRequests: metrics.totalRequests,
-      totalErrors: metrics.totalErrors,
+  if (exceeded) {
+    captureMessage(`Alert: Error rate exceeded ${threshold}% in last 5 minutes!`, 'error', {
+      tags: { type: 'performance', alert: 'error_rate' },
     });
-
+    logger.error('Error Rate Threshold Exceeded', { threshold, window: '5min' });
     return true;
   }
   return false;
 };
 
-export {
-  performanceMonitor,
-  getMetrics,
-  resetMetrics,
-  checkErrorRateThreshold,
-  metrics,
-};
+export { performanceMonitor, getMetrics, resetMetrics, checkErrorRateThreshold };

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { Socket } from 'socket.io-client';
 import { initializeSocket, disconnectSocket } from '../services/socket';
+import { getSocketServerUrl } from '../utils/runtimeConfig';
 
 interface SocketContextProps {
   socket: Socket | null;
@@ -17,7 +18,9 @@ export const SocketProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
-    const socketInstance = initializeSocket();
+    // Explicitly pass the resolved socket URL from runtimeConfig so
+    // SocketContext does not rely on socket.ts's default parameter.
+    const socketInstance = initializeSocket(getSocketServerUrl());
     setSocket(socketInstance);
 
     const onConnect = () => setIsConnected(true);
@@ -32,14 +35,12 @@ export const SocketProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     return () => {
       socketInstance.off('connect', onConnect);
       socketInstance.off('disconnect', onDisconnect);
-      disconnectSocket();
+      // Removed disconnectSocket() to preserve singleton connection across route changes
     };
   }, []);
 
   return (
-    <SocketContext.Provider value={{ socket, isConnected }}>
-      {children}
-    </SocketContext.Provider>
+    <SocketContext.Provider value={{ socket, isConnected }}>{children}</SocketContext.Provider>
   );
 };
 

@@ -1,15 +1,23 @@
 /**
  * PersonalizedFeed
- * Shows a "For You" AI-recommended list of events.
- * Full ML-backed implementation coming soon — this stub renders the
- * events in a simple card grid so the page doesn't break.
+ * Shows a "For You" AI-recommended list of events scored by useRecommendations.
  */
-export default function PersonalizedFeed({ events = [], onEventClick }) {
+export default function PersonalizedFeed({ events = [], loading = false, onEventClick }) {
+  if (loading) {
+    return (
+      <div style={{ textAlign: 'center', padding: '48px 24px', color: 'var(--t2, #94a3b8)' }}>
+        <div style={{ fontSize: 36, marginBottom: 12 }}>✨</div>
+        <p style={{ margin: 0 }}>Generating personalised recommendations...</p>
+      </div>
+    );
+  }
   if (!events.length) {
     return (
       <div style={{ textAlign: 'center', padding: '48px 24px', color: 'var(--t2, #94a3b8)' }}>
         <div style={{ fontSize: 36, marginBottom: 12 }}>✨</div>
-        <p style={{ margin: 0 }}>No events to recommend yet. Check back soon!</p>
+        <p style={{ margin: 0 }}>
+          No events to recommend yet. Interact with events to personalise your feed!
+        </p>
       </div>
     );
   }
@@ -32,7 +40,7 @@ export default function PersonalizedFeed({ events = [], onEventClick }) {
           <span>✨</span> Recommended For You
         </h2>
         <p style={{ margin: '6px 0 0', fontSize: '0.85rem', color: 'var(--t2, #94a3b8)' }}>
-          Personalised picks based on your activity — full AI recommendations coming soon.
+          Personalised picks based on your browsing activity and interests.
         </p>
       </div>
 
@@ -78,13 +86,9 @@ export default function PersonalizedFeed({ events = [], onEventClick }) {
                   fontWeight: 600,
                   marginBottom: 10,
                   background:
-                    ev.status === 'upcoming'
-                      ? 'rgba(0,212,255,0.12)'
-                      : 'rgba(255,255,255,0.06)',
+                    ev.status === 'upcoming' ? 'rgba(0,212,255,0.12)' : 'rgba(255,255,255,0.06)',
                   color:
-                    ev.status === 'upcoming'
-                      ? 'var(--accent2, #00d4ff)'
-                      : 'var(--t3, #64748b)',
+                    ev.status === 'upcoming' ? 'var(--accent2, #00d4ff)' : 'var(--t3, #64748b)',
                 }}
               >
                 {ev.status === 'upcoming' ? '🔵 Upcoming' : '✅ Completed'}

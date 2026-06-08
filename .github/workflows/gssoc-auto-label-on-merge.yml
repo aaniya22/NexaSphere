@@ -22,7 +22,7 @@ jobs:
 
     steps:
       - name: Apply gssoc:approved and update linked issues
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |

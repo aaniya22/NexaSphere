@@ -11,7 +11,7 @@
   --surface: #111118;
   --surface2: #1a1a24;
   --border: #2a2a38;
-  --red: #CC1111;
+  --red: #cc1111;
   --red-hover: #ee2222;
   --text: #f0f0f0;
   --text2: #a0a0b0;
@@ -57,7 +57,7 @@ body {
   flex-direction: column;
   padding: 24px 0;
   z-index: 100;
-  transition: transform 0.25s cubic-bezier(.4, 0, .2, 1);
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* ── Hamburger button (hidden on desktop) ── */
@@ -86,7 +86,9 @@ body {
   height: 2px;
   background: var(--text);
   border-radius: 2px;
-  transition: transform 0.2s, opacity 0.2s;
+  transition:
+    transform 0.2s,
+    opacity 0.2s;
 }
 
 /* ── Backdrop (mobile only) ── */
@@ -122,17 +124,17 @@ body {
   }
 
   /* Hamburger → X animation */
-  .sidebar.sidebar-open~* .ham-line:nth-child(1),
+  .sidebar.sidebar-open ~ * .ham-line:nth-child(1),
   .ham-line.open:nth-child(1) {
     transform: translateY(7px) rotate(45deg);
   }
 
-  .sidebar.sidebar-open~* .ham-line:nth-child(2),
+  .sidebar.sidebar-open ~ * .ham-line:nth-child(2),
   .ham-line.open:nth-child(2) {
     opacity: 0;
   }
 
-  .sidebar.sidebar-open~* .ham-line:nth-child(3),
+  .sidebar.sidebar-open ~ * .ham-line:nth-child(3),
   .ham-line.open:nth-child(3) {
     transform: translateY(-7px) rotate(-45deg);
   }
@@ -966,6 +968,26 @@ body {
   animation: spin 1s linear infinite;
 }
 
+/* ── Skip-to-content link ── */
+.skip-link {
+  position: fixed;
+  top: -100%;
+  left: 8px;
+  z-index: 9999;
+  background: var(--red);
+  color: #fff;
+  padding: 8px 16px;
+  border-radius: 0 0 var(--radius) var(--radius);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: top 0.15s;
+}
+
+.skip-link:focus {
+  top: 0;
+}
+
 /* ── Offline Banner ── */
 .offline-banner {
   position: fixed;
@@ -989,7 +1011,6 @@ body {
 }
 
 @keyframes pulse {
-
   0%,
   100% {
     opacity: 1;

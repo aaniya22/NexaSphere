@@ -3,7 +3,7 @@
  * Sends alerts to Slack for critical errors and metrics
  */
 
-import logger from "./logger.js";
+import logger from './logger.js';
 
 /**
  * Send Slack alert
@@ -13,7 +13,7 @@ async function sendSlackAlert(alertData) {
   const webhookUrl = process.env.SLACK_WEBHOOK_URL;
 
   if (!webhookUrl) {
-    logger.warn("Slack webhook URL not configured. Skipping alert.");
+    logger.warn('Slack webhook URL not configured. Skipping alert.');
     return;
   }
 
@@ -21,23 +21,23 @@ async function sendSlackAlert(alertData) {
     const payload = formatSlackMessage(alertData);
 
     const response = await fetch(webhookUrl, {
-      method: "POST",
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify(payload),
     });
 
     if (!response.ok) {
-      logger.error("Failed to send Slack alert", {
+      logger.error('Failed to send Slack alert', {
         status: response.status,
         statusText: response.statusText,
       });
     } else {
-      logger.info("Slack alert sent successfully", { alertType: alertData.title });
+      logger.info('Slack alert sent successfully', { alertType: alertData.title });
     }
   } catch (error) {
-    logger.error("Error sending Slack alert", { error: error.message });
+    logger.error('Error sending Slack alert', { error: error.message });
   }
 }
 
@@ -46,7 +46,7 @@ async function sendSlackAlert(alertData) {
  * @param {Object} data - Alert data
  */
 function formatSlackMessage(data) {
-  const color = data.severity === "critical" ? "danger" : "warning";
+  const color = data.severity === 'critical' ? 'danger' : 'warning';
 
   const blockFields = [];
   if (data.message) blockFields.push({ type: "mrkdwn", text: `*Message:*\n${data.message}` });
@@ -152,18 +152,18 @@ async function sendPerformanceAlert(metrics) {
     };
 
     const response = await fetch(webhookUrl, {
-      method: "POST",
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify(payload),
     });
 
     if (!response.ok) {
-      logger.error("Failed to send performance alert");
+      logger.error('Failed to send performance alert');
     }
   } catch (error) {
-    logger.error("Error sending performance alert", { error: error.message });
+    logger.error('Error sending performance alert', { error: error.message });
   }
 }
 
@@ -176,13 +176,8 @@ async function sendErrorRateAlert(errorRate, threshold) {
   sendSlackAlert({
     title: `⚠️ Error Rate Alert`,
     message: `Error rate (${errorRate.toFixed(2)}%) has exceeded threshold (${threshold}%)`,
-    severity: errorRate > threshold * 2 ? "critical" : "warning",
+    severity: errorRate > threshold * 2 ? 'critical' : 'warning',
   });
 }
 
-export {
-  sendSlackAlert,
-  formatSlackMessage,
-  sendPerformanceAlert,
-  sendErrorRateAlert,
-};
+export { sendSlackAlert, formatSlackMessage, sendPerformanceAlert, sendErrorRateAlert };

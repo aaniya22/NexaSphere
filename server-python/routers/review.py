@@ -1,9 +1,11 @@
 import logging
 import os
 import google.generativeai as genai
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 import json
+
+from utils.security import limiter
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -22,7 +24,8 @@ class ReviewRequest(BaseModel):
     language: str
 
 @router.post("/ai/review", tags=["AI Mentor"])
-async def review_code(request: ReviewRequest):
+@limiter.limit("10/minute")
+async def review_code(http_request: Request, request: ReviewRequest):
     if not model:
         raise HTTPException(status_code=503, detail="AI services are currently unavailable.")
     

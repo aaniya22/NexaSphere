@@ -66,7 +66,7 @@ async def request_id_middleware(request: Request, call_next):
 async def root():
     return {"message": "NexaSphere AI Core API is running. Visit /docs for Swagger API documentation."}
 
-from routers import forms, recommend, certificates, notifications, portfolio
+from routers import forms, recommend, certificates, notifications, portfolio, health
 app.include_router(forms.router)
 app.include_router(recommend.router)
 app.include_router(certificates.router)
@@ -89,13 +89,14 @@ class ChatRequest(BaseModel):
 
 # 4. Chat Endpoint
 @app.post("/ai/chat")
-async def chat_with_ai(request: ChatRequest):
+@limiter.limit("20/minute")
+async def chat_with_ai(http_request: Request, chat_req: ChatRequest):
     try:
         if not model:
             return {"reply": "Nexa-AI Core is offline. (GEMINI_API_KEY missing)"}
             
         # We send the user message to the model along with system instructions manually
-        full_prompt = f"System Instruction:\n{SYSTEM_PROMPT}\n\nUser Message:\n{request.message}"
+        full_prompt = f"System Instruction:\n{SYSTEM_PROMPT}\n\nUser Message:\n{chat_req.message}"
         response = model.generate_content(full_prompt)
         
         if not response.text:

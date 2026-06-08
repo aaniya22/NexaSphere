@@ -20,7 +20,7 @@ const createMockSocket = (id = 'test-socket-123') => {
     return {
       emit: (event, data) => {
         self.emittedTo.push({ room, event, data });
-      }
+      },
     };
   };
   socket.disconnect = () => {
@@ -114,67 +114,70 @@ test('Security Audit & Validation: Socket Room Hardening', async (t) => {
     assert.ok(socket.rooms.size <= 11);
   });
 
-  await t.test('Scenario 7: Workspace event relay only forwards from authorized room members', () => {
-    const alice = createMockSocket('socket-alice');
-    const eve = createMockSocket('socket-eve');
-    _onConnection(alice);
-    _onConnection(eve);
+  await t.test(
+    'Scenario 7: Workspace event relay only forwards from authorized room members',
+    () => {
+      const alice = createMockSocket('socket-alice');
+      const eve = createMockSocket('socket-eve');
+      _onConnection(alice);
+      _onConnection(eve);
 
-    const room = 'workspace-abc';
+      const room = 'workspace-abc';
 
-    // Alice joins the workspace room
-    alice.emit('join_room', room, { name: 'Alice' });
-    alice.emittedTo = []; // Clear the user_joined notification from our tracking
+      // Alice joins the workspace room
+      alice.emit('join_room', room, { name: 'Alice' });
+      alice.emittedTo = []; // Clear the user_joined notification from our tracking
 
-    // Eve does NOT join workspace-abc
+      // Eve does NOT join workspace-abc
 
-    // Alice sends a workspace update — should be relayed
-    alice.emit('workspace_update', { roomId: room, content: 'Hello' });
-    const aliceUpdates = alice.emittedTo.filter(e => e.event === 'workspace_update');
-    assert.equal(aliceUpdates.length, 1);
-    assert.equal(aliceUpdates[0].room, room);
+      // Alice sends a workspace update — should be relayed
+      alice.emit('workspace_update', { roomId: room, content: 'Hello' });
+      const aliceUpdates = alice.emittedTo.filter((e) => e.event === 'workspace_update');
+      assert.equal(aliceUpdates.length, 1);
+      assert.equal(aliceUpdates[0].room, room);
 
-    // Eve sends a workspace update to the same room — should be blocked
-    eve.emit('workspace_update', { roomId: room, content: 'Malicious' });
-    const eveUpdates = eve.emittedTo.filter(e => e.event === 'workspace_update');
-    assert.equal(eveUpdates.length, 0);
+      // Eve sends a workspace update to the same room — should be blocked
+      eve.emit('workspace_update', { roomId: room, content: 'Malicious' });
+      const eveUpdates = eve.emittedTo.filter((e) => e.event === 'workspace_update');
+      assert.equal(eveUpdates.length, 0);
 
-    // Same for document_change
-    alice.emit('document_change', { roomId: room, doc: 'doc1' });
-    const aliceDocs = alice.emittedTo.filter(e => e.event === 'document_change');
-    assert.equal(aliceDocs.length, 1);
+      // Same for document_change
+      alice.emit('document_change', { roomId: room, doc: 'doc1' });
+      const aliceDocs = alice.emittedTo.filter((e) => e.event === 'document_change');
+      assert.equal(aliceDocs.length, 1);
 
-    eve.emit('document_change', { roomId: room, doc: 'doc1' });
-    const eveDocs = eve.emittedTo.filter(e => e.event === 'document_change');
-    assert.equal(eveDocs.length, 0);
+      eve.emit('document_change', { roomId: room, doc: 'doc1' });
+      const eveDocs = eve.emittedTo.filter((e) => e.event === 'document_change');
+      assert.equal(eveDocs.length, 0);
 
-    // cursor_moved
-    alice.emit('cursor_moved', { roomId: room, pos: 5 });
-    const aliceCursors = alice.emittedTo.filter(e => e.event === 'cursor_moved');
-    assert.equal(aliceCursors.length, 1);
+      // cursor_moved
+      alice.emit('cursor_moved', { roomId: room, pos: 5 });
+      const aliceCursors = alice.emittedTo.filter((e) => e.event === 'cursor_moved');
+      assert.equal(aliceCursors.length, 1);
 
-    eve.emit('cursor_moved', { roomId: room, pos: 99 });
-    const eveCursors = eve.emittedTo.filter(e => e.event === 'cursor_moved');
-    assert.equal(eveCursors.length, 0);
+      eve.emit('cursor_moved', { roomId: room, pos: 99 });
+      const eveCursors = eve.emittedTo.filter((e) => e.event === 'cursor_moved');
+      assert.equal(eveCursors.length, 0);
 
-    // typing_start
-    alice.emit('typing_start', { roomId: room });
-    const aliceTypingStart = alice.emittedTo.filter(e => e.event === 'typing_start');
-    assert.equal(aliceTypingStart.length, 1);
+      // typing_start
+      alice.emit('typing_start', { roomId: room });
+      const aliceTypingStart = alice.emittedTo.filter((e) => e.event === 'typing_start');
+      assert.equal(aliceTypingStart.length, 1);
 
-    eve.emit('typing_start', { roomId: room });
-    const eveTypingStart = eve.emittedTo.filter(e => e.event === 'typing_start');
-    assert.equal(eveTypingStart.length, 0);
+      eve.emit('typing_start', { roomId: room });
+      const eveTypingStart = eve.emittedTo.filter((e) => e.event === 'typing_start');
+      assert.equal(eveTypingStart.length, 0);
 
-    // typing_stop
-    alice.emit('typing_stop', { roomId: room });
-    const aliceTypingStop = alice.emittedTo.filter(e => e.event === 'typing_stop');
-    assert.equal(aliceTypingStop.length, 1);
+      // typing_stop
+      alice.emit('typing_stop', { roomId: room });
+      const aliceTypingStop = alice.emittedTo.filter((e) => e.event === 'typing_stop');
+      assert.equal(aliceTypingStop.length, 1);
 
-    eve.emit('typing_stop', { roomId: room });
-    const eveTypingStop = eve.emittedTo.filter(e => e.event === 'typing_stop');
-    assert.equal(eveTypingStop.length, 0);
-  });
+      eve.emit('typing_stop', { roomId: room });
+      const eveTypingStop = eve.emittedTo.filter((e) => e.event === 'typing_stop');
+      assert.equal(eveTypingStop.length, 0);
+    }
+  );
 
   await t.test('Scenario 8: Workspace event relay blocked when roomId is missing', () => {
     const socket = createMockSocket('socket-8');
@@ -203,11 +206,11 @@ test('Security Audit & Validation: Socket Room Hardening', async (t) => {
 
     // After leaving, workspace events should be blocked
     socket.emit('workspace_update', { roomId: room, content: 'After leave' });
-    const updates = socket.emittedTo.filter(e => e.event === 'workspace_update');
+    const updates = socket.emittedTo.filter((e) => e.event === 'workspace_update');
     assert.equal(updates.length, 0);
 
     socket.emit('document_change', { roomId: room, doc: 'doc2' });
-    const docs = socket.emittedTo.filter(e => e.event === 'document_change');
+    const docs = socket.emittedTo.filter((e) => e.event === 'document_change');
     assert.equal(docs.length, 0);
   });
 
@@ -227,7 +230,7 @@ test('Security Audit & Validation: Socket Room Hardening', async (t) => {
     // Re-using the same socket after disconnect — events should be blocked
     // (membership was cleaned up)
     socket.emit('workspace_update', { roomId: room, content: 'After disc' });
-    const updates = socket.emittedTo.filter(e => e.event === 'workspace_update');
+    const updates = socket.emittedTo.filter((e) => e.event === 'workspace_update');
     assert.equal(updates.length, 0);
   });
 

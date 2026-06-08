@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose from 'mongoose';
 
 const teamRoomSchema = new mongoose.Schema(
   {
@@ -12,31 +12,31 @@ const teamRoomSchema = new mongoose.Schema(
       type: String,
       trim: true,
       maxlength: 500,
-      default: "",
+      default: '',
     },
     members: [
       {
         userId: {
           type: mongoose.Schema.Types.ObjectId,
-          ref: "User",
+          ref: 'User',
           required: true,
         },
         role: {
           type: String,
-          enum: ["Admin", "Contributor", "Viewer"],
+          enum: ['Admin', 'Contributor', 'Viewer'],
           required: true,
         },
       },
     ],
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      ref: 'User',
       required: true,
     },
   },
   { timestamps: true }
 );
 
-teamRoomSchema.index({ "members.userId": 1 });
+teamRoomSchema.index({ 'members.userId': 1 });
 
-export default mongoose.model("TeamRoom", teamRoomSchema);
+export default mongoose.model('TeamRoom', teamRoomSchema);

@@ -6,7 +6,7 @@ name: GSSoC — Assignment Timeout Escalation
 # ─────────────────────────────────────────────────────────────────────────────
 on:
   schedule:
-    - cron: '0 */6 * * *'   # Every 6 hours
+    - cron: '0 */6 * * *' # Every 6 hours
   workflow_dispatch:
 
 concurrency:
@@ -22,7 +22,7 @@ jobs:
 
     steps:
       - name: Check and escalate timed-out assignment requests
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |

@@ -19,7 +19,9 @@ export function useEvents() {
     }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
   return { events, setEvents, loading, error, reload: load };
 }

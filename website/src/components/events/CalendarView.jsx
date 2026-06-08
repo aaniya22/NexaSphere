@@ -30,7 +30,7 @@ export default function CalendarView({ events, onEventClick }) {
 
   const eventsByDate = useMemo(() => {
     const map = {};
-    events.forEach(ev => {
+    events.forEach((ev) => {
       const d = parseEventDate(ev.date);
       if (d) {
         const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
@@ -41,10 +41,22 @@ export default function CalendarView({ events, onEventClick }) {
     return map;
   }, [events]);
 
-  const monthNames = ["January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December"];
-  
-  const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const monthNames = [
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
+  ];
+
+  const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
   const blanks = Array.from({ length: firstDayOfMonth }).map((_, i) => (
     <div key={`blank-${i}`} className="calendar-cell blank"></div>
@@ -63,11 +75,16 @@ export default function CalendarView({ events, onEventClick }) {
       <div key={`day-${dateNum}`} className={`calendar-cell ${isToday ? 'today' : ''}`}>
         <div className="calendar-day-header">{dateNum}</div>
         <div className="calendar-day-events">
-          {dayEvents.map(ev => {
-            const isKSS = ev.id === 1 || ev.id === 'kss-153' || String(ev.shortName || '').toLowerCase().includes('kss');
+          {dayEvents.map((ev) => {
+            const isKSS =
+              ev.id === 1 ||
+              ev.id === 'kss-153' ||
+              String(ev.shortName || '')
+                .toLowerCase()
+                .includes('kss');
             return (
-              <div 
-                key={ev.id} 
+              <div
+                key={ev.id}
                 className={`calendar-event-chip ${ev.status === 'completed' ? 'completed' : 'upcoming'} ${isKSS ? 'kss-event' : ''}`}
                 onClick={() => onEventClick && onEventClick(ev)}
                 title={ev.name}
@@ -86,16 +103,38 @@ export default function CalendarView({ events, onEventClick }) {
     <div className="calendar-container pop-in">
       <div className="calendar-header">
         <button className="calendar-nav-btn" onClick={prevMonth} aria-label="Previous Month">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M15 18l-6-6 6-6"/></svg>
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+          >
+            <path d="M15 18l-6-6 6-6" />
+          </svg>
         </button>
-        <h2 className="calendar-title">{monthNames[currentMonth]} {currentYear}</h2>
+        <h2 className="calendar-title">
+          {monthNames[currentMonth]} {currentYear}
+        </h2>
         <button className="calendar-nav-btn" onClick={nextMonth} aria-label="Next Month">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M9 18l6-6-6-6"/></svg>
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+          >
+            <path d="M9 18l6-6-6-6" />
+          </svg>
         </button>
       </div>
       <div className="calendar-grid">
-        {daysOfWeek.map(d => (
-          <div key={d} className="calendar-day-label">{d}</div>
+        {daysOfWeek.map((d) => (
+          <div key={d} className="calendar-day-label">
+            {d}
+          </div>
         ))}
         {blanks}
         {days}

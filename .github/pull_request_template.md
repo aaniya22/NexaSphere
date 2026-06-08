@@ -1,25 +1,19 @@
 ## Description
 
-Briefly describe the changes made in this pull request.
+Please include a summary of the change and which issue is fixed.
 
-## Related Issue
-
-Closes #
+Fixes #{issue_number}
 
 ## Type of Change
 
-- [ ] Bug fix
-- [ ] New feature
-- [ ] Documentation update
-- [ ] Chore or maintenance
+- [ ] Bug fix (non-breaking change which fixes an issue)
+- [ ] New feature (non-breaking change which adds functionality)
+- [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
+- [ ] This change requires a documentation update
 
-## Checklist
+## Checklist:
 
-- [ ] I have tested these changes locally.
-- [ ] I have run the relevant lint, build, or test commands.
-- [ ] I have linked the related issue.
-- [ ] My changes follow the existing project style.
-
-## Screenshots
-
-Add screenshots or screen recordings for UI changes, if applicable.
+- [ ] My code follows the style guidelines of this project
+- [ ] I have performed a self-review of my own code
+- [ ] I have commented my code, particularly in hard-to-understand areas
+- [ ] My changes generate no new warnings

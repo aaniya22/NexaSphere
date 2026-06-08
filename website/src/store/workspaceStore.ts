@@ -5,9 +5,17 @@ export interface CursorPosition {
   y: number;
 }
 
+export interface UserInfo {
+  id?: string;
+  name: string;
+  color?: string;
+  avatarUrl?: string;
+  initials?: string;
+}
+
 export interface UserPresence {
   socketId: string;
-  user: any;
+  user: UserInfo;
   cursor?: CursorPosition;
   isTyping?: boolean;
 }
@@ -17,8 +25,10 @@ interface WorkspaceState {
   users: Record<string, UserPresence>;
   status: 'Connected' | 'Reconnecting...' | 'Disconnected' | 'Syncing changes...';
   setDocumentContent: (content: string) => void;
-  setStatus: (status: 'Connected' | 'Reconnecting...' | 'Disconnected' | 'Syncing changes...') => void;
-  addUser: (socketId: string, user: any) => void;
+  setStatus: (
+    status: 'Connected' | 'Reconnecting...' | 'Disconnected' | 'Syncing changes...'
+  ) => void;
+  addUser: (socketId: string, user: UserInfo) => void;
   removeUser: (socketId: string) => void;
   updateUserCursor: (socketId: string, cursor: CursorPosition) => void;
   updateUserTyping: (socketId: string, isTyping: boolean) => void;
@@ -28,35 +38,39 @@ export const useWorkspaceStore = create<WorkspaceState>((set) => ({
   documentContent: '',
   users: {},
   status: 'Disconnected',
-  
+
   setDocumentContent: (content) => set({ documentContent: content }),
-  
+
   setStatus: (status) => set({ status }),
-  
-  addUser: (socketId, user) => set((state) => ({
-    users: {
-      ...state.users,
-      [socketId]: { socketId, user }
-    }
-  })),
-  
-  removeUser: (socketId) => set((state) => {
-    const newUsers = { ...state.users };
-    delete newUsers[socketId];
-    return { users: newUsers };
-  }),
-  
-  updateUserCursor: (socketId, cursor) => set((state) => ({
-    users: {
-      ...state.users,
-      [socketId]: { ...state.users[socketId], cursor }
-    }
-  })),
-  
-  updateUserTyping: (socketId, isTyping) => set((state) => ({
-    users: {
-      ...state.users,
-      [socketId]: { ...state.users[socketId], isTyping }
-    }
-  })),
+
+  addUser: (socketId, user) =>
+    set((state) => ({
+      users: {
+        ...state.users,
+        [socketId]: { socketId, user },
+      },
+    })),
+
+  removeUser: (socketId) =>
+    set((state) => {
+      const newUsers = { ...state.users };
+      delete newUsers[socketId];
+      return { users: newUsers };
+    }),
+
+  updateUserCursor: (socketId, cursor) =>
+    set((state) => ({
+      users: {
+        ...state.users,
+        [socketId]: { ...state.users[socketId], cursor },
+      },
+    })),
+
+  updateUserTyping: (socketId, isTyping) =>
+    set((state) => ({
+      users: {
+        ...state.users,
+        [socketId]: { ...state.users[socketId], isTyping },
+      },
+    })),
 }));

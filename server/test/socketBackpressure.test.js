@@ -10,13 +10,13 @@ const createMockSocket = (id = 'test-socket-123') => {
   socket.adminAuthenticated = false;
   socket.rooms = new Set([id]);
   socket.data = {};
-  
+
   socket.conn = new EventEmitter();
   socket.conn.writeBuffer = [];
   socket.conn.write = function (packet, options) {
     socket.conn.writeBuffer.push({ data: packet, type: 'message', options });
   };
-  
+
   socket.join = (room) => {
     socket.rooms.add(room);
   };
@@ -24,20 +24,19 @@ const createMockSocket = (id = 'test-socket-123') => {
     socket.rooms.delete(room);
   };
   socket.to = (room) => ({
-    emit: (event, data) => {}
+    emit: (event, data) => {},
   });
-  
+
   socket.disconnect = (force) => {
     socket.disconnected = true;
     socket.emit('disconnect');
   };
   socket.disconnected = false;
-  
+
   return socket;
 };
 
 test('Scalability & Performance: WebSocket Backpressure Protection System', async (t) => {
-
   await t.test('Scenario 1: Outbound Packet Buffer is bounded by MAX_PENDING_PACKETS', () => {
     const socket = createMockSocket('client-1');
     applyBackpressureProtection(socket);
@@ -61,7 +60,7 @@ test('Scalability & Performance: WebSocket Backpressure Protection System', asyn
 
     // Queue is non-empty
     socket.conn.write('42["chat_message",{"roomId":"r1","msg":"test"}]', {});
-    
+
     // Check firstQueuedTime is initialized
     assert.ok(socket.data.firstQueuedTime > 0);
 
@@ -89,39 +88,57 @@ test('Scalability & Performance: WebSocket Backpressure Protection System', asyn
     assert.equal(socket.data.firstQueuedTime, null);
   });
 
-  await t.test('Scenario 4: High-frequency client events are throttled and coalesced in-place', () => {
-    const socket = createMockSocket('client-4');
-    applyBackpressureProtection(socket);
+  await t.test(
+    'Scenario 4: High-frequency client events are throttled and coalesced in-place',
+    () => {
+      const socket = createMockSocket('client-4');
+      applyBackpressureProtection(socket);
 
-    // Queue becomes non-empty
-    socket.conn.write('42["cursor_moved",{"roomId":"room-A","socketId":"client-4","x":10,"y":20}]', {});
+      // Queue becomes non-empty
+      socket.conn.write(
+        '42["cursor_moved",{"roomId":"room-A","socketId":"client-4","x":10,"y":20}]',
+        {}
+      );
 
-    // Write a second update quickly (within the 50ms window) for the SAME room and socket
-    socket.conn.write('42["cursor_moved",{"roomId":"room-A","socketId":"client-4","x":15,"y":25}]', {});
+      // Write a second update quickly (within the 50ms window) for the SAME room and socket
+      socket.conn.write(
+        '42["cursor_moved",{"roomId":"room-A","socketId":"client-4","x":15,"y":25}]',
+        {}
+      );
 
-    // The second write should be coalesced! Length remains 1 instead of growing
-    assert.equal(socket.conn.writeBuffer.length, 1);
-    
-    // The data inside the queue MUST be updated to the latest coordinates (x:15, y:25)
-    assert.ok(socket.conn.writeBuffer[0].data.includes('"x":15'));
-    assert.ok(socket.conn.writeBuffer[0].data.includes('"y":25'));
-  });
+      // The second write should be coalesced! Length remains 1 instead of growing
+      assert.equal(socket.conn.writeBuffer.length, 1);
 
-  await t.test('Scenario 5: Coalescing separates events from different rooms or different users', () => {
-    const socket = createMockSocket('client-5');
-    applyBackpressureProtection(socket);
+      // The data inside the queue MUST be updated to the latest coordinates (x:15, y:25)
+      assert.ok(socket.conn.writeBuffer[0].data.includes('"x":15'));
+      assert.ok(socket.conn.writeBuffer[0].data.includes('"y":25'));
+    }
+  );
 
-    // Event for Room A
-    socket.conn.write('42["cursor_moved",{"roomId":"room-A","socketId":"client-5","x":10,"y":20}]', {});
+  await t.test(
+    'Scenario 5: Coalescing separates events from different rooms or different users',
+    () => {
+      const socket = createMockSocket('client-5');
+      applyBackpressureProtection(socket);
 
-    // Event for Room B
-    socket.conn.write('42["cursor_moved",{"roomId":"room-B","socketId":"client-5","x":30,"y":40}]', {});
+      // Event for Room A
+      socket.conn.write(
+        '42["cursor_moved",{"roomId":"room-A","socketId":"client-5","x":10,"y":20}]',
+        {}
+      );
 
-    // Should NOT coalesce, length should be 2!
-    assert.equal(socket.conn.writeBuffer.length, 2);
-    assert.ok(socket.conn.writeBuffer[0].data.includes('room-A'));
-    assert.ok(socket.conn.writeBuffer[1].data.includes('room-B'));
-  });
+      // Event for Room B
+      socket.conn.write(
+        '42["cursor_moved",{"roomId":"room-B","socketId":"client-5","x":30,"y":40}]',
+        {}
+      );
+
+      // Should NOT coalesce, length should be 2!
+      assert.equal(socket.conn.writeBuffer.length, 2);
+      assert.ok(socket.conn.writeBuffer[0].data.includes('room-A'));
+      assert.ok(socket.conn.writeBuffer[1].data.includes('room-B'));
+    }
+  );
 
   await t.test('Scenario 6: Disconnection cleans up references and listeners completely', () => {
     const socket = createMockSocket('client-6');

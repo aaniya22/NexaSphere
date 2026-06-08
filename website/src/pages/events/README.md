@@ -6,10 +6,10 @@ Events pages — home page event timeline and full event detail pages.
 
 ## Files
 
-| File | Purpose |
-|---|---|
-| `EventsPage.jsx` | Full-page events timeline (all events) |
-| `EventDetailPage.jsx` | Full detail page for a single event |
+| File                  | Purpose                                |
+| --------------------- | -------------------------------------- |
+| `EventsPage.jsx`      | Full-page events timeline (all events) |
+| `EventDetailPage.jsx` | Full detail page for a single event    |
 
 ---
 

@@ -31,10 +31,7 @@ function parsePositiveInt(value, fallback) {
 function getPoolConfig() {
   return {
     max: parsePositiveInt(process.env.PG_POOL_MAX, 20),
-    connectionTimeoutMillis: parsePositiveInt(
-      process.env.PG_CONNECTION_TIMEOUT_MS,
-      5_000,
-    ),
+    connectionTimeoutMillis: parsePositiveInt(process.env.PG_CONNECTION_TIMEOUT_MS, 5_000),
     idleTimeoutMillis: parsePositiveInt(process.env.PG_IDLE_TIMEOUT_MS, 30_000),
     // statement_timeout is a Postgres session-level parameter. Passing it via
     // the connection string's options query parameter means every client
@@ -44,25 +41,33 @@ function getPoolConfig() {
 }
 
 let pool = null;
+let replicaPool = null;
+let circuitOpenUntil = 0;
 
-function getPool() {
-  if (pool) return pool;
-  const databaseUrl = process.env.DATABASE_URL;
-  if (!databaseUrl) return null;
+function getPools() {
+  if (!pool && process.env.DATABASE_URL) {
+    pool = new pg.Pool({
+      connectionString: process.env.DATABASE_URL,
+      ...getPoolConfig(),
+    });
 
-  pool = new pg.Pool({
-    connectionString: databaseUrl,
-    ...getPoolConfig(),
-  });
+    pool.on('error', (err) => {
+      console.error('[pg.Pool primary] Unexpected error on idle client:', err.message);
+    });
+  }
 
-  // Surface unexpected errors on idle clients so they do not silently crash
-  // the process or swallow stack traces. The pool itself stays alive — pg
-  // will remove the broken client and replace it on the next checkout.
-  pool.on('error', (err) => {
-    console.error('[pg.Pool] Unexpected error on idle client:', err.message);
-  });
+  if (!replicaPool && process.env.DATABASE_URL_REPLICA) {
+    replicaPool = new pg.Pool({
+      connectionString: process.env.DATABASE_URL_REPLICA,
+      ...getPoolConfig(),
+    });
 
-  return pool;
+    replicaPool.on('error', (err) => {
+      console.error('[pg.Pool replica] Unexpected error on idle client:', err.message);
+    });
+  }
+
+  return { primaryPool: pool, replicaPool };
 }
 
 export let withDbOverride = null;
@@ -71,21 +76,48 @@ export async function withDb(fn) {
   if (withDbOverride) {
     return await withDbOverride(fn);
   }
-  const p = getPool();
-  if (!p) throw new Error('PostgreSQL not configured. Missing DATABASE_URL.');
-  const client = await p.connect();
+  const { primaryPool, replicaPool } = getPools();
+  if (!primaryPool) throw new Error('PostgreSQL not configured. Missing DATABASE_URL.');
+
+  const cooldownMs = parsePositiveInt(process.env.PG_CIRCUIT_BREAKER_COOLDOWN_MS, 30_000);
+  const now = Date.now();
+  let client;
+
+  if (now < circuitOpenUntil && replicaPool) {
+    // Circuit is open, use replica
+    client = await replicaPool.connect();
+  } else {
+    // Circuit is closed (or half-open), try primary
+    try {
+      client = await primaryPool.connect();
+      if (circuitOpenUntil !== 0) {
+        // We successfully connected, close the circuit
+        circuitOpenUntil = 0;
+      }
+    } catch (primaryErr) {
+      console.error('[db] Primary connection failed:', primaryErr.message);
+      if (replicaPool) {
+        console.warn(`[db] Opening circuit for ${cooldownMs}ms. Falling back to read-replica...`);
+        circuitOpenUntil = Date.now() + cooldownMs;
+        try {
+          client = await replicaPool.connect();
+        } catch (replicaErr) {
+          console.error('[db] Replica connection also failed:', replicaErr.message);
+          throw primaryErr;
+        }
+      } else {
+        throw primaryErr;
+      }
+    }
+  }
+
   try {
     return await fn(client);
   } finally {
-    client.release();
+    if (client) client.release();
   }
 }
 
-/**
- * Returns a snapshot of live pool metrics useful for health checks and
- * performance monitoring. Returns null when the pool has not been initialised
- * (DATABASE_URL not set).
- */
 export function getPoolStats() {
   if (!pool) return null;
   return {
@@ -94,9 +126,18 @@ export function getPoolStats() {
     waiting: pool.waitingCount,
   };
 }
+
+// For testing purposes
+export function _resetCircuitBreaker() {
+  circuitOpenUntil = 0;
+}
+export function _resetPools() {
+  pool = null;
+  replicaPool = null;
+}
+
 export function setWithDbOverride(fn) {
   withDbOverride = fn;
 }
 
 export { pg };
-

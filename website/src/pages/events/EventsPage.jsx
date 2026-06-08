@@ -1,14 +1,40 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { events as fallbackEvents } from '../../data/eventsData';
 import { BannerOrbs } from '../../shared/MotionLayer';
 import Footer from '../../shared/Footer';
 import { DynamicIcon } from '../../shared/Icons';
 import PersonalizedFeed from '../../components/recommendation/PersonalizedFeed';
+import EventCountdown from '../../components/events/EventCountdown.jsx';
+import { useRecommendations } from '../../hooks/useRecommendations';
+import { getEventCountdownStatus } from '../../hooks/useCountdown.js';
 import EventCalendarView from '../../components/calendar/EventCalendarView';
 
 export default function EventsPage({ onBack, onEventClick, events = fallbackEvents }) {
   const [view, setView] = useState('timeline');
   const [recommendationView, setRecommendationView] = useState(false);
+  const [now] = useState(() => Date.now());
+
+  const getEffectiveStatus = (ev) => {
+    if (ev.status === 'completed') return 'completed';
+    const startDate = ev.startDate ?? ev.date;
+    const endDate = ev.endDate ?? ev.date;
+    return getEventCountdownStatus({ startDate, endDate });
+  };
+
+  const sortedEvents = useMemo(() => {
+    return [...events]
+      .map((ev) => ({ ...ev, status: getEffectiveStatus(ev) }))
+      .sort((a, b) => {
+        const aIsUpcoming = a.status !== 'completed';
+        const bIsUpcoming = b.status !== 'completed';
+        if (aIsUpcoming !== bIsUpcoming) return bIsUpcoming ? 1 : -1;
+        const da = parseDate(a)?.getTime() ?? 0;
+        const db = parseDate(b)?.getTime() ?? 0;
+        return aIsUpcoming ? da - db : db - da;
+      });
+  }, [events, now]);
+
+  const { recommendations, loading: recsLoading } = useRecommendations(sortedEvents);
 
   const buildGradient = (ev) => {
     if (ev.gradientColors?.length > 1) {
@@ -19,30 +45,6 @@ export default function EventsPage({ onBack, onEventClick, events = fallbackEven
     }
     return null;
   };
-
-  const now = Date.now();
-  const parseDate = (ev) => {
-    const raw = ev.dateText ?? ev.date ?? '';
-    const d = new Date(raw);
-    return isNaN(d) ? null : d;
-  };
-  const getEffectiveStatus = (ev) => {
-    if (ev.status === 'completed') return 'completed';
-    const d = parseDate(ev);
-    if (d && d.getTime() < now) return 'completed'; // date passed → auto-complete
-    return ev.status || 'upcoming';
-  };
-
-  const sortedEvents = [...events]
-    .map((ev) => ({ ...ev, status: getEffectiveStatus(ev) }))
-    .sort((a, b) => {
-      const aIsUpcoming = a.status !== 'completed';
-      const bIsUpcoming = b.status !== 'completed';
-      if (aIsUpcoming !== bIsUpcoming) return bIsUpcoming ? 1 : -1;
-      const da = parseDate(a)?.getTime() ?? 0;
-      const db = parseDate(b)?.getTime() ?? 0;
-      return aIsUpcoming ? da - db : db - da;
-    });
 
   useEffect(() => {
     window.scrollTo({ top: 0 });
@@ -223,7 +225,11 @@ export default function EventsPage({ onBack, onEventClick, events = fallbackEven
 
       <div className="container">
         {recommendationView ? (
-          <PersonalizedFeed events={sortedEvents} onEventClick={onEventClick} />
+          <PersonalizedFeed
+            events={recommendations}
+            loading={recsLoading}
+            onEventClick={onEventClick}
+          />
         ) : view === 'timeline' ? (
           <div className="events-timeline ns-reveal">
             {sortedEvents.map((ev, i) => {
@@ -232,7 +238,7 @@ export default function EventsPage({ onBack, onEventClick, events = fallbackEven
               const glowColor = ev.gradientColors?.[0] || null;
               return (
                 <div className="timeline-item" key={ev.id}>
-                  <div className={`timeline-dot${ev.status === 'upcoming' ? ' upcoming' : ''}`} />
+                  <div className={`timeline-dot${ev.status !== 'completed' ? ' upcoming' : ''}`} />
                   <div
                     className={`timeline-card shimmer ${i % 2 === 0 ? 'pop-left' : 'pop-right'}`}
                     style={{
@@ -356,6 +362,7 @@ export default function EventsPage({ onBack, onEventClick, events = fallbackEven
                     >
                       {ev.description}
                     </p>
+                    <EventCountdown event={ev} />
                     <div
                       style={{
                         display: 'flex',
@@ -376,6 +383,24 @@ export default function EventsPage({ onBack, onEventClick, events = fallbackEven
                               style={{ marginRight: '4px' }}
                             />{' '}
                             Completed
+                          </>
+                        ) : ev.status === 'live' ? (
+                          <>
+                            <DynamicIcon
+                              name="PlayCircle"
+                              size={11}
+                              style={{ marginRight: '4px' }}
+                            />{' '}
+                            Live Now
+                          </>
+                        ) : ev.status === 'starting-soon' ? (
+                          <>
+                            <DynamicIcon
+                              name="Clock"
+                              size={11}
+                              style={{ marginRight: '4px' }}
+                            />{' '}
+                            Starting Soon
                           </>
                         ) : (
                           <>

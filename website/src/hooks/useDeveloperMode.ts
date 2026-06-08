@@ -26,7 +26,10 @@ export function useDeveloperMode() {
       if (isInput) return;
 
       // Ctrl + ` or Alt + T
-      if ((event.ctrlKey && event.key === '`') || (event.altKey && event.key.toLowerCase() === 't')) {
+      if (
+        (event.ctrlKey && event.key === '`') ||
+        (event.altKey && event.key.toLowerCase() === 't')
+      ) {
         event.preventDefault();
         toggleTerminal();
       } else if (event.key === 'Escape' && isOpen) {

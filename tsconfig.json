@@ -14,8 +14,7 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
-    "jsx": "react-jsx",
-    "types": ["vitest/globals", "vite/client"]
+    "jsx": "react-jsx"
   },
   "include": ["src", "tests", "e2e", "vite.config.js", "vitest.config.ts", "playwright.config.ts"],
   "references": []

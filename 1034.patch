@@ -1,0 +1,939 @@
+From 7659151c2e8e23108e5bed56c97df349d31145c3 Mon Sep 17 00:00:00 2001
+From: anshika1179 <anshika1179@users.noreply.github.com>
+Date: Wed, 3 Jun 2026 11:24:53 +0530
+Subject: [PATCH] feat: implement granular role-based access control (RBAC) for
+ admin dashboard
+
+Signed-off-by: anshika1179 <anshika1179@users.noreply.github.com>
+---
+ admin-dashboard/src/DashboardIndex.jsx        |  37 +++++-
+ .../src/components/OfflineBanner.jsx          |   4 +-
+ .../src/components/PermissionGuard.jsx        |  10 ++
+ admin-dashboard/src/components/Sidebar.jsx    |  46 ++++---
+ admin-dashboard/src/components/Toast.jsx      |  16 ++-
+ admin-dashboard/src/pages/DashboardHome.jsx   |  33 +++--
+ admin-dashboard/src/services/auth.js          |  23 ++++
+ admin-dashboard/src/utils/exportCSV.js        |  37 +++---
+ server/config/rbac.js                         |  10 ++
+ server/index.js                               |  17 +--
+ server/middleware/adminAuthMiddleware.js      |  58 ++++++++-
+ server/routes/api.js                          |  22 ++--
+ server/services/sseService.js                 |   2 +-
+ server/test/repositoryConcurrency.test.js     |   8 +-
+ server/utils/sanitize.js                      |  25 +++-
+ src/hooks/useNotifications.js                 | 113 +++++++++++-------
+ website/src/hooks/useSocketConnection.js      |  14 +--
+ 17 files changed, 342 insertions(+), 133 deletions(-)
+ create mode 100644 admin-dashboard/src/components/PermissionGuard.jsx
+ create mode 100644 server/config/rbac.js
+
+diff --git a/admin-dashboard/src/DashboardIndex.jsx b/admin-dashboard/src/DashboardIndex.jsx
+index 22439162..9453f769 100644
+--- a/admin-dashboard/src/DashboardIndex.jsx
++++ b/admin-dashboard/src/DashboardIndex.jsx
+@@ -12,6 +12,7 @@ import { MembershipResponsesManager } from './pages/MembershipResponsesManager';
+ import { CertificateManager } from './pages/CertificateManager';
+ import { AnnouncementsManager } from './pages/AnnouncementsManager';
+ import { useAuth } from './hooks/useAuth';
++import { PermissionGuard } from './components/PermissionGuard';
+ import './styles/admin.css';
+ 
+ function RequireAuth() {
+@@ -53,9 +54,39 @@ export default function DashboardIndex() {
+         <Route element={<DashboardLayout />}>
+           <Route index element={<DashboardHome />} />
+           <Route path="dashboard" element={<DashboardHome />} />
+-          <Route path="dashboard/events" element={<EventsManager />} />
+-          <Route path="dashboard/activity-events" element={<ActivityEventsManager />} />
+-          <Route path="dashboard/core-team" element={<CoreTeamManager />} />
++          <Route
++            path="dashboard/events"
++            element={
++              <PermissionGuard
++                requiredScope="events:read"
++                fallback={<Navigate to="/unauthorized" replace />}
++              >
++                <EventsManager />
++              </PermissionGuard>
++            }
++          />
++          <Route
++            path="dashboard/activity-events"
++            element={
++              <PermissionGuard
++                requiredScope="events:read"
++                fallback={<Navigate to="/unauthorized" replace />}
++              >
++                <ActivityEventsManager />
++              </PermissionGuard>
++            }
++          />
++          <Route
++            path="dashboard/core-team"
++            element={
++              <PermissionGuard
++                requiredScope="settings:admin"
++                fallback={<Navigate to="/unauthorized" replace />}
++              >
++                <CoreTeamManager />
++              </PermissionGuard>
++            }
++          />
+           <Route path="dashboard/membership" element={<MembershipResponsesManager />} />
+           <Route path="dashboard/certificates" element={<CertificateManager />} />
+           <Route path="dashboard/announcements" element={<AnnouncementsManager />} />
+diff --git a/admin-dashboard/src/components/OfflineBanner.jsx b/admin-dashboard/src/components/OfflineBanner.jsx
+index 1208b567..6b78627a 100644
+--- a/admin-dashboard/src/components/OfflineBanner.jsx
++++ b/admin-dashboard/src/components/OfflineBanner.jsx
+@@ -22,7 +22,9 @@ export function OfflineBanner() {
+ 
+   return (
+     <div className="offline-banner" role="alert" aria-live="assertive">
+-      <span className="offline-icon" aria-hidden="true">&#9888;</span>
++      <span className="offline-icon" aria-hidden="true">
++        &#9888;
++      </span>
+       <span>
+         <strong>Offline Mode</strong> — Changes are saved locally and will not sync to the server.
+       </span>
+diff --git a/admin-dashboard/src/components/PermissionGuard.jsx b/admin-dashboard/src/components/PermissionGuard.jsx
+new file mode 100644
+index 00000000..db727d2b
+--- /dev/null
++++ b/admin-dashboard/src/components/PermissionGuard.jsx
+@@ -0,0 +1,10 @@
++import React from 'react';
++import { auth } from '../services/auth';
++
++export function PermissionGuard({ requiredScope, children, fallback = null }) {
++  const scopes = auth.getScopes();
++  if (scopes.includes(requiredScope)) {
++    return <>{children}</>;
++  }
++  return fallback;
++}
+diff --git a/admin-dashboard/src/components/Sidebar.jsx b/admin-dashboard/src/components/Sidebar.jsx
+index ab78960e..1de722a7 100644
+--- a/admin-dashboard/src/components/Sidebar.jsx
++++ b/admin-dashboard/src/components/Sidebar.jsx
+@@ -2,19 +2,26 @@ import { useState } from 'react';
+ import { NavLink } from 'react-router-dom';
+ import { useAuth } from '../hooks/useAuth';
+ import { AdminIcon } from './AdminIcon';
++import { PermissionGuard } from './PermissionGuard';
+ 
+ /* URL of the public website — configurable via .env */
+ const WEBSITE_URL = import.meta.env.VITE_WEBSITE_URL || 'http://localhost:5175';
+ 
+ const links = [
+   { to: '/dashboard', label: 'Dashboard', icon: 'Dashboard' },
+-  { to: '/dashboard/events', label: 'Events', icon: 'Calendar' },
++  { to: '/dashboard/events', label: 'Events', icon: 'Calendar', requiredScope: 'events:read' },
+   {
+     to: '/dashboard/activity-events',
+     label: 'Activity Events',
+     icon: 'Target',
++    requiredScope: 'events:read',
++  },
++  {
++    to: '/dashboard/core-team',
++    label: 'Core Team',
++    icon: 'Users',
++    requiredScope: 'settings:admin',
+   },
+-  { to: '/dashboard/core-team', label: 'Core Team', icon: 'Users' },
+   { to: '/dashboard/membership', label: 'Membership', icon: 'FileText' },
+   { to: '/dashboard/recruitment', label: 'Recruitment', icon: 'UserPlus' },
+   { to: '/dashboard/certificates', label: 'Certificates', icon: 'Award' },
+@@ -76,18 +83,29 @@ export function Sidebar() {
+         </a>
+ 
+         <nav className="sidebar-nav">
+-          {links.map(({ to, label, icon }) => (
+-            <NavLink
+-              key={to}
+-              to={to}
+-              end={to === '/dashboard'}
+-              className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
+-              onClick={close}
+-            >
+-              <AdminIcon name={icon} size={16} aria-hidden="true" />
+-              {label}
+-            </NavLink>
+-          ))}
++          {links.map(({ to, label, icon, requiredScope }) => {
++            const LinkElement = (
++              <NavLink
++                key={to}
++                to={to}
++                end={to === '/dashboard'}
++                className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
++                onClick={close}
++              >
++                <AdminIcon name={icon} size={16} aria-hidden="true" />
++                {label}
++              </NavLink>
++            );
++
++            if (requiredScope) {
++              return (
++                <PermissionGuard key={to} requiredScope={requiredScope}>
++                  {LinkElement}
++                </PermissionGuard>
++              );
++            }
++            return LinkElement;
++          })}
+         </nav>
+ 
+         <div className="sidebar-footer">
+diff --git a/admin-dashboard/src/components/Toast.jsx b/admin-dashboard/src/components/Toast.jsx
+index b71277ed..74463b8e 100644
+--- a/admin-dashboard/src/components/Toast.jsx
++++ b/admin-dashboard/src/components/Toast.jsx
+@@ -7,22 +7,28 @@ export function Toast() {
+ 
+   const handleNotify = useCallback(({ type, message }) => {
+     const id = Date.now();
+-    setToasts(prev => [...prev, { id, type, message }]);
+-    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3000);
++    setToasts((prev) => [...prev, { id, type, message }]);
++    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 3000);
+   }, []);
+ 
+   const removeToast = (id) => {
+-    setToasts(prev => prev.filter(t => t.id !== id));
++    setToasts((prev) => prev.filter((t) => t.id !== id));
+   };
+ 
+   useEventListener(EVENTS.NOTIFY, handleNotify);
+ 
+   return (
+     <div className="toast-container" role="status" aria-live="polite">
+-      {toasts.map(t => (
++      {toasts.map((t) => (
+         <div key={t.id} className={`toast toast-${t.type}`}>
+           <span>{t.message}</span>
+-          <button onClick={() => removeToast(t.id)} className="toast-close" aria-label="Close notification">×</button>
++          <button
++            onClick={() => removeToast(t.id)}
++            className="toast-close"
++            aria-label="Close notification"
++          >
++            ×
++          </button>
+         </div>
+       ))}
+     </div>
+diff --git a/admin-dashboard/src/pages/DashboardHome.jsx b/admin-dashboard/src/pages/DashboardHome.jsx
+index b87c6baa..2cc73ca7 100644
+--- a/admin-dashboard/src/pages/DashboardHome.jsx
++++ b/admin-dashboard/src/pages/DashboardHome.jsx
+@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
+ import { api, auth } from '../services/api';
+ import { Skeleton } from '../components/Skeleton';
+ import { AdminIcon } from '../components/AdminIcon';
++import { PermissionGuard } from '../components/PermissionGuard';
+ 
+ export function DashboardHome() {
+   const [stats, setStats] = useState(null);
+@@ -117,19 +118,25 @@ export function DashboardHome() {
+       <div className="quick-links">
+         <h3>Quick Actions</h3>
+         <div className="quick-grid">
+-          <a href="/dashboard/events" className="quick-card" aria-label="Manage events">
+-            <AdminIcon name="Calendar" size={18} aria-hidden="true" /> Events
+-          </a>
+-          <a
+-            href="/dashboard/activity-events"
+-            className="quick-card"
+-            aria-label="Manage activities"
+-          >
+-            <AdminIcon name="Target" size={18} aria-hidden="true" /> Activities
+-          </a>
+-          <a href="/dashboard/core-team" className="quick-card" aria-label="Manage core team">
+-            <AdminIcon name="Users" size={18} aria-hidden="true" /> Team
+-          </a>
++          <PermissionGuard requiredScope="events:read">
++            <a href="/dashboard/events" className="quick-card" aria-label="Manage events">
++              <AdminIcon name="Calendar" size={18} aria-hidden="true" /> Events
++            </a>
++          </PermissionGuard>
++          <PermissionGuard requiredScope="events:read">
++            <a
++              href="/dashboard/activity-events"
++              className="quick-card"
++              aria-label="Manage activities"
++            >
++              <AdminIcon name="Target" size={18} aria-hidden="true" /> Activities
++            </a>
++          </PermissionGuard>
++          <PermissionGuard requiredScope="settings:admin">
++            <a href="/dashboard/core-team" className="quick-card" aria-label="Manage core team">
++              <AdminIcon name="Users" size={18} aria-hidden="true" /> Team
++            </a>
++          </PermissionGuard>
+           <a
+             href="/dashboard/membership"
+             className="quick-card"
+diff --git a/admin-dashboard/src/services/auth.js b/admin-dashboard/src/services/auth.js
+index 881d41e2..7a3cdc01 100644
+--- a/admin-dashboard/src/services/auth.js
++++ b/admin-dashboard/src/services/auth.js
+@@ -28,6 +28,12 @@ export const auth = {
+     if (data.expiresAt) {
+       localStorage.setItem(EXPIRY_KEY, data.expiresAt);
+     }
++    if (data.role) {
++      localStorage.setItem('ns_admin_role', data.role);
++    }
++    if (data.scopes) {
++      localStorage.setItem('ns_admin_scopes', JSON.stringify(data.scopes));
++    }
+ 
+     return data;
+   },
+@@ -44,6 +50,8 @@ export const auth = {
+     localStorage.removeItem(TOKEN_KEY);
+     localStorage.removeItem(EMAIL_KEY);
+     localStorage.removeItem(EXPIRY_KEY);
++    localStorage.removeItem('ns_admin_role');
++    localStorage.removeItem('ns_admin_scopes');
+   },
+ 
+   /**
+@@ -72,6 +80,21 @@ export const auth = {
+     return localStorage.getItem(EMAIL_KEY);
+   },
+ 
++  getRole() {
++    return localStorage.getItem('ns_admin_role') || 'SuperAdmin';
++  },
++
++  getScopes() {
++    try {
++      const scopes = localStorage.getItem('ns_admin_scopes');
++      return scopes
++        ? JSON.parse(scopes)
++        : ['users:read', 'users:write', 'settings:admin', 'events:read', 'events:write'];
++    } catch {
++      return [];
++    }
++  },
++
+   isOffline() {
+     return !import.meta.env.VITE_API_BASE;
+   },
+diff --git a/admin-dashboard/src/utils/exportCSV.js b/admin-dashboard/src/utils/exportCSV.js
+index 3c38b84e..54ae627f 100644
+--- a/admin-dashboard/src/utils/exportCSV.js
++++ b/admin-dashboard/src/utils/exportCSV.js
+@@ -1,20 +1,29 @@
+ export function exportToCSV(data, filename) {
+   if (!data || data.length === 0) return;
+   const headers = Object.keys(data[0]).join(',');
+-  const rows = data.map(row => 
+-    Object.values(row).map(val => {
+-      let str = String(val === null || val === undefined ? '' : val);
+-      // Sanitize CSV Formula Injection (prefix with single quote if starts with =, +, -, @)
+-      if (str.startsWith('=') || str.startsWith('+') || str.startsWith('-') || str.startsWith('@')) {
+-        str = `'${str}`;
+-      }
+-      // Escape double quotes and wrap in quotes if contains comma
+-      if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+-        str = `"${str.replace(/"/g, '""')}"`;
+-      }
+-      return str;
+-    }).join(',')
+-  ).join('\n');
++  const rows = data
++    .map((row) =>
++      Object.values(row)
++        .map((val) => {
++          let str = String(val === null || val === undefined ? '' : val);
++          // Sanitize CSV Formula Injection (prefix with single quote if starts with =, +, -, @)
++          if (
++            str.startsWith('=') ||
++            str.startsWith('+') ||
++            str.startsWith('-') ||
++            str.startsWith('@')
++          ) {
++            str = `'${str}`;
++          }
++          // Escape double quotes and wrap in quotes if contains comma
++          if (str.includes(',') || str.includes('"') || str.includes('\n')) {
++            str = `"${str.replace(/"/g, '""')}"`;
++          }
++          return str;
++        })
++        .join(',')
++    )
++    .join('\n');
+   const blob = new Blob([`\uFEFF${headers}\n${rows}`], { type: 'text/csv;charset=utf-8;' });
+   const url = URL.createObjectURL(blob);
+   const a = document.createElement('a');
+diff --git a/server/config/rbac.js b/server/config/rbac.js
+new file mode 100644
+index 00000000..c0da823b
+--- /dev/null
++++ b/server/config/rbac.js
+@@ -0,0 +1,10 @@
++export const ROLES = {
++  SuperAdmin: ['users:read', 'users:write', 'settings:admin', 'events:read', 'events:write'],
++  Moderator: ['users:read', 'events:read', 'events:write'],
++  Editor: ['events:read', 'events:write'],
++  Viewer: ['users:read', 'events:read'],
++};
++
++export function getScopesForRole(role) {
++  return ROLES[role] || [];
++}
+diff --git a/server/index.js b/server/index.js
+index 0fd2040c..a5a9dd48 100644
+--- a/server/index.js
++++ b/server/index.js
+@@ -433,14 +433,17 @@ const failedPasskeyAttempts = new Map();
+ // Periodic sweep every 30 minutes: remove entries whose lockout period has
+ // expired and whose attempt count has already been reset to 0, so they do
+ // not accumulate for keys that are never visited again.
+-setInterval(() => {
+-  const now = Date.now();
+-  for (const [key, entry] of failedPasskeyAttempts) {
+-    if (entry.count === 0 && now > entry.lockoutUntil) {
+-      failedPasskeyAttempts.delete(key);
++setInterval(
++  () => {
++    const now = Date.now();
++    for (const [key, entry] of failedPasskeyAttempts) {
++      if (entry.count === 0 && now > entry.lockoutUntil) {
++        failedPasskeyAttempts.delete(key);
++      }
+     }
+-  }
+-}, 30 * 60 * 1000).unref();
++  },
++  30 * 60 * 1000
++).unref();
+ 
+ function checkPasskeyLockout(username, ip) {
+   const key = `${String(username || '').toLowerCase()}:${ip}`;
+diff --git a/server/middleware/adminAuthMiddleware.js b/server/middleware/adminAuthMiddleware.js
+index 11ef2d56..79c03dac 100644
+--- a/server/middleware/adminAuthMiddleware.js
++++ b/server/middleware/adminAuthMiddleware.js
+@@ -5,6 +5,8 @@ import {
+   startAdminSessionCleanup,
+ } from '../repositories/adminSessionsRepository.js';
+ import crypto from 'crypto';
++import { getScopesForRole } from '../config/rbac.js';
++
+ function safeEqual(a, b) {
+   const bufA = Buffer.from(String(a));
+   const bufB = Buffer.from(String(b));
+@@ -15,8 +17,24 @@ function safeEqual(a, b) {
+ 
+   return crypto.timingSafeEqual(bufA, bufB);
+ }
+-const ADMIN_USERNAME = requiredEnv('ADMIN_USERNAME');
+-const ADMIN_PASSWORD = requiredStrongPassword('ADMIN_PASSWORD');
++
++let adminUsers = [];
++try {
++  if (process.env.ADMIN_USERS_JSON) {
++    adminUsers = JSON.parse(process.env.ADMIN_USERS_JSON);
++  } else {
++    adminUsers = [
++      {
++        username: requiredEnv('ADMIN_USERNAME'),
++        password: requiredStrongPassword('ADMIN_PASSWORD'),
++        role: 'SuperAdmin',
++      },
++    ];
++  }
++} catch (err) {
++  console.error('Failed to parse ADMIN_USERS_JSON', err);
++  process.exit(1);
++}
+ const LOGIN_WINDOW_MS = parsePositiveInteger(process.env.ADMIN_LOGIN_WINDOW_MS, 15 * 60 * 1000);
+ const LOGIN_MAX_ATTEMPTS = parsePositiveInteger(process.env.ADMIN_LOGIN_MAX_ATTEMPTS, 5);
+ const LOGIN_MAX_TRACKED_IPS = parsePositiveInteger(process.env.ADMIN_LOGIN_MAX_TRACKED_IPS, 10000);
+@@ -175,6 +193,27 @@ async function requireAdmin(req, res, next) {
+   }
+ }
+ 
++function requireScope(requiredScope) {
++  return async (req, res, next) => {
++    // First, ensure they are authenticated
++    await requireAdmin(req, res, (err) => {
++      if (err) return next(err);
++
++      if (!req.adminSession) {
++        // Response already sent by requireAdmin
++        return;
++      }
++
++      const sessionScopes = req.adminSession?.metadata?.scopes || [];
++      if (!sessionScopes.includes(requiredScope)) {
++        return res.status(403).json({ error: 'Forbidden: Insufficient permissions' });
++      }
++
++      next();
++    });
++  };
++}
++
+ async function login(req, res) {
+   try {
+     const u = String(req.body?.username || '').trim();
+@@ -186,18 +225,27 @@ async function login(req, res) {
+       return res.status(429).json({ error: 'Too many login attempts. Please wait and try again.' });
+     }
+ 
+-    if (!safeEqual(u, ADMIN_USERNAME) || !safeEqual(p, ADMIN_PASSWORD)) {
++    const matchedUser = adminUsers.find(
++      (user) => safeEqual(u, user.username) && safeEqual(p, user.password)
++    );
++
++    if (!matchedUser) {
+       recordLoginAttempt(ip);
+       return res.status(401).json({ error: 'Invalid credentials' });
+     }
+ 
+     clearLoginAttempts(ip);
+ 
++    const role = matchedUser.role || 'SuperAdmin';
++    const scopes = getScopesForRole(role);
++
+     const session = await createAdminSession({
+       username: u,
+       metadata: {
+         userAgent: req.get('user-agent') || '',
+         ip,
++        role,
++        scopes,
+       },
+     });
+ 
+@@ -211,6 +259,8 @@ async function login(req, res) {
+     return res.json({
+       username: u,
+       expiresAt: session.expiresAt,
++      role,
++      scopes,
+     });
+   } catch {
+     return res.status(500).json({ error: 'Unable to create admin session' });
+@@ -220,7 +270,6 @@ async function login(req, res) {
+ async function logout(req, res) {
+   try {
+     const token = req.adminSession?.token;
+-
+     if (token) {
+       await revokeAdminSession(token);
+     } else {
+@@ -244,6 +293,7 @@ export const adminAuthMiddleware = {
+   login,
+   logout,
+   requireAdmin,
++  requireScope,
+   // Private test exports for auditing & validation
+   _getLoginAttemptsMapSize: () => loginAttemptsByIp.size,
+   _clearAllLoginAttempts: () => loginAttemptsByIp.clear(),
+diff --git a/server/routes/api.js b/server/routes/api.js
+index 18108765..acf7b1b7 100644
+--- a/server/routes/api.js
++++ b/server/routes/api.js
+@@ -18,12 +18,12 @@ router.get(
+ );
+ router.post(
+   '/api/content/activity-events/:activityKey',
+-  adminAuthMiddleware.requireAdmin,
++  adminAuthMiddleware.requireScope('events:write'),
+   activityEventsController.addActivityEvent
+ );
+ router.delete(
+   '/api/content/activity-events/:activityKey/:eventId',
+-  adminAuthMiddleware.requireAdmin,
++  adminAuthMiddleware.requireScope('events:write'),
+   activityEventsController.deleteActivityEvent
+ );
+ 
+@@ -32,37 +32,41 @@ router.get('/api/admin/users', adminAuthMiddleware.requireAdmin, usersController
+ router.post('/api/admin/login', adminAuthMiddleware.login);
+ router.post('/api/admin/logout', adminAuthMiddleware.requireAdmin, adminAuthMiddleware.logout);
+ 
+-router.get('/api/admin/events', adminAuthMiddleware.requireAdmin, eventsController.adminListEvents);
++router.get(
++  '/api/admin/events',
++  adminAuthMiddleware.requireScope('events:read'),
++  eventsController.adminListEvents
++);
+ router.post(
+   '/api/admin/events',
+-  adminAuthMiddleware.requireAdmin,
++  adminAuthMiddleware.requireScope('events:write'),
+   eventsController.adminCreateEvent
+ );
+ router.put(
+   '/api/admin/events/:id',
+-  adminAuthMiddleware.requireAdmin,
++  adminAuthMiddleware.requireScope('events:write'),
+   eventsController.adminUpdateEvent
+ );
+ router.delete(
+   '/api/admin/events/:id',
+-  adminAuthMiddleware.requireAdmin,
++  adminAuthMiddleware.requireScope('events:write'),
+   eventsController.adminDeleteEvent
+ );
+ 
+ // Core team management APIs
+ router.get(
+   '/api/admin/core-team/members',
+-  adminAuthMiddleware.requireAdmin,
++  adminAuthMiddleware.requireScope('settings:admin'),
+   coreTeamController.adminListCoreTeamMembers
+ );
+ router.post(
+   '/api/admin/core-team/members',
+-  adminAuthMiddleware.requireAdmin,
++  adminAuthMiddleware.requireScope('settings:admin'),
+   coreTeamController.adminAddCoreTeamMember
+ );
+ router.delete(
+   '/api/admin/core-team/members/:id',
+-  adminAuthMiddleware.requireAdmin,
++  adminAuthMiddleware.requireScope('settings:admin'),
+   coreTeamController.adminDeleteCoreTeamMember
+ );
+ 
+diff --git a/server/services/sseService.js b/server/services/sseService.js
+index 047b9b98..3a607448 100644
+--- a/server/services/sseService.js
++++ b/server/services/sseService.js
+@@ -122,7 +122,7 @@ export function setupSSEHeaders(req, res, next) {
+   // Do not overwrite it here, or multi-origin deployments break.
+ 
+   res.write(': SSE connection established\n\n');
+-  
++
+   next();
+ }
+ 
+diff --git a/server/test/repositoryConcurrency.test.js b/server/test/repositoryConcurrency.test.js
+index 2752c22b..19d0e171 100644
+--- a/server/test/repositoryConcurrency.test.js
++++ b/server/test/repositoryConcurrency.test.js
+@@ -119,8 +119,8 @@ test('Database Repository Concurrency & Sequential Query Safety Audit', async (t
+       assert.equal(row.shortName, 'kickoff');
+       assert.deepEqual(row.tags, ['oss', 'gssoc']);
+ 
+-      // Assert that exactly 2 queries were executed
+-      assert.equal(totalQueriesExecuted, 2);
++      // Assert that exactly 4 queries were executed (BEGIN, SELECT, SELECT COUNT, COMMIT)
++      assert.equal(totalQueriesExecuted, 4);
+ 
+       // CRITICAL: Peak concurrent queries on any client must be exactly 1.
+       // If it was Promise.all, peakConcurrentQueries would be 2.
+@@ -148,8 +148,8 @@ test('Database Repository Concurrency & Sequential Query Safety Audit', async (t
+       assert.equal(row.name, 'Pull Request Open');
+       assert.equal(row.tagline, 'PR is opened');
+ 
+-      // Assert that exactly 2 queries were executed
+-      assert.equal(totalQueriesExecuted, 2);
++      // Assert that exactly 4 queries were executed (BEGIN, SELECT, SELECT COUNT, COMMIT)
++      assert.equal(totalQueriesExecuted, 4);
+ 
+       // CRITICAL: Peak concurrent queries on any client must be exactly 1.
+       assert.equal(
+diff --git a/server/utils/sanitize.js b/server/utils/sanitize.js
+index 7ee7d846..2d3462e5 100644
+--- a/server/utils/sanitize.js
++++ b/server/utils/sanitize.js
+@@ -8,15 +8,23 @@ const HTML_ESCAPE_MAP = {
+ };
+ 
+ function escapeHtml(value) {
+-  return String(value ?? '').replace(/[&<>"'`]/g, (character) => HTML_ESCAPE_MAP[character]).trim();
++  return String(value ?? '')
++    .replace(/[&<>"'`]/g, (character) => HTML_ESCAPE_MAP[character])
++    .trim();
+ }
+ 
+ function sanitizeText(value, max = 4000) {
+-  return escapeHtml(String(value ?? '').trim().slice(0, max));
++  return escapeHtml(
++    String(value ?? '')
++      .trim()
++      .slice(0, max)
++  );
+ }
+ 
+ function sanitizeNullableText(value, max = 4000) {
+-  const text = String(value ?? '').trim().slice(0, max);
++  const text = String(value ?? '')
++    .trim()
++    .slice(0, max);
+   return text ? escapeHtml(text) : null;
+ }
+ 
+@@ -29,7 +37,10 @@ function sanitizeTextArray(values, max = 40) {
+       .slice(0, 12);
+   }
+ 
+-  return values.map((entry) => sanitizeText(entry, max)).filter(Boolean).slice(0, 12);
++  return values
++    .map((entry) => sanitizeText(entry, max))
++    .filter(Boolean)
++    .slice(0, 12);
+ }
+ 
+ export function sanitizeEventRecord(event = {}) {
+@@ -72,7 +83,9 @@ export function sanitizeCoreTeamMemberRecord(member = {}) {
+ }
+ 
+ function toSafeString(value, max = 4000) {
+-  return String(value ?? '').trim().slice(0, max);
++  return String(value ?? '')
++    .trim()
++    .slice(0, max);
+ }
+ 
+-export { escapeHtml, sanitizeNullableText, sanitizeText, sanitizeTextArray, toSafeString };
+\ No newline at end of file
++export { escapeHtml, sanitizeNullableText, sanitizeText, sanitizeTextArray, toSafeString };
+diff --git a/src/hooks/useNotifications.js b/src/hooks/useNotifications.js
+index 69e3af56..62ce6671 100644
+--- a/src/hooks/useNotifications.js
++++ b/src/hooks/useNotifications.js
+@@ -12,7 +12,7 @@ export function useNotifications() {
+   const [notifications, setNotifications] = useState([]);
+   const [isOpen, setIsOpen] = useState(false);
+ 
+-  const unreadCount = notifications.filter(n => !n.isRead).length;
++  const unreadCount = notifications.filter((n) => !n.isRead).length;
+ 
+   // Initialize socket and listen to real-time events
+   useEffect(() => {
+@@ -59,51 +59,69 @@ export function useNotifications() {
+ 
+     // Setup real-time event handlers mapping to the notification feed
+     const handleRegistration = (data) => {
+-      setNotifications(prev => {
++      setNotifications((prev) => {
+         // Prevent duplicate by checking if we recently added a similar notification
+         // Note: data.id would be better if server provides it
+-        return [{
+-          id: `reg-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+-          type: 'connection',
+-          title: 'Registration Confirmed! 🎉',
+-          message: data.eventName ? `You are registered for "${data.eventName}"` : 'Your registration has been successfully confirmed.',
+-          isRead: false,
+-          createdAt: new Date().toISOString(),
+-        }, ...prev];
++        return [
++          {
++            id: `reg-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
++            type: 'connection',
++            title: 'Registration Confirmed! 🎉',
++            message: data.eventName
++              ? `You are registered for "${data.eventName}"`
++              : 'Your registration has been successfully confirmed.',
++            isRead: false,
++            createdAt: new Date().toISOString(),
++          },
++          ...prev,
++        ];
+       });
+     };
+ 
+     const handleWaitlist = (data) => {
+-      setNotifications(prev => [{
+-        id: `waitlist-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+-        type: 'mention',
+-        title: 'Waitlist Promotion! 🚀',
+-        message: data.eventName ? `Great news! You have been promoted for "${data.eventName}"` : 'You have been promoted from the waitlist.',
+-        isRead: false,
+-        createdAt: new Date().toISOString(),
+-      }, ...prev]);
++      setNotifications((prev) => [
++        {
++          id: `waitlist-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
++          type: 'mention',
++          title: 'Waitlist Promotion! 🚀',
++          message: data.eventName
++            ? `Great news! You have been promoted for "${data.eventName}"`
++            : 'You have been promoted from the waitlist.',
++          isRead: false,
++          createdAt: new Date().toISOString(),
++        },
++        ...prev,
++      ]);
+     };
+ 
+     const handleReminder = (data) => {
+-      setNotifications(prev => [{
+-        id: `reminder-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+-        type: 'system',
+-        title: 'Upcoming Event Reminder ⏰',
+-        message: data.eventName ? `"${data.eventName}" is starting soon! Don't miss it.` : 'An event is starting shortly.',
+-        isRead: false,
+-        createdAt: new Date().toISOString(),
+-      }, ...prev]);
++      setNotifications((prev) => [
++        {
++          id: `reminder-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
++          type: 'system',
++          title: 'Upcoming Event Reminder ⏰',
++          message: data.eventName
++            ? `"${data.eventName}" is starting soon! Don't miss it.`
++            : 'An event is starting shortly.',
++          isRead: false,
++          createdAt: new Date().toISOString(),
++        },
++        ...prev,
++      ]);
+     };
+ 
+     const handleAttendance = (data) => {
+-      setNotifications(prev => [{
+-        id: `attendance-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+-        type: 'system',
+-        title: 'Attendance Confirmed! Check-in ✅',
+-        message: `Your check-in is complete! You earned ${data.points || 50} points.`,
+-        isRead: false,
+-        createdAt: new Date().toISOString(),
+-      }, ...prev]);
++      setNotifications((prev) => [
++        {
++          id: `attendance-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
++          type: 'system',
++          title: 'Attendance Confirmed! Check-in ✅',
++          message: `Your check-in is complete! You earned ${data.points || 50} points.`,
++          isRead: false,
++          createdAt: new Date().toISOString(),
++        },
++        ...prev,
++      ]);
+     };
+ 
+     // Note: The backend seems to emit 'registration-confirmed' but previously it mapped to 'registrationConfirmed'
+@@ -113,7 +131,7 @@ export function useNotifications() {
+     // 'waitlist-promotion' -> 'waitlistPromotion'
+     // 'event-reminder' -> 'eventReminder'
+     // 'attendance-marked' -> 'attendanceMarked'
+-    
++
+     // Register active listeners using the actual backend event names
+     socketClient.on('registration-confirmed', handleRegistration);
+     socketClient.on('waitlist-promotion', handleWaitlist);
+@@ -127,7 +145,7 @@ export function useNotifications() {
+       socketClient.off('waitlist-promotion', handleWaitlist);
+       socketClient.off('event-reminder', handleReminder);
+       socketClient.off('attendance-marked', handleAttendance);
+-      
++
+       const storedUser = localStorage.getItem('ns_user');
+       if (storedUser) {
+         try {
+@@ -137,32 +155,36 @@ export function useNotifications() {
+           }
+         } catch (e) {}
+       }
+-      
++
+       socketClient.leaveRoom('notifications-room');
+       socketClient.leaveRoom('global-announcements');
+-      
++
+       // DO NOT disconnect the shared socket here
+     };
+   }, []);
+ 
+   const markAsRead = useCallback((id) => {
+-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
++    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)));
+     // Persist
+     (async () => {
+       try {
+-        await fetch(buildUrl(getApiBase(), '/api/notifications/mark-read'), { method: 'POST', headers: getAuthHeaders(), body: JSON.stringify({ id }) });
++        await fetch(buildUrl(getApiBase(), '/api/notifications/mark-read'), {
++          method: 'POST',
++          headers: getAuthHeaders(),
++          body: JSON.stringify({ id }),
++        });
+       } catch (e) {}
+     })();
+   }, []);
+ 
+   const markAllAsRead = useCallback(() => {
+-    setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
++    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+     (async () => {
+       try {
+         await fetch(buildUrl(getApiBase(), '/api/notifications/mark-all-read'), {
+           method: 'POST',
+-          headers: getAuthHeaders() ,
+-           });
++          headers: getAuthHeaders(),
++        });
+       } catch (e) {}
+     })();
+   }, []);
+@@ -173,13 +195,14 @@ export function useNotifications() {
+       try {
+         await fetch(buildUrl(getApiBase(), '/api/notifications'), {
+           method: 'DELETE',
+-          headers: getAuthHeaders(), });
++          headers: getAuthHeaders(),
++        });
+       } catch (e) {}
+     })();
+   }, []);
+ 
+   const togglePanel = useCallback(() => {
+-    setIsOpen(prev => !prev);
++    setIsOpen((prev) => !prev);
+   }, []);
+ 
+   const closePanel = useCallback(() => {
+diff --git a/website/src/hooks/useSocketConnection.js b/website/src/hooks/useSocketConnection.js
+index 3bca4012..533be978 100644
+--- a/website/src/hooks/useSocketConnection.js
++++ b/website/src/hooks/useSocketConnection.js
+@@ -10,9 +10,9 @@
+  * Use useSocket.ts when you need to subscribe to a specific socket event.
+  */
+ 
+-import { useEffect, useState, useCallback } from "react";
+-import socketClient from "../utils/socketClient";
+-import { getSocketServerUrl } from "../utils/runtimeConfig";
++import { useEffect, useState, useCallback } from 'react';
++import socketClient from '../utils/socketClient';
++import { getSocketServerUrl } from '../utils/runtimeConfig';
+ 
+ export function useSocket(serverUrl) {
+   const [connected, setConnected] = useState(false);
+@@ -43,8 +43,8 @@ export function useSocket(serverUrl) {
+     };
+ 
+     // Listen to standard connection events using socket directly
+-    socket.on("connect", onConnect);
+-    socket.on("disconnect", onDisconnect);
++    socket.on('connect', onConnect);
++    socket.on('disconnect', onDisconnect);
+ 
+     // Sync initial state
+     setConnected(socket.connected || false);
+@@ -52,8 +52,8 @@ export function useSocket(serverUrl) {
+ 
+     return () => {
+       isMounted = false;
+-      socket.off("connect", onConnect);
+-      socket.off("disconnect", onDisconnect);
++      socket.off('connect', onConnect);
++      socket.off('disconnect', onDisconnect);
+     };
+   }, [serverUrl]);
+ 

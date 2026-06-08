@@ -1,5 +1,8 @@
 import { useEffect } from 'react';
 import { DynamicIcon } from '../../shared/Icons';
+import EventCountdown from '../../components/events/EventCountdown.jsx';
+import { getEventCountdownStatus } from '../../hooks/useCountdown.js';
+import './EventsSection.css';
 
 export default function EventsSection({ onEventClick, events = [] }) {
   const buildGradient = (ev) => {
@@ -40,18 +43,11 @@ export default function EventsSection({ onEventClick, events = [] }) {
     return () => obs.disconnect();
   }, []);
 
-  // Auto-detect: if date has passed, treat as completed regardless of stored status
-  const now = Date.now();
-  const parseDate = (ev) => {
-    const raw = ev.dateText ?? ev.date ?? '';
-    const d = new Date(raw);
-    return isNaN(d) ? null : d;
-  };
   const getEffectiveStatus = (ev) => {
     if (ev.status === 'completed') return 'completed';
-    const d = parseDate(ev);
-    if (d && d.getTime() < now) return 'completed'; // date passed → auto-complete
-    return ev.status || 'upcoming';
+    const startDate = ev.startDate ?? ev.date;
+    const endDate = ev.endDate ?? ev.date;
+    return getEventCountdownStatus({ startDate, endDate });
   };
 
   // Sort: upcoming first (earliest date first), then completed (most recent first)
@@ -83,7 +79,7 @@ export default function EventsSection({ onEventClick, events = [] }) {
             return (
               <div className="timeline-item" key={ev.id}>
                 <div
-                  className={`timeline-dot${ev._effectiveStatus === 'upcoming' ? ' upcoming' : ''}`}
+                  className={`timeline-dot${ev._effectiveStatus !== 'completed' ? ' upcoming' : ''}`}
                 />
                 <div
                   className={`timeline-card shimmer ${i % 2 === 0 ? 'pop-left' : 'pop-right'}`}
@@ -206,6 +202,7 @@ export default function EventsSection({ onEventClick, events = [] }) {
                   >
                     {ev.description}
                   </p>
+                  <EventCountdown event={ev} />
                   <div
                     style={{
                       display: 'flex',
@@ -226,6 +223,24 @@ export default function EventsSection({ onEventClick, events = [] }) {
                             style={{ marginRight: '4px' }}
                           />{' '}
                           Completed
+                        </>
+                      ) : ev._effectiveStatus === 'live' ? (
+                        <>
+                          <DynamicIcon
+                            name="PlayCircle"
+                            size={11}
+                            style={{ marginRight: '4px' }}
+                          />{' '}
+                          Live Now
+                        </>
+                      ) : ev._effectiveStatus === 'starting-soon' ? (
+                        <>
+                          <DynamicIcon
+                            name="Clock"
+                            size={11}
+                            style={{ marginRight: '4px' }}
+                          />{' '}
+                          Starting Soon
                         </>
                       ) : (
                         <>

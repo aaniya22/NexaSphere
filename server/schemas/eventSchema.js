@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { toSafeString } from '../utils/sanitize.js';
+import { sanitizeText } from '../utils/sanitize.js';
 
 const tagsSchema = z
   .union([z.array(z.string()), z.string()])
@@ -13,7 +13,7 @@ const tagsSchema = z
           .map((entry) => entry.trim());
 
     return list
-      .map((entry) => toSafeString(entry, 40))
+      .map((entry) => sanitizeText(entry, 40))
       .filter(Boolean)
       .slice(0, 12);
   });
@@ -29,26 +29,27 @@ const eventBaseSchema = z.object({
   tags: tagsSchema,
 });
 
-export const eventSchema = eventBaseSchema
-  .transform((data) => {
-    const baseId = data.id || data.shortName || data.name;
-    const id = String(baseId)
+export const eventSchema = eventBaseSchema.transform((data) => {
+  const baseId = data.id || data.shortName || data.name;
+  const id =
+    String(baseId)
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '') || `event-${Date.now()}`;
 
-    return {
-      ...data,
-      id,
-      name: toSafeString(data.name, 120),
-      shortName: toSafeString(data.shortName || data.name, 60),
-      date: toSafeString(data.date, 80),
-      description: toSafeString(data.description, 1200),
-      status: data.status === 'upcoming' ? 'upcoming' : 'completed',
-      icon: toSafeString(data.icon || 'Pin', 32),
-      tags: Array.isArray(data.tags) ? data.tags : [],
-    };
-  });
+  return {
+    ...data,
+    id,
+    name: sanitizeText(data.name, 120),
+    shortName: sanitizeText(data.shortName || data.name, 60),
+    date: sanitizeText(data.date, 80),
+    description: sanitizeText(data.description, 1200),
+    status: data.status === 'upcoming' ? 'upcoming' : 'completed',
+    // Set default icon if missing
+    icon: sanitizeText(data.icon || 'Pin', 32),
+    tags: Array.isArray(data.tags) ? data.tags : [],
+  };
+});
 
 export const eventPatchSchema = eventBaseSchema.partial().transform((data) => ({
   ...data,

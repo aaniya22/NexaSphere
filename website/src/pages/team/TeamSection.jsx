@@ -127,7 +127,17 @@ export default function TeamSection({ onApply }) {
     };
 
     fetchTeam();
-    const interval = setInterval(fetchTeam, 4000);
+
+    // Replace unconditional 4s polling with a visibilitychange listener —
+    // refetch only when the user returns to the tab instead of hammering
+    // the API every 4 seconds regardless of tab visibility or user activity.
+    // The socket listener below already handles real-time admin updates.
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchTeam();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     // Socket: refetch immediately when admin updates team
     const onContentUpdated = (data) => {
@@ -139,7 +149,7 @@ export default function TeamSection({ onApply }) {
 
     return () => {
       alive = false;
-      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       off('content:updated', onContentUpdated);
     };
   }, []);

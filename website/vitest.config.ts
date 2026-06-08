@@ -11,21 +11,23 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html', 'lcov'],
-      include: ['src/**/*.{ts,tsx}'],
+      include: ['src/**/*.{ts,tsx,js,jsx}'],
       exclude: [
         'src/**/*.d.ts',
         'src/**/__tests__',
-        'src/**/*.test.{ts,tsx}',
-        'src/**/*.spec.{ts,tsx}',
+        'src/**/*.test.{ts,tsx,js,jsx}',
+        'src/**/*.spec.{ts,tsx,js,jsx}',
         'src/main.tsx',
         'src/vite-env.d.ts',
       ],
-      lines: 70,
-      functions: 70,
-      branches: 70,
-      statements: 70,
+      thresholds: {
+        lines: 70,
+        functions: 70,
+        branches: 70,
+        statements: 70,
+      },
     },
-    include: ['src/**/*.test.{ts,tsx}', 'src/**/*.spec.{ts,tsx}'],
+    include: ['src/**/*.test.{ts,tsx,js,jsx}', 'src/**/*.spec.{ts,tsx,js,jsx}'],
   },
   resolve: {
     alias: {

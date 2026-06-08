@@ -6,7 +6,7 @@ name: GSSoC — Stale PR Cleanup
 # ─────────────────────────────────────────────────────────────────────────────
 on:
   schedule:
-    - cron: '0 3 * * *'   # Daily at 03:00 UTC
+    - cron: '0 3 * * *' # Daily at 03:00 UTC
   workflow_dispatch:
 
 concurrency:
@@ -23,7 +23,7 @@ jobs:
 
     steps:
       - name: Find and handle stale PRs
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |

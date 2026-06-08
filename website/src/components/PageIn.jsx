@@ -8,12 +8,14 @@ export default function PageIn({ children, k }) {
     return () => clearTimeout(t);
   }, [k]);
   return (
-    <div style={{
-      opacity: r ? 1 : 0,
-      transform: r ? 'none' : 'translateY(10px)',
-      transition: 'opacity .5s ease, transform .5s ease',
-      willChange: 'opacity, transform'
-    }}>
+    <div
+      style={{
+        opacity: r ? 1 : 0,
+        transform: r ? 'none' : 'translateY(10px)',
+        transition: 'opacity .5s ease, transform .5s ease',
+        willChange: 'opacity, transform',
+      }}
+    >
       {children}
     </div>
   );

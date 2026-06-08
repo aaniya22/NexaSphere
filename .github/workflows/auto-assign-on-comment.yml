@@ -1,0 +1,61 @@
+name: Auto-Assign Premshaw23 on Issue Comment
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  issues: write
+
+jobs:
+  auto-assign:
+    # Only run when Premshaw23 comments on an issue (not a PR comment)
+    if: |
+      github.event.comment.user.login == 'Premshaw23' &&
+      github.event.issue.pull_request == null
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check if already assigned
+        id: check
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue = context.payload.issue;
+            const assignees = issue.assignees.map(a => a.login);
+            const alreadyAssigned = assignees.includes('Premshaw23');
+            core.setOutput('already_assigned', alreadyAssigned.toString());
+            return alreadyAssigned;
+
+      - name: Assign Premshaw23 to issue
+        if: steps.check.outputs.already_assigned == 'false'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.addAssignees({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.issue.number,
+              assignees: ['Premshaw23'],
+            });
+
+      - name: Post confirmation comment
+        if: steps.check.outputs.already_assigned == 'false'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.issue.number,
+              body: [
+                '👋 Hey @Premshaw23! You\'ve been automatically assigned to this issue since you commented on it.',
+                '',
+                'Please make sure to:',
+                '- Read the issue description carefully',
+                '- Check [CONTRIBUTING.md](../blob/main/CONTRIBUTING.md) before starting work',
+                '- Open a PR referencing this issue when you\'re ready (e.g. `Fixes #' + context.payload.issue.number + '`)',
+                '',
+                'Happy coding! 🚀',
+              ].join('\n'),
+            });

@@ -6,15 +6,15 @@ All site content lives here. Edit these files to update the website **without to
 
 ## Files
 
-| File | Edit to... |
-|---|---|
-| `teamData.js` | Add / update core team members |
-| `activitiesData.js` | Change activity card icons & descriptions (home grid) |
-| `eventsData.js` | Add events to the home page timeline + Events page |
-| `activities/index.js` | Register a new activity page |
-| `activities/workshop.js` | Add / update Workshop events |
-| `activities/insightSession.js` | Add / update KSS & Insight Session events |
-| `activities/hackathon.js` | Add / update Hackathon events |
+| File                           | Edit to...                                            |
+| ------------------------------ | ----------------------------------------------------- |
+| `teamData.js`                  | Add / update core team members                        |
+| `activitiesData.js`            | Change activity card icons & descriptions (home grid) |
+| `eventsData.js`                | Add events to the home page timeline + Events page    |
+| `activities/index.js`          | Register a new activity page                          |
+| `activities/workshop.js`       | Add / update Workshop events                          |
+| `activities/insightSession.js` | Add / update KSS & Insight Session events             |
+| `activities/hackathon.js`      | Add / update Hackathon events                         |
 
 ---
 
@@ -77,7 +77,7 @@ When the session is conducted, move it to `conductedEvents` and fill in speakers
 
 ## Events log (April 2026)
 
-| Event | Status | File |
-|---|---|---|
-| KSS #153 — Impact of AI | ✅ Completed | `activities/insightSession.js` |
-| Workshop: Git & GitHub | ✅ Completed | `activities/workshop.js` + `eventsData.js` |
+| Event                   | Status       | File                                       |
+| ----------------------- | ------------ | ------------------------------------------ |
+| KSS #153 — Impact of AI | ✅ Completed | `activities/insightSession.js`             |
+| Workshop: Git & GitHub  | ✅ Completed | `activities/workshop.js` + `eventsData.js` |

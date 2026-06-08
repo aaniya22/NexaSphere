@@ -20,13 +20,6 @@ export default function Image({ src, alt, width, height, fill, style, className,
       };
 
   return (
-    <img
-      src={src}
-      alt={alt}
-      style={imageStyle}
-      className={className}
-      loading="lazy"
-      {...props}
-    />
+    <img src={src} alt={alt} style={imageStyle} className={className} loading="lazy" {...props} />
   );
 }

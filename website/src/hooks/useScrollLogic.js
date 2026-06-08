@@ -1,10 +1,40 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 const AUTO_SCROLL_THRESHOLD = 400;
 
-export function useBackToTop() {
+function useBackToTopElement() {
+  const btnRef = useRef(null);
+
   useEffect(() => {
-    const btn = document.getElementById('back-to-top');
+    const tryGetElement = () => {
+      const el = document.getElementById('back-to-top');
+      if (el && el !== btnRef.current) {
+        btnRef.current = el;
+      }
+      return el;
+    };
+
+    if (tryGetElement()) return;
+
+    const observer = new MutationObserver(() => {
+      if (tryGetElement()) {
+        observer.disconnect();
+      }
+    });
+
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    return () => observer.disconnect();
+  }, []);
+
+  return btnRef;
+}
+
+export function useBackToTop() {
+  const btnRef = useBackToTopElement();
+
+  useEffect(() => {
+    const btn = btnRef.current;
     if (!btn) return;
 
     const handleScroll = () => {
@@ -22,7 +52,7 @@ export function useBackToTop() {
       window.removeEventListener('scroll', handleScroll);
       btn.removeEventListener('click', handleClick);
     };
-  }, []);
+  }, [btnRef.current]);
 }
 
 export function useActiveTabObserver(page, mobile, navTabs, navHeights, setActiveTab) {
@@ -30,10 +60,10 @@ export function useActiveTabObserver(page, mobile, navTabs, navHeights, setActiv
     if (page) return;
 
     const navHeight = mobile ? navHeights.MOBILE : navHeights.DESKTOP;
-    
+
     const handleScroll = () => {
       const scrollY = window.scrollY + navHeight + 30;
-      
+
       for (let i = navTabs.length - 1; i >= 0; i--) {
         const section = document.getElementById(`section-${navTabs[i].toLowerCase()}`);
         if (section && section.offsetTop <= scrollY) {

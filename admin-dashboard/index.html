@@ -1,34 +1,38 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>NexaSphere Admin — Dashboard</title>
-    <meta name="description" content="NexaSphere Admin Dashboard — manage events, team, certificates and more." />
+    <meta
+      name="description"
+      content="NexaSphere Admin Dashboard — manage events, team, certificates and more."
+    />
     <meta name="robots" content="noindex, nofollow" />
     <meta name="theme-color" content="#CC1111" />
 
-    <!-- Favicon (same as main site) -->
     <link rel="icon" type="image/png" href="/assets/logo-icon.png" />
     <link rel="icon" type="image/svg+xml" href="/assets/logo-icon.svg" />
 
-    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Orbitron:wght@700&display=swap"
       rel="stylesheet"
     />
-
-    <!-- Prevent flash of un-themed content -->
-    <script>
-      try {
-        var t = localStorage.getItem('ns-admin-theme') || 'dark';
-        document.documentElement.setAttribute('data-theme', t);
-      } catch (e) {}
-    </script>
   </head>
   <body>
+    <script>
+      (function () {
+        try {
+          var t = window.localStorage.getItem('ns-admin-theme');
+          if (t) {
+            document.documentElement.setAttribute('data-theme', t);
+          }
+        } catch (e) {}
+      })();
+    </script>
+
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

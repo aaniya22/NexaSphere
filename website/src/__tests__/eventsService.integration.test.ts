@@ -52,6 +52,6 @@ describe('Events Service (Backend Integration)', () => {
 
   it('should handle errors gracefully', async () => {
     mockEventsService.getAll.mockRejectedValue(new Error('Database error'));
-    expect(() => mockEventsService.getAll()).rejects.toThrow('Database error');
+    await expect(mockEventsService.getAll()).rejects.toThrow('Database error');
   });
 });

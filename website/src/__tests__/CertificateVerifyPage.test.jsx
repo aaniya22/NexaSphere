@@ -65,7 +65,7 @@ describe('CertificateVerifyPage', () => {
     render(<CertificateVerifyPage certificateId={CERT_ID} onGoHome={() => {}} />);
 
     await waitFor(() => {
-      expect(screen.getByText(/Certificate Verified/i)).toBeInTheDocument();
+      expect(screen.getByText('Certificate Verified')).toBeInTheDocument();
     });
 
     expect(screen.getByText('Anshika Rai')).toBeInTheDocument();

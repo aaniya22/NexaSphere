@@ -1,11 +1,14 @@
 import { z } from 'zod';
-import { toSafeString } from '../utils/sanitize.js';
+import { sanitizeText } from '../utils/sanitize.js';
 
-const creatorSchema = z.object({
-  name: z.string().trim().max(120).optional().default(''),
-  email: z.string().trim().max(140).optional().default(''),
-  phone: z.string().trim().max(30).optional().default(''),
-}).optional().default(undefined);
+const creatorSchema = z
+  .object({
+    name: z.string().trim().max(120).optional().default(''),
+    email: z.string().trim().max(140).optional().default(''),
+    phone: z.string().trim().max(30).optional().default(''),
+  })
+  .optional()
+  .default(undefined);
 
 export const activityEventSchema = z
   .object({
@@ -20,16 +23,16 @@ export const activityEventSchema = z
   .transform((data) => ({
     ...data,
     id: data.id || `manual-${Date.now()}`,
-    name: toSafeString(data.name, 120),
-    date: toSafeString(data.date, 80),
-    tagline: toSafeString(data.tagline || '', 240),
-    description: toSafeString(data.description, 1200),
+    name: sanitizeText(data.name, 120),
+    date: sanitizeText(data.date, 80),
+    tagline: sanitizeText(data.tagline || '', 240),
+    description: sanitizeText(data.description, 1200),
     status: data.status === 'upcoming' ? 'upcoming' : 'completed',
     createdBy: data.createdBy
       ? {
-          name: toSafeString(data.createdBy.name, 120),
-          email: toSafeString(data.createdBy.email, 140),
-          phone: toSafeString(data.createdBy.phone, 30),
+          name: sanitizeText(data.createdBy.name, 120),
+          email: sanitizeText(data.createdBy.email, 140),
+          phone: sanitizeText(data.createdBy.phone, 30),
         }
       : undefined,
   }));

@@ -211,9 +211,7 @@ export async function queueGetAll() {
       const allKeys = await keys(syncQueueStore);
       if (allKeys.length === 0) return [];
       const allValues = await getMany(allKeys, syncQueueStore);
-      return allValues
-        .filter(Boolean)
-        .sort((a, b) => a.timestamp - b.timestamp);
+      return allValues.filter(Boolean).sort((a, b) => a.timestamp - b.timestamp);
     }
   } catch (err) {
     console.warn('[NexaSphere IDB] queueGetAll failed:', err);
@@ -311,27 +309,27 @@ export async function prefsDel(key) {
 // ── Well-known cache keys ─────────────────────────────────────────────────────
 
 export const CACHE_KEYS = {
-  DASHBOARD:       'dashboard-data',
-  ANALYTICS:       'analytics-data',
-  NOTIFICATIONS:   'notifications',
-  USER_PROFILE:    'user-profile',
+  DASHBOARD: 'dashboard-data',
+  ANALYTICS: 'analytics-data',
+  NOTIFICATIONS: 'notifications',
+  USER_PROFILE: 'user-profile',
   RECENTLY_VIEWED: 'recently-viewed',
-  EVENTS:          'events-list',
+  EVENTS: 'events-list',
 };
 
 export const PREF_KEYS = {
-  THEME:              'theme',
+  THEME: 'theme',
   NOTIFICATIONS_SEEN: 'notifications-seen',
-  INSTALL_DISMISSED:  'install-prompt-dismissed',
-  INSTALL_COUNT:      'app-open-count',
+  INSTALL_DISMISSED: 'install-prompt-dismissed',
+  INSTALL_COUNT: 'app-open-count',
 };
 
 // Default TTL values (seconds)
 export const TTL = {
-  DASHBOARD:       5 * 60,        // 5 minutes
-  ANALYTICS:       10 * 60,       // 10 minutes
-  NOTIFICATIONS:   2 * 60,        // 2 minutes
-  USER_PROFILE:    15 * 60,       // 15 minutes
-  EVENTS:          5 * 60,        // 5 minutes
-  RECENTLY_VIEWED: 60 * 60 * 24,  // 24 hours
+  DASHBOARD: 5 * 60, // 5 minutes
+  ANALYTICS: 10 * 60, // 10 minutes
+  NOTIFICATIONS: 2 * 60, // 2 minutes
+  USER_PROFILE: 15 * 60, // 15 minutes
+  EVENTS: 5 * 60, // 5 minutes
+  RECENTLY_VIEWED: 60 * 60 * 24, // 24 hours
 };

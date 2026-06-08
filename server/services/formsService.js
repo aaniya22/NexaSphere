@@ -1,14 +1,34 @@
-import { supabaseRequest, HAS_SUPABASE, requiredEnv, normalizePrivateKey } from '../storage/supabaseClient.js';
+import {
+  supabaseRequest,
+  HAS_SUPABASE,
+  requiredEnv,
+  normalizePrivateKey,
+} from '../storage/supabaseClient.js';
 import { google } from 'googleapis';
 import { ZodError } from 'zod';
 import { normalizeFormSubmission } from '../validators/formSchemas.js';
 import { getPublicAppUrl } from '../utils/publicAppUrl.js';
 import { sendWelcomeVerificationEmail } from './emailService.js';
 import { broadcastSSEEvent } from './sseService.js';
-import { emitToRoom, getRoom } from '../config/socket.js';
+import { emitToRole } from '../config/socket.js';
+
+let _sheetsClient = null;
+
+function getSheetsClient() {
+  if (_sheetsClient) return _sheetsClient;
+  const auth = new google.auth.JWT({
+    email: requiredEnv('GOOGLE_SERVICE_ACCOUNT_EMAIL'),
+    key: normalizePrivateKey(requiredEnv('GOOGLE_PRIVATE_KEY')),
+    scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+  });
+  _sheetsClient = google.sheets({ version: 'v4', auth });
+  return _sheetsClient;
+}
 
 function toSafeString(value, max = 4000) {
-  return String(value ?? '').trim().slice(0, max);
+  return String(value ?? '')
+    .trim()
+    .slice(0, max);
 }
 
 export const formsService = {
@@ -17,13 +37,15 @@ export const formsService = {
     try {
       await supabaseRequest('form_submissions', {
         method: 'POST',
-        body: [{
-          form_type: formType,
-          full_name: toSafeString(payload.fullName, 140),
-          college_email: toSafeString(payload.collegeEmail, 140),
-          whatsapp: toSafeString(payload.whatsapp, 40),
-          payload,
-        }],
+        body: [
+          {
+            form_type: formType,
+            full_name: toSafeString(payload.fullName, 140),
+            college_email: toSafeString(payload.collegeEmail, 140),
+            whatsapp: toSafeString(payload.whatsapp, 40),
+            payload,
+          },
+        ],
       });
       return true;
     } catch {
@@ -32,9 +54,8 @@ export const formsService = {
   },
 
   async appendFormToSheet(formType, payload) {
-    const clientEmail = requiredEnv('GOOGLE_SERVICE_ACCOUNT_EMAIL');
-    const privateKey = normalizePrivateKey(requiredEnv('GOOGLE_PRIVATE_KEY'));
     const spreadsheetId = requiredEnv('GOOGLE_SHEET_ID');
+    const sheets = getSheetsClient();
 
     const defaultTab = process.env.GOOGLE_SHEET_TAB_NAME || 'Responses';
     const tabMap = {
@@ -43,14 +64,6 @@ export const formsService = {
       core_team: process.env.GOOGLE_CORE_TEAM_TAB_NAME || 'CoreTeamResponses',
     };
     const sheetName = tabMap[formType] || defaultTab;
-
-    const auth = new google.auth.JWT({
-      email: clientEmail,
-      key: privateKey,
-      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-    });
-
-    const sheets = google.sheets({ version: 'v4', auth });
 
     const now = new Date().toISOString();
     const row = [
@@ -65,7 +78,7 @@ export const formsService = {
     await sheets.spreadsheets.values.append({
       spreadsheetId,
       range: `${sheetName}!A1`,
-      valueInputOption: 'USER_ENTERED',
+      valueInputOption: 'RAW',
       insertDataOption: 'INSERT_ROWS',
       requestBody: { values: [row] },
     });
@@ -78,17 +91,14 @@ export const formsService = {
       try {
         await this.appendFormToSheet(formType, payload);
       } catch (sheetErr) {
+        console.error('[Forms Service] Failed to append to Google Sheet:', sheetErr);
         if (!savedToSupabase) throw sheetErr;
       }
 
       // Trigger standard welcome verification email
       try {
-        const verifyUrl = `${getPublicAppUrl()}/verify?email=${encodeURIComponent(body.collegeEmail)}`;
-        await sendWelcomeVerificationEmail(
-          body.collegeEmail,
-          body.fullName,
-          verifyUrl,
-        );
+        const verifyUrl = `${getPublicAppUrl()}/verify?email=${encodeURIComponent(payload.collegeEmail)}`;
+        await sendWelcomeVerificationEmail(payload.collegeEmail, payload.fullName, verifyUrl);
       } catch (emailErr) {
         console.error('[Forms Service] Failed to send welcome verification email:', emailErr);
       }
@@ -100,7 +110,7 @@ export const formsService = {
           fullName: payload.fullName,
           timestamp: new Date().toISOString(),
         });
-        emitToRoom(getRoom('admin'), 'admin:new-registration', {
+        emitToRole('membership_admin', 'admin:new-registration', {
           formType,
           userName: payload.fullName,
           timestamp: new Date(),
@@ -112,7 +122,10 @@ export const formsService = {
       return { ok: true };
     } catch (e) {
       if (e instanceof ZodError) {
-        const issues = e.issues.map((issue) => ({ path: issue.path.join('.'), message: issue.message }));
+        const issues = e.issues.map((issue) => ({
+          path: issue.path.join('.'),
+          message: issue.message,
+        }));
         const err = new Error('Invalid form submission');
         err.details = issues;
         throw err;

@@ -13,16 +13,23 @@ export default function Cursor() {
     floatPhase: 0,
     hovering: false,
     clicking: false,
-    raf: null
+    raf: null,
   });
 
   useEffect(() => {
-    if (window.matchMedia('(hover:none)').matches) return;
+    const isTouchDevice =
+      window.matchMedia('(hover:none)').matches ||
+      'ontouchstart' in window ||
+      navigator.maxTouchPoints > 0;
+
+    if (isTouchDevice) {
+      return;
+    }
     document.body.style.cursor = 'none';
 
     const s = stateRef.current;
 
-    const onMove = e => {
+    const onMove = (e) => {
       s.mx = e.clientX;
       s.my = e.clientY;
     };
@@ -33,8 +40,8 @@ export default function Cursor() {
       s.clicking = false;
     };
 
-    const onOver = e => {
-      s.hovering = !!(e.target.closest('button,a,[role="button"],[tabindex]'));
+    const onOver = (e) => {
+      s.hovering = !!e.target.closest('button,a,[role="button"],[tabindex]');
     };
 
     const tick = () => {
@@ -42,9 +49,10 @@ export default function Cursor() {
       s.oy += (s.my - s.oy) * 0.18;
 
       s.floatPhase += 0.022;
-      s.floatY = Math.sin(s.floatPhase) * 2 +
-  Math.sin(s.floatPhase * 1.7) * 1 +
-  Math.sin(s.floatPhase * 0.5) * 1.5;
+      s.floatY =
+        Math.sin(s.floatPhase) * 2 +
+        Math.sin(s.floatPhase * 1.7) * 1 +
+        Math.sin(s.floatPhase * 0.5) * 1.5;
 
       const fy = s.oy + s.floatY;
 
@@ -71,12 +79,12 @@ export default function Cursor() {
     };
 
     window.addEventListener('mousemove', onMove, {
-      passive: true
+      passive: true,
     });
     window.addEventListener('mousedown', onDown);
     window.addEventListener('mouseup', onUp);
     window.addEventListener('mouseover', onOver, {
-      passive: true
+      passive: true,
     });
     s.raf = requestAnimationFrame(tick);
 
@@ -92,36 +100,64 @@ export default function Cursor() {
 
   return (
     <>
-      <div ref={glowRef} style={{
-        position:'fixed', pointerEvents:'none', zIndex:10000,
-        width:'180px', height:'180px', borderRadius:'50%',
-        background:'radial-gradient(circle, rgba(204,17,17,.025) 0%, rgba(136,0,0,.015) 40%, transparent 70%)',
-        transform:'translate(-50%,-50%)',
-        transition:'opacity .3s',
-      }}/>
+      <div
+        ref={glowRef}
+        style={{
+          position: 'fixed',
+          pointerEvents: 'none',
+          zIndex: 10000,
+          width: '180px',
+          height: '180px',
+          borderRadius: '50%',
+          background:
+            'radial-gradient(circle, rgba(204,17,17,.025) 0%, rgba(136,0,0,.015) 40%, transparent 70%)',
+          transform: 'translate(-50%,-50%)',
+          transition: 'opacity .3s',
+        }}
+      />
 
-      <div ref={trailRef} style={{
-        position:'fixed', pointerEvents:'none', zIndex:10002,
-        width:'16px', height:'16px', borderRadius:'50%',
-        background:'radial-gradient(circle, rgba(204,17,17,0.35) 0%, transparent 70%)',
-        transform:'translate(-50%,-50%)',
-        filter:'blur(3px)',
-        transition:'opacity .25s',
-      }}/>
+      <div
+        ref={trailRef}
+        style={{
+          position: 'fixed',
+          pointerEvents: 'none',
+          zIndex: 10002,
+          width: '16px',
+          height: '16px',
+          borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(204,17,17,0.35) 0%, transparent 70%)',
+          transform: 'translate(-50%,-50%)',
+          filter: 'blur(3px)',
+          transition: 'opacity .25s',
+        }}
+      />
 
-      <div ref={orbRef} style={{
-        position:'fixed', pointerEvents:'none', zIndex:10005,
-        width:'12px', height:'12px', borderRadius:'50%',
-        background:'radial-gradient(circle at 35% 35%, #fff 0%, #CC1111 40% #880000 100%)',
-        boxShadow:'0 0 4px rgba(204,17,17,.35), 0 0 8px rgba(204,17,17,.15)',
-        transition:'transform .18s cubic-bezier(.34,1.56,.64,1), opacity .2s',
-      }}>
-        <div style={{
-          position:'absolute', top:'20%', left:'22%',
-          width:'3px', height:'3px', borderRadius:'50%',
-          background:'rgba(255,255,255,.7)',
-          filter:'blur(.5px)',
-        }}/>
+      <div
+        ref={orbRef}
+        style={{
+          position: 'fixed',
+          pointerEvents: 'none',
+          zIndex: 10005,
+          width: '12px',
+          height: '12px',
+          borderRadius: '50%',
+          background: 'radial-gradient(circle at 35% 35%, #fff 0%, #CC1111 40% #880000 100%)',
+          boxShadow: '0 0 4px rgba(204,17,17,.35), 0 0 8px rgba(204,17,17,.15)',
+          transition: 'transform .18s cubic-bezier(.34,1.56,.64,1), opacity .2s',
+        }}
+      >
+        <div
+          style={{
+            position: 'absolute',
+            top: '20%',
+            left: '22%',
+            width: '3px',
+            height: '3px',
+            borderRadius: '50%',
+            background: 'rgba(255,255,255,.7)',
+            filter: 'blur(.5px)',
+          }}
+        />
       </div>
     </>
   );

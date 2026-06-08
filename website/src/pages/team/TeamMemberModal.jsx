@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 
 // ── Copy Popup ──
 function CopyPopup({ value, onClose }) {
   const [copied, setCopied] = useState(false);
+  const timeoutRef = useRef(null);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(value).then(() => {
@@ -16,8 +17,16 @@ function CopyPopup({ value, onClose }) {
     const handler = (e) => {
       if (!e.target.closest('.copy-popup')) onClose();
     };
-    setTimeout(() => document.addEventListener('click', handler), 0);
-    return () => document.removeEventListener('click', handler);
+    timeoutRef.current = setTimeout(() => {
+      document.addEventListener('click', handler);
+    }, 0);
+
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+      document.removeEventListener('click', handler);
+    };
   }, [onClose]);
 
   return (
@@ -45,7 +54,9 @@ function ModalContent({ member, onClose }) {
   const [imgError, setImgError] = useState(false);
 
   useEffect(() => {
-    const handler = (e) => { if (e.key === 'Escape') onClose(); };
+    const handler = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
     window.addEventListener('keydown', handler);
     document.body.style.overflow = 'hidden';
     return () => {
@@ -60,17 +71,30 @@ function ModalContent({ member, onClose }) {
   return (
     <div
       className="modal-overlay"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
     >
       <div className="modal-box">
         {/* Close */}
-        <button className="modal-close" onClick={onClose} aria-label="Close">✕</button>
+        <button className="modal-close" onClick={onClose} aria-label="Close">
+          ✕
+        </button>
 
         {/* Photo */}
-        <img 
-          src={(!member.photo || imgError) ? 'https://api.dicebear.com/7.x/initials/svg?seed=' + encodeURIComponent(member.name) + '&backgroundColor=7b6fff&textColor=ffffff' : member.photo} 
-          alt={member.name} 
-          className="modal-photo" 
+        <img
+          src={
+            !member.photo || imgError
+              ? 'https://api.dicebear.com/7.x/initials/svg?seed=' +
+                encodeURIComponent(member.name) +
+                '&backgroundColor=7b6fff&textColor=ffffff'
+              : member.photo
+          }
+          alt={member.name}
+          className="modal-photo"
+          loading="lazy"
+          width="120"
+          height="120"
           onError={() => setImgError(true)}
         />
 
@@ -116,7 +140,12 @@ function ModalContent({ member, onClose }) {
                     target="_blank"
                     rel="noopener noreferrer"
                     className="modal-social-btn btn-whatsapp"
-                    style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                    style={{
+                      textDecoration: 'none',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
                   >
                     💬 WhatsApp
                   </a>
@@ -176,8 +205,5 @@ function ModalContent({ member, onClose }) {
 // ── Export: renders via Portal so it's never clipped by any parent ──
 export default function TeamMemberModal({ member, onClose }) {
   if (!member) return null;
-  return createPortal(
-    <ModalContent member={member} onClose={onClose} />,
-    document.body
-  );
+  return createPortal(<ModalContent member={member} onClose={onClose} />, document.body);
 }

@@ -6,7 +6,7 @@ import { BookmarkType } from '../../utils/bookmarkStorage';
 interface BookmarksDrawerProps {
   isOpen: boolean;
   onClose: () => void;
-  onNavigate?: (type: string, key: string) => void;
+  onNavigate?: (_type: string, _key: string) => void;
 }
 
 export default function BookmarksDrawer({ isOpen, onClose, onNavigate }: BookmarksDrawerProps) {
@@ -22,11 +22,14 @@ export default function BookmarksDrawer({ isOpen, onClose, onNavigate }: Bookmar
   }, [isOpen, onClose]);
 
   // Group bookmarks by type
-  const grouped = bookmarks.reduce((acc, item) => {
-    if (!acc[item.type]) acc[item.type] = [];
-    acc[item.type].push(item);
-    return acc;
-  }, {} as Record<BookmarkType, typeof bookmarks>);
+  const grouped = bookmarks.reduce(
+    (acc, item) => {
+      if (!acc[item.type]) acc[item.type] = [];
+      acc[item.type].push(item);
+      return acc;
+    },
+    {} as Record<BookmarkType, typeof bookmarks>
+  );
 
   const categories: BookmarkType[] = ['Event', 'Activity', 'Roadmap'];
 
@@ -74,25 +77,60 @@ export default function BookmarksDrawer({ isOpen, onClose, onNavigate }: Bookmar
             }}
           >
             {/* Header */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '1.5rem',
-              borderBottom: '1px solid rgba(255,255,255,0.1)',
-            }}>
-              <h2 style={{ margin: 0, fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--c1)' }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '1.5rem',
+                borderBottom: '1px solid rgba(255,255,255,0.1)',
+              }}
+            >
+              <h2
+                style={{
+                  margin: 0,
+                  fontSize: '1.25rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                }}
+              >
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  style={{ color: 'var(--c1)' }}
+                >
                   <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
                 </svg>
                 Saved for Later
               </h2>
-              <button 
+              <button
                 onClick={onClose}
-                style={{ background: 'transparent', border: 'none', color: 'var(--t2)', cursor: 'pointer', padding: '4px' }}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--t2)',
+                  cursor: 'pointer',
+                  padding: '4px',
+                }}
                 aria-label="Close bookmarks"
               >
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
                   <line x1="18" y1="6" x2="6" y2="18"></line>
                   <line x1="6" y1="6" x2="18" y2="18"></line>
                 </svg>
@@ -103,11 +141,23 @@ export default function BookmarksDrawer({ isOpen, onClose, onNavigate }: Bookmar
             <div style={{ flex: 1, overflowY: 'auto', padding: '1.5rem' }}>
               {bookmarks.length === 0 ? (
                 <div style={{ textAlign: 'center', color: 'var(--t2)', marginTop: '40px' }}>
-                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: '16px' }}>
+                  <svg
+                    width="48"
+                    height="48"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="rgba(255,255,255,0.1)"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    style={{ marginBottom: '16px' }}
+                  >
                     <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
                   </svg>
                   <p>No bookmarks yet.</p>
-                  <p style={{ fontSize: '0.9rem', opacity: 0.7 }}>Save events, activities, and roadmaps to access them quickly here.</p>
+                  <p style={{ fontSize: '0.9rem', opacity: 0.7 }}>
+                    Save events, activities, and roadmaps to access them quickly here.
+                  </p>
                 </div>
               ) : (
                 categories.map((category) => {
@@ -116,18 +166,20 @@ export default function BookmarksDrawer({ isOpen, onClose, onNavigate }: Bookmar
 
                   return (
                     <div key={category} style={{ marginBottom: '2rem' }}>
-                      <h3 style={{ 
-                        fontSize: '1rem', 
-                        color: 'var(--t2)', 
-                        borderBottom: '1px solid rgba(255,255,255,0.1)', 
-                        paddingBottom: '8px', 
-                        marginBottom: '12px' 
-                      }}>
+                      <h3
+                        style={{
+                          fontSize: '1rem',
+                          color: 'var(--t2)',
+                          borderBottom: '1px solid rgba(255,255,255,0.1)',
+                          paddingBottom: '8px',
+                          marginBottom: '12px',
+                        }}
+                      >
                         {category}s
                       </h3>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                         {items.map((item) => (
-                          <div 
+                          <div
                             key={item.id}
                             style={{
                               background: 'rgba(255,255,255,0.03)',
@@ -148,11 +200,21 @@ export default function BookmarksDrawer({ isOpen, onClose, onNavigate }: Bookmar
                             }}
                           >
                             <div style={{ flex: 1, minWidth: 0, paddingRight: '12px' }}>
-                              <h4 style={{ margin: 0, fontSize: '0.95rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              <h4
+                                style={{
+                                  margin: 0,
+                                  fontSize: '0.95rem',
+                                  whiteSpace: 'nowrap',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                }}
+                              >
                                 {item.title}
                               </h4>
                               {item.date && (
-                                <span style={{ fontSize: '0.8rem', color: 'var(--t2)' }}>{item.date}</span>
+                                <span style={{ fontSize: '0.8rem', color: 'var(--t2)' }}>
+                                  {item.date}
+                                </span>
                               )}
                             </div>
                             <button
@@ -173,7 +235,16 @@ export default function BookmarksDrawer({ isOpen, onClose, onNavigate }: Bookmar
                               }}
                               title="Remove"
                             >
-                              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <svg
+                                width="16"
+                                height="16"
+                                viewBox="0 0 24 24"
+                                fill="currentColor"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              >
                                 <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
                               </svg>
                             </button>

@@ -10,7 +10,12 @@ interface DistributionChartProps {
 
 export const DistributionChart: React.FC<DistributionChartProps> = ({ data, loading }) => {
   return (
-    <ChartWrapper title="Skill Distribution" subtitle="Engagement by category" loading={loading} height={300}>
+    <ChartWrapper
+      title="Skill Distribution"
+      subtitle="Engagement by category"
+      loading={loading}
+      height={300}
+    >
       <PieChart margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
         <Pie
           data={data}

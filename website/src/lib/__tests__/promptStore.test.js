@@ -14,7 +14,7 @@ import {
   deletePrompt,
   clearWorkspace,
   getRecentPrompts,
-} from '../lib/promptStore';
+} from '../promptStore';
 
 // Mock IndexedDB for testing
 const mockDb = {
@@ -61,9 +61,9 @@ describe('Prompt Store', () => {
   it('should get pinned prompts', async () => {
     const id1 = await savePrompt('Q1', 'A1', 'default');
     const id2 = await savePrompt('Q2', 'A2', 'default');
-    
+
     await togglePinPrompt(id1, true);
-    
+
     const pinned = await getPinnedPrompts('default');
     expect(pinned.length).toBeGreaterThan(0);
   });
@@ -84,10 +84,10 @@ describe('Prompt Store', () => {
   it('should filter prompts by workspace', async () => {
     await savePrompt('Coding Q', 'Coding A', 'coding');
     await savePrompt('Research Q', 'Research A', 'research');
-    
+
     const codingPrompts = await getAllPrompts('coding');
     const researchPrompts = await getAllPrompts('research');
-    
+
     expect(codingPrompts.length).toBeGreaterThan(0);
     expect(researchPrompts.length).toBeGreaterThan(0);
   });

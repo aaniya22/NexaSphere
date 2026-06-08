@@ -66,6 +66,7 @@ nexasphere/                  ← repository root
 ```
 
 **Two separate `package.json` files:**
+
 - `/package.json` — frontend dependencies and scripts
 - `/server/package.json` — backend dependencies and scripts
 
@@ -75,13 +76,13 @@ nexasphere/                  ← repository root
 
 ### Technology
 
-| Tool | Role |
-|---|---|
-| **React 18** | UI rendering, concurrent features |
-| **Vite 5** | Dev server, HMR, production bundler |
-| **Zustand** | Lightweight global state |
-| **Framer Motion** | Animations and transitions |
-| **Socket.io-client** | Real-time event subscription |
+| Tool                 | Role                                |
+| -------------------- | ----------------------------------- |
+| **React 18**         | UI rendering, concurrent features   |
+| **Vite 5**           | Dev server, HMR, production bundler |
+| **Zustand**          | Lightweight global state            |
+| **Framer Motion**    | Animations and transitions          |
+| **Socket.io-client** | Real-time event subscription        |
 
 ### Layer Structure
 
@@ -107,21 +108,21 @@ src/
 
 ### State Management Strategy
 
-| State type | Where it lives |
-|---|---|
-| Server data (fetched) | Component-local `useState` + custom hooks |
-| UI state (theme, modals) | React Context (`src/context/theme/`) |
-| Bookmark state | `BookmarkContext` + `localStorage` (via `utils/bookmarkStorage.ts`) |
-| Workspace collaboration | Zustand store (`src/store/workspaceStore.ts`) |
-| Socket connection | `SocketContext` singleton |
+| State type               | Where it lives                                                      |
+| ------------------------ | ------------------------------------------------------------------- |
+| Server data (fetched)    | Component-local `useState` + custom hooks                           |
+| UI state (theme, modals) | React Context (`src/context/theme/`)                                |
+| Bookmark state           | `BookmarkContext` + `localStorage` (via `utils/bookmarkStorage.ts`) |
+| Workspace collaboration  | Zustand store (`src/store/workspaceStore.ts`)                       |
+| Socket connection        | `SocketContext` singleton                                           |
 
 ### Path Aliases (Vite)
 
 The following Next.js shims are configured in `vite.config.js` for compatibility:
 
-| Import | Resolves to |
-|---|---|
-| `next/image` | `src/shared/next-image.jsx` |
+| Import         | Resolves to                   |
+| -------------- | ----------------------------- |
+| `next/image`   | `src/shared/next-image.jsx`   |
 | `next/dynamic` | `src/shared/next-dynamic.jsx` |
 
 ### Dev Server Proxy
@@ -134,15 +135,15 @@ Requests from the frontend to `/api/*` and `/healthz` are proxied to `http://loc
 
 ### Technology
 
-| Tool | Role |
-|---|---|
-| **Express 4** | HTTP routing and middleware |
-| **Socket.io** | WebSocket server |
-| **node-pg-migrate** | Database schema migrations |
-| **`pg`** | PostgreSQL driver |
-| **Zod** | Request validation |
-| **Winston** | Structured logging |
-| **Swagger/ReDoc** | API documentation (`/api-docs`) |
+| Tool                | Role                            |
+| ------------------- | ------------------------------- |
+| **Express 4**       | HTTP routing and middleware     |
+| **Socket.io**       | WebSocket server                |
+| **node-pg-migrate** | Database schema migrations      |
+| **`pg`**            | PostgreSQL driver               |
+| **Zod**             | Request validation              |
+| **Winston**         | Structured logging              |
+| **Swagger/ReDoc**   | API documentation (`/api-docs`) |
 
 ### Layer Pattern
 
@@ -188,13 +189,13 @@ HTTP Request
 
 ### API Routes
 
-| Route file | Prefix | Description |
-|---|---|---|
-| `routes/api.js` | `/api` | Core data routes (events, team, forms) |
-| `routes/analytics.js` | `/api/analytics` | Activity analytics |
-| `routes/monitoring.js` | `/api/monitoring` | Health & performance metrics |
-| `routes/documentation.js` | `/api-docs` | Swagger UI / ReDoc |
-| `routes/adminStream.js` | `/api/admin/stream` | SSE admin event stream |
+| Route file                | Prefix              | Description                            |
+| ------------------------- | ------------------- | -------------------------------------- |
+| `routes/api.js`           | `/api`              | Core data routes (events, team, forms) |
+| `routes/analytics.js`     | `/api/analytics`    | Activity analytics                     |
+| `routes/monitoring.js`    | `/api/monitoring`   | Health & performance metrics           |
+| `routes/documentation.js` | `/api-docs`         | Swagger UI / ReDoc                     |
+| `routes/adminStream.js`   | `/api/admin/stream` | SSE admin event stream                 |
 
 ---
 
@@ -226,13 +227,13 @@ The migration config file: `server/.postgres_migrations_config.json`
 
 ### Key Tables (from schema)
 
-| Table | Purpose |
-|---|---|
-| `events` | Club events with metadata |
-| `core_team` | Core team member profiles |
-| `activity_events` | User activity log |
-| `forms` | Dynamic form submissions |
-| `notifications` | In-app notification queue |
+| Table             | Purpose                   |
+| ----------------- | ------------------------- |
+| `events`          | Club events with metadata |
+| `core_team`       | Core team member profiles |
+| `activity_events` | User activity log         |
+| `forms`           | Dynamic form submissions  |
+| `notifications`   | In-app notification queue |
 
 ---
 
@@ -240,11 +241,11 @@ The migration config file: `server/.postgres_migrations_config.json`
 
 Socket.io is used for:
 
-| Feature | Socket event namespace |
-|---|---|
-| Live notifications | `/notifications` |
-| Collaborative workspace | `/workspace` |
-| Admin event stream | SSE via `routes/adminStream.js` |
+| Feature                 | Socket event namespace          |
+| ----------------------- | ------------------------------- |
+| Live notifications      | `/notifications`                |
+| Collaborative workspace | `/workspace`                    |
+| Admin event stream      | SSE via `routes/adminStream.js` |
 
 **Frontend:** `src/utils/socketClient.js` creates a singleton Socket.io client.  
 **Context:** `src/context/SocketContext.tsx` provides the connection to all components.  
@@ -275,16 +276,16 @@ Backend → Firebase Admin SDK (verifyIdToken)
 
 ## 8. External Services
 
-| Service | Used for | Config key(s) |
-|---|---|---|
-| **Firebase Admin** | Token verification (auth) | `FIREBASE_*` env vars |
-| **SendGrid** | Transactional email delivery | `SENDGRID_API_KEY` |
-| **Nodemailer** | Alternative SMTP delivery | `SMTP_*` env vars |
-| **Google Generative AI** | AI features (roadmap, resume) | `VITE_GEMINI_API_KEY` |
-| **TensorFlow.js** | In-browser ML inference | (no config needed) |
-| **Sentry (Frontend)** | Browser error tracking | `VITE_SENTRY_DSN` |
-| **Sentry (Backend)** | Node error tracking | `SENTRY_DSN` |
-| **Cloudflare Turnstile** | Bot-proof form CAPTCHA | `VITE_TURNSTILE_SITE_KEY` |
+| Service                  | Used for                      | Config key(s)             |
+| ------------------------ | ----------------------------- | ------------------------- |
+| **Firebase Admin**       | Token verification (auth)     | `FIREBASE_*` env vars     |
+| **SendGrid**             | Transactional email delivery  | `SENDGRID_API_KEY`        |
+| **Nodemailer**           | Alternative SMTP delivery     | `SMTP_*` env vars         |
+| **Google Generative AI** | AI features (roadmap, resume) | `VITE_GEMINI_API_KEY`     |
+| **TensorFlow.js**        | In-browser ML inference       | (no config needed)        |
+| **Sentry (Frontend)**    | Browser error tracking        | `VITE_SENTRY_DSN`         |
+| **Sentry (Backend)**     | Node error tracking           | `SENTRY_DSN`              |
+| **Cloudflare Turnstile** | Bot-proof form CAPTCHA        | `VITE_TURNSTILE_SITE_KEY` |
 
 ---
 
@@ -292,29 +293,29 @@ Backend → Firebase Admin SDK (verifyIdToken)
 
 ### Frontend (`.env.local` at repo root)
 
-| Variable | Required | Description |
-|---|---|---|
-| `VITE_APP_URL` | Yes | Frontend public URL (e.g. `http://localhost:5175`) |
-| `VITE_API_BASE` | Yes | Backend API base URL (e.g. `http://localhost:8080`) |
-| `VITE_AI_API_BASE` | No | Python AI service URL (e.g. `http://localhost:8000`) |
-| `VITE_SOCKET_URL` | Yes | Socket.io server URL (usually same as API) |
-| `VITE_SOCKET_PATH` | No | Socket.io path (default: `/socket.io`) |
-| `VITE_GEMINI_API_KEY` | No | Google AI API key for AI features |
-| `VITE_SENTRY_DSN` | No | Sentry DSN for frontend error tracking |
-| `VITE_TURNSTILE_SITE_KEY` | No | Cloudflare Turnstile site key |
-| `VITE_BASE_PATH` | No | Base path override (e.g. `/NexaSphere/` for GitHub Pages) |
+| Variable                  | Required | Description                                               |
+| ------------------------- | -------- | --------------------------------------------------------- |
+| `VITE_APP_URL`            | Yes      | Frontend public URL (e.g. `http://localhost:5175`)        |
+| `VITE_API_BASE`           | Yes      | Backend API base URL (e.g. `http://localhost:8080`)       |
+| `VITE_AI_API_BASE`        | No       | Python AI service URL (e.g. `http://localhost:8000`)      |
+| `VITE_SOCKET_URL`         | Yes      | Socket.io server URL (usually same as API)                |
+| `VITE_SOCKET_PATH`        | No       | Socket.io path (default: `/socket.io`)                    |
+| `VITE_GEMINI_API_KEY`     | No       | Google AI API key for AI features                         |
+| `VITE_SENTRY_DSN`         | No       | Sentry DSN for frontend error tracking                    |
+| `VITE_TURNSTILE_SITE_KEY` | No       | Cloudflare Turnstile site key                             |
+| `VITE_BASE_PATH`          | No       | Base path override (e.g. `/NexaSphere/` for GitHub Pages) |
 
 ### Backend (`server/.env`)
 
-| Variable | Required | Description |
-|---|---|---|
-| `DATABASE_URL` | Yes | PostgreSQL connection string |
-| `PORT` | No | Server port (default: 8080) |
-| `CORS_ORIGIN` | Yes | Comma-separated list of allowed origins |
-| `FIREBASE_*` | Yes | Firebase Admin SDK credentials |
-| `SENDGRID_API_KEY` | No | SendGrid API key for email |
-| `SMTP_*` | No | SMTP credentials (alternative to SendGrid) |
-| `SENTRY_DSN` | No | Sentry DSN for backend error tracking |
+| Variable           | Required | Description                                |
+| ------------------ | -------- | ------------------------------------------ |
+| `DATABASE_URL`     | Yes      | PostgreSQL connection string               |
+| `PORT`             | No       | Server port (default: 8080)                |
+| `CORS_ORIGIN`      | Yes      | Comma-separated list of allowed origins    |
+| `FIREBASE_*`       | Yes      | Firebase Admin SDK credentials             |
+| `SENDGRID_API_KEY` | No       | SendGrid API key for email                 |
+| `SMTP_*`           | No       | SMTP credentials (alternative to SendGrid) |
+| `SENTRY_DSN`       | No       | Sentry DSN for backend error tracking      |
 
 > 📄 Full example files: [`.env.example`](../.env.example) (frontend) · [`server/.env.example`](../server/.env.example) (backend)
 
@@ -361,4 +362,4 @@ React Component → Re-render UI
 
 ---
 
-*Last updated: May 2026 · Maintained by [@Ayushh-Sharmaa](https://github.com/Ayushh-Sharmaa)*
+_Last updated: May 2026 · Maintained by [@Ayushh-Sharmaa](https://github.com/Ayushh-Sharmaa)_

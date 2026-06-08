@@ -7,6 +7,7 @@
 <br/>
 
 ---
+
 ## 📌 Overview
 
 <br/>
@@ -51,6 +52,7 @@ FastAPI microservice handling:
 <br/>
 
 ---
+
 ## 🚀 Quick Start
 
 <br/>
@@ -221,6 +223,7 @@ SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 <br/>
 
 ---
+
 ## 📁 Project Structure
 
 <br/>
@@ -265,7 +268,7 @@ The Python backend also powers a highly intelligent **Hybrid Recommendation Engi
 3. Open `http://localhost:8000/docs` to test `GET /recommend/events/{user_id}`.
 
 ### Robust Caching (Built-in Redis Fallback)
-The engine automatically attempts to connect to Redis using the `REDIS_URL` environment variable for performance optimization. 
+The engine automatically attempts to connect to Redis using the `REDIS_URL` environment variable for performance optimization.
 **If Redis is unavailable (e.g., throwing ConnectionError 10061), the system gracefully logs `Redis unavailable, using local cache` and falls back to a global in-memory Python dictionary cache.** This ensures the application never crashes during testing or deployment even without Redis installed.
 
 ### Mock Data Fallback
@@ -284,9 +287,11 @@ If you haven't configured a PostgreSQL database, the engine falls back to a real
 ### Health Check
 
 ```
+
 GET /health
 GET /api/forms/status
-```
+
+````
 
 <br/>
 
@@ -307,7 +312,7 @@ Content-Type: application/json
   "section": "A",
   "reason": "Want to join the community"
 }
-```
+````
 
 <br/>
 
@@ -486,6 +491,7 @@ CREATE TABLE core_team_applications (
 <br/>
 
 ---
+
 ## 🧪 Testing
 
 <br/>

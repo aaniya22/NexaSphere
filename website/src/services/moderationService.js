@@ -1,5 +1,5 @@
 // src/services/moderationService.js
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 // Initialize Gemini AI
 const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY || '');
@@ -13,7 +13,7 @@ export const MODERATION_CATEGORIES = {
   VIOLENCE: 'violence',
   SELF_HARM: 'self_harm',
   SEXUAL: 'sexual',
-  MISINFORMATION: 'misinformation'
+  MISINFORMATION: 'misinformation',
 };
 
 // Severity levels
@@ -21,7 +21,7 @@ export const SEVERITY = {
   LOW: 'low',
   MEDIUM: 'medium',
   HIGH: 'high',
-  CRITICAL: 'critical'
+  CRITICAL: 'critical',
 };
 
 // User reputation levels
@@ -30,7 +30,7 @@ export const REPUTATION = {
   NORMAL: 'normal',
   WATCHED: 'watched',
   RESTRICTED: 'restricted',
-  BANNED: 'banned'
+  BANNED: 'banned',
 };
 
 class ModerationService {
@@ -41,7 +41,7 @@ class ModerationService {
       /(http|https):\/\/[^\s]+/g, // URLs
       /[^\w\s]{3,}/g, // Excessive special characters
       /(.)\1{4,}/g, // Repeated characters
-      /\b(?:free|win|prize|lottery|click|subscribe|follow)\b/gi // Spam keywords
+      /\b(?:free|win|prize|lottery|click|subscribe|follow)\b/gi, // Spam keywords
     ];
   }
 
@@ -52,7 +52,7 @@ class ModerationService {
       flags: [],
       severity: null,
       action: 'allow',
-      confidence: 0
+      confidence: 0,
     };
 
     // Run spam detection
@@ -94,7 +94,7 @@ class ModerationService {
   // Spam detection using regex patterns
   detectSpam(content) {
     let spamScore = 0;
-    let matchedPatterns = [];
+    const matchedPatterns = [];
 
     for (const pattern of this.spamPatterns) {
       if (pattern.test(content)) {
@@ -106,11 +106,11 @@ class ModerationService {
     // Check for repeated words
     const words = content.toLowerCase().split(/\s+/);
     const wordFrequency = {};
-    words.forEach(word => {
+    words.forEach((word) => {
       wordFrequency[word] = (wordFrequency[word] || 0) + 1;
     });
-    
-    const repeatedWords = Object.values(wordFrequency).filter(count => count > 3).length;
+
+    const repeatedWords = Object.values(wordFrequency).filter((count) => count > 3).length;
     if (repeatedWords > 0) {
       spamScore += repeatedWords * 0.1;
     }
@@ -123,15 +123,15 @@ class ModerationService {
 
     return {
       isSpam: spamScore > 0.4,
-      confidence: Math.min(spamScore, 1)
+      confidence: Math.min(spamScore, 1),
     };
   }
 
   // AI-based content detection
   async detectWithAI(content) {
     try {
-      const model = genAI.getGenerativeModel({ model: "gemini-pro" });
-      
+      const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+
       const prompt = `
         Analyze the following content for toxicity, hate speech, harassment, and inappropriate material.
         Content: "${content}"
@@ -149,14 +149,15 @@ class ModerationService {
       const result = await model.generateContent(prompt);
       const response = await result.response;
       const text = response.text();
-      
+
       // Parse JSON response
       const parsed = JSON.parse(text);
-      
+
       return {
-        flags: parsed.categories?.map(cat => ({ type: cat, confidence: parsed.confidence })) || [],
+        flags:
+          parsed.categories?.map((cat) => ({ type: cat, confidence: parsed.confidence })) || [],
         confidence: parsed.confidence || 0.7,
-        explanation: parsed.explanation
+        explanation: parsed.explanation,
       };
     } catch (error) {
       console.error('AI moderation failed:', error);
@@ -185,7 +186,7 @@ class ModerationService {
         [SEVERITY.LOW]: -5,
         [SEVERITY.MEDIUM]: -15,
         [SEVERITY.HIGH]: -30,
-        [SEVERITY.CRITICAL]: -50
+        [SEVERITY.CRITICAL]: -50,
       };
       newScore += penalties[moderationResult.severity] || -10;
       violations++;
@@ -194,8 +195,8 @@ class ModerationService {
       newScore = Math.min(100, newScore + 1);
     }
 
-    // Determine reputation level
-    let level = REPUTATION.NORMAL;
+    // Determine reputation level based on current score to update user profile
+    let level;
     if (newScore >= 80) level = REPUTATION.TRUSTED;
     else if (newScore >= 60) level = REPUTATION.NORMAL;
     else if (newScore >= 40) level = REPUTATION.WATCHED;
@@ -205,7 +206,7 @@ class ModerationService {
     this.userReputations.set(userId, {
       level,
       score: newScore,
-      violations
+      violations,
     });
   }
 
@@ -213,16 +214,21 @@ class ModerationService {
   determineAction(result, userRep) {
     if (userRep.level === REPUTATION.BANNED) return 'block';
     if (userRep.level === REPUTATION.RESTRICTED) return 'shadow_ban';
-    
+
     if (!result.isAppropriate) {
       if (result.severity === SEVERITY.CRITICAL) return 'block';
       if (result.severity === SEVERITY.HIGH) return 'flag_review';
       if (userRep.level === REPUTATION.WATCHED) return 'shadow_ban';
       return 'flag_user';
     }
-    
+
     return 'allow';
   }
+
+  // Maximum number of flagged content entries to retain in localStorage.
+  // Prevents unbounded growth that could overflow the ~5MB quota and
+  // corrupt unrelated localStorage keys (bookmarks, roadmap autosave).
+  static MAX_FLAGGED_ENTRIES = 200;
 
   // Flag content for admin review
   flagForReview(content, userId, result) {
@@ -233,12 +239,16 @@ class ModerationService {
       timestamp: new Date().toISOString(),
       flags: result.flags,
       severity: result.severity,
-      status: 'pending'
+      status: 'pending',
     };
     this.flaggedContent.unshift(flag);
-    
-    // Store in localStorage for persistence
-    localStorage.setItem('moderation_flagged', JSON.stringify(this.flaggedContent));
+
+    // Evict oldest entries beyond the cap before saving
+    if (this.flaggedContent.length > ModerationService.MAX_FLAGGED_ENTRIES) {
+      this.flaggedContent = this.flaggedContent.slice(0, ModerationService.MAX_FLAGGED_ENTRIES);
+    }
+
+    this._saveFlaggedContent();
   }
 
   // Get flagged content for admin
@@ -247,17 +257,43 @@ class ModerationService {
     if (stored) {
       this.flaggedContent = JSON.parse(stored);
     }
-    return status ? this.flaggedContent.filter(f => f.status === status) : this.flaggedContent;
+    return status ? this.flaggedContent.filter((f) => f.status === status) : this.flaggedContent;
   }
 
   // Resolve a flagged item
   resolveFlag(flagId, action) {
-    const flag = this.flaggedContent.find(f => f.id === flagId);
+    const flag = this.flaggedContent.find((f) => f.id === flagId);
     if (flag) {
       flag.status = 'reviewed';
       flag.resolvedAt = new Date().toISOString();
       flag.resolution = action;
+      this._saveFlaggedContent();
+    }
+  }
+
+  // Safe localStorage write — catches QuotaExceededError instead of
+  // letting it propagate and corrupt unrelated localStorage operations.
+  _saveFlaggedContent() {
+    try {
       localStorage.setItem('moderation_flagged', JSON.stringify(this.flaggedContent));
+    } catch (err) {
+      if (err instanceof DOMException && err.name === 'QuotaExceededError') {
+        console.warn(
+          '[ModerationService] localStorage quota exceeded — trimming flagged content and retrying.'
+        );
+        // Aggressively trim to half the cap and retry once
+        this.flaggedContent = this.flaggedContent.slice(
+          0,
+          Math.floor(ModerationService.MAX_FLAGGED_ENTRIES / 2)
+        );
+        try {
+          localStorage.setItem('moderation_flagged', JSON.stringify(this.flaggedContent));
+        } catch (_) {
+          console.warn('[ModerationService] Retry after trim also failed — skipping save.');
+        }
+      } else {
+        throw err;
+      }
     }
   }
 

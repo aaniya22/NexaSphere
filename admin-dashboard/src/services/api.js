@@ -46,6 +46,14 @@ const vikasImg = teamImg('vikas.png');
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8080';
 
+const safeJsonParse = (str, defaultVal) => {
+  try {
+    return str ? JSON.parse(str) : defaultVal;
+  } catch {
+    return defaultVal;
+  }
+};
+
 // Migration: upgrade pre-v2 localStorage seed to the full 12-member official team.
 // Uses a version key so migrations are idempotent — they run exactly once per browser.
 // If the schema version is already >= 2, skip entirely to avoid touching real data.
@@ -204,6 +212,30 @@ const getDb = (key, defaultVal) => {
       setDb(key, initialTeam);
       return initialTeam;
     }
+    if (key === 'announcements') {
+      const initialAnnouncements = [
+        {
+          id: '1',
+          title: 'Welcome to the NexaSphere Admin Dashboard',
+          content:
+            'Manage events, team members, announcements, and certificates with real-time updates.',
+          category: 'general',
+          pinned: true,
+          createdAt: new Date().toISOString(),
+        },
+        {
+          id: '2',
+          title: 'Upcoming Hackathon Registration Open',
+          content:
+            'Registration for the national hackathon closes in 3 days. Push notifications are active.',
+          category: 'event',
+          pinned: false,
+          createdAt: new Date(Date.now() - 86400000).toISOString(),
+        },
+      ];
+      setDb(key, initialAnnouncements);
+      return initialAnnouncements;
+    }
 
     return defaultVal;
   } catch {
@@ -358,11 +390,133 @@ async function fetchWithAuth(url, options = {}) {
           ],
         });
       }
+
+      // /api/admin/portfolios
+      else if (url.startsWith('/api/admin/portfolios')) {
+        let portfolios = getDb('portfolios', []);
+        if (method === 'GET') {
+          const queryParams = new URLSearchParams(url.split('?')[1] || '');
+          const username = queryParams.get('username');
+          if (username) {
+            const found = portfolios.find((p) => p.username === username);
+            resolve({ portfolios: found ? [found] : [] });
+          } else {
+            resolve({ portfolios });
+          }
+        }
+        if (method === 'DELETE' && url.includes('/achievements/')) {
+          resolve({ ok: true });
+        }
+        if (method === 'POST' && url.includes('/achievements')) {
+          const newAch = {
+            ...body,
+            id: Date.now().toString(),
+            awarded_at: new Date().toISOString(),
+          };
+          resolve({ achievement: newAch });
+        }
+      }
+
+      // /api/admin/announcements
+      else if (url.startsWith('/api/admin/announcements')) {
+        let announcements = getDb('announcements', []);
+        if (method === 'GET') resolve({ announcements });
+        if (method === 'POST') {
+          const newAnn = {
+            ...body,
+            id: Date.now().toString(),
+            createdAt: new Date().toISOString(),
+          };
+          announcements = [newAnn, ...announcements];
+          setDb('announcements', announcements);
+          resolve(newAnn);
+        }
+        if (method === 'PUT') {
+          const id = url.split('/').pop();
+          announcements = announcements.map((a) =>
+            a.id === id ? { ...body, id, updatedAt: new Date().toISOString() } : a
+          );
+          setDb('announcements', announcements);
+          resolve({ ...body, id });
+        }
+        if (method === 'DELETE') {
+          const id = url.split('/').pop();
+          announcements = announcements.filter((a) => a.id !== id);
+          setDb('announcements', announcements);
+          resolve({ success: true });
+        }
+      }
+
+      // /api/admin/events/:eventId/registrations
+      else if (url.match(/\/api\/admin\/events\/[^\/]+\/registrations/)) {
+        const eventId = url.split('/')[4];
+        let regDb = getDb('event_registrations', {});
+        let regs = regDb[eventId] || [];
+        if (method === 'GET') resolve({ registrations: regs });
+        if (method === 'POST') {
+          const newReg = {
+            ...body,
+            id: Date.now().toString(),
+            created_at: new Date().toISOString(),
+          };
+          regs = [newReg, ...regs];
+          regDb[eventId] = regs;
+          setDb('event_registrations', regDb);
+          resolve(newReg);
+        }
+      }
+
+      // /api/admin/events/:eventId/attendance
+      else if (url.match(/\/api\/admin\/events\/[^\/]+\/attendance/)) {
+        const eventId = url.split('/')[4];
+        let regDb = getDb('event_registrations', {});
+        let regs = regDb[eventId] || [];
+        if (method === 'POST' && body) {
+          const idx = regs.findIndex(
+            (r) => r.email === body.email || r.ticket_token === body.token
+          );
+          if (idx >= 0) {
+            regs[idx] = { ...regs[idx], attended: true, attended_at: new Date().toISOString() };
+            regDb[eventId] = regs;
+            setDb('event_registrations', regDb);
+            resolve({ ...regs[idx], already_attended: false });
+          } else {
+            resolve({ error: 'Registration not found' });
+          }
+        }
+      }
+
+      // /api/admin/events/:eventId/analytics
+      else if (url.match(/\/api\/admin\/events\/[^\/]+\/analytics/)) {
+        const eventId = url.split('/')[4];
+        let regDb = getDb('event_registrations', {});
+        let regs = regDb[eventId] || [];
+        const total = regs.length;
+        const confirmed = regs.filter((r) => r.status === 'confirmed').length;
+        const attended = regs.filter((r) => r.attended).length;
+        resolve({
+          eventId,
+          stats: { total, confirmed, waitlisted: total - confirmed, attended },
+          attendanceRate: confirmed > 0 ? Math.round((attended / confirmed) * 100) : 0,
+          departmentBreakdown: [],
+          yearBreakdown: [],
+          waitlist: [],
+        });
+      }
     }, 300); // simulate slight network delay
   });
 }
 
 export const api = {
+  eventRegistrations: {
+    list: (eventId) => fetchWithAuth(`/api/admin/events/${eventId}/registrations`),
+    markAttendance: (eventId, payload) =>
+      fetchWithAuth(`/api/admin/events/${eventId}/attendance`, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      }),
+    analytics: (eventId) => fetchWithAuth(`/api/admin/events/${eventId}/analytics`),
+  },
   events: {
     getAll: () => fetchWithAuth('/api/admin/events'),
     create: async (event) => {
@@ -413,6 +567,15 @@ export const api = {
         });
       }
       await fetchWithAuth(`/api/admin/events/${id}`, { method: 'DELETE' });
+      // Record tombstone for offline sync to avoid resurrecting deleted events
+      try {
+        const tombstoneKey = 'ns_tombstone_events';
+        const existing = safeJsonParse(localStorage.getItem(tombstoneKey), []);
+        const updated = Array.isArray(existing) ? [...existing, id] : [id];
+        localStorage.setItem(tombstoneKey, JSON.stringify(updated));
+      } catch (e) {
+        console.warn('Failed to record tombstone for event deletion', e);
+      }
       eventEmitter.emit(EVENTS.EVENT_DELETED, { id });
       eventEmitter.emit(EVENTS.NOTIFY, {
         type: 'success',
@@ -612,6 +775,84 @@ export const api = {
       });
       eventEmitter.emit(EVENTS.NOTIFY, { type: 'success', message: 'Certificate revoked' });
       return result;
+    },
+  },
+
+  portfolios: {
+    getAll: (params = '') => fetchWithAuth(`/api/admin/portfolios${params}`),
+    getAchievements: (username) =>
+      fetchWithAuth(`/api/admin/portfolios/${encodeURIComponent(username)}/achievements`),
+    awardAchievement: (username, achievement) =>
+      fetchWithAuth(`/api/admin/portfolios/${encodeURIComponent(username)}/achievements`, {
+        method: 'POST',
+        body: JSON.stringify(achievement),
+      }),
+    removeAchievement: (username, name) =>
+      fetchWithAuth(
+        `/api/admin/portfolios/${encodeURIComponent(username)}/achievements/${encodeURIComponent(name)}`,
+        {
+          method: 'DELETE',
+        }
+      ),
+  },
+
+  announcements: {
+    getAll: () => fetchWithAuth('/api/admin/announcements'),
+    create: async (announcement) => {
+      if (auth.isOfflineMode()) {
+        eventEmitter.emit(EVENTS.NOTIFY, {
+          type: 'warning',
+          message: 'Offline — changes not saved to server',
+        });
+      }
+      const result = await fetchWithAuth('/api/admin/announcements', {
+        method: 'POST',
+        body: JSON.stringify(announcement),
+      });
+      eventEmitter.emit(EVENTS.ANNOUNCEMENT_CREATED, result);
+      eventEmitter.emit(EVENTS.NOTIFY, {
+        type: 'success',
+        message: 'Announcement published',
+      });
+      broadcastContentUpdate('announcements');
+      notifyContentUpdated('ns_db_announcements');
+      return result;
+    },
+    update: async (id, announcement) => {
+      if (auth.isOfflineMode()) {
+        eventEmitter.emit(EVENTS.NOTIFY, {
+          type: 'warning',
+          message: 'Offline — changes not saved to server',
+        });
+      }
+      const result = await fetchWithAuth(`/api/admin/announcements/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(announcement),
+      });
+      eventEmitter.emit(EVENTS.ANNOUNCEMENT_UPDATED, result);
+      eventEmitter.emit(EVENTS.NOTIFY, {
+        type: 'success',
+        message: 'Announcement updated',
+      });
+      broadcastContentUpdate('announcements');
+      notifyContentUpdated('ns_db_announcements');
+      return result;
+    },
+    delete: async (id) => {
+      if (auth.isOfflineMode()) {
+        eventEmitter.emit(EVENTS.NOTIFY, {
+          type: 'warning',
+          message: 'Offline — changes not saved to server',
+        });
+      }
+      await fetchWithAuth(`/api/admin/announcements/${id}`, { method: 'DELETE' });
+      eventEmitter.emit(EVENTS.ANNOUNCEMENT_DELETED, { id });
+      eventEmitter.emit(EVENTS.NOTIFY, {
+        type: 'success',
+        message: 'Announcement deleted',
+      });
+      broadcastContentUpdate('announcements');
+      notifyContentUpdated('ns_db_announcements');
     },
   },
 };

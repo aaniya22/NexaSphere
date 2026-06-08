@@ -1,8 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  ArrowLeft, BookOpen, ExternalLink, Monitor, Brain, 
-  Cloud, Smartphone, Shield, Book, FileText, CheckCircle, Sparkles 
+import {
+  ArrowLeft,
+  BookOpen,
+  ExternalLink,
+  Monitor,
+  Brain,
+  Cloud,
+  Smartphone,
+  Shield,
+  Book,
+  FileText,
+  CheckCircle,
+  Sparkles,
 } from 'lucide-react';
 import { roadmapData } from '../../data/roadmapData';
 import BookmarkButton from '../../components/common/BookmarkButton';
@@ -46,7 +56,11 @@ export default function RoadmapsPage({ onBack }) {
     return () => document.removeEventListener('mousedown', handleOutsideClick);
   }, [selectedNode]);
 
-  // Keyboard navigation (Escape key to close panel)
+  // Keyboard navigation — dep array changed from [] to [selectedNode] to
+  // match the outside-click handler and avoid a stale closure. Previously
+  // the empty dep array caused a second redundant keydown listener to be
+  // registered on mount that was never re-registered, while the correct
+  // selectedNode-aware listener was already handled by the effect above.
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
@@ -55,7 +69,7 @@ export default function RoadmapsPage({ onBack }) {
     };
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [selectedNode]);
 
   const IconComponent = DOMAIN_ICONS[activeDomain] || Monitor;
 
@@ -71,8 +85,8 @@ export default function RoadmapsPage({ onBack }) {
     <div className="roadmaps-page-container">
       {/* Header */}
       <div className="roadmaps-header">
-        <button 
-          onClick={onBack} 
+        <button
+          onClick={onBack}
           className="btn btn-sm btn-outline back-btn"
           aria-label="Go back to Home"
         >
@@ -80,19 +94,20 @@ export default function RoadmapsPage({ onBack }) {
         </button>
         <h1 className="roadmaps-title">Learning Roadmaps</h1>
         <p className="roadmaps-subtitle">
-          Step-by-step guidance, industry-vetted technologies, and premium learning materials selected by the NexaSphere team.
+          Step-by-step guidance, industry-vetted technologies, and premium learning materials
+          selected by the NexaSphere team.
         </p>
         <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'center' }}>
-          <button 
+          <button
             onClick={() => setIsBuilderActive(true)}
             className="btn btn-primary flex items-center gap-2"
-            style={{ 
-              fontFamily: "'Orbitron', monospace", 
+            style={{
+              fontFamily: "'Orbitron', monospace",
               fontWeight: 800,
               letterSpacing: '0.05em',
               boxShadow: '0 0 20px rgba(230, 57, 70, 0.45)',
               textTransform: 'uppercase',
-              fontSize: '0.85rem'
+              fontSize: '0.85rem',
             }}
           >
             <Sparkles size={16} className="text-white animate-pulse" />
@@ -147,13 +162,13 @@ export default function RoadmapsPage({ onBack }) {
                 </linearGradient>
               </defs>
               {/* Draw connections based on DOM layouts */}
-              <line 
-                x1="50%" 
-                y1="20" 
-                x2="50%" 
-                y2="98%" 
-                stroke="url(#glowing-line)" 
-                strokeWidth="4" 
+              <line
+                x1="50%"
+                y1="20"
+                x2="50%"
+                y2="98%"
+                stroke="url(#glowing-line)"
+                strokeWidth="4"
                 strokeDasharray="8 6"
               />
             </svg>
@@ -164,10 +179,10 @@ export default function RoadmapsPage({ onBack }) {
             {domainData.nodes.map((node, index) => {
               const isSelected = selectedNode?.id === node.id;
               return (
-                <div 
-                  key={node.id} 
+                <div
+                  key={node.id}
                   className="roadmap-node-row"
-                  ref={el => nodeRefs.current[node.id] = el}
+                  ref={(el) => (nodeRefs.current[node.id] = el)}
                 >
                   {/* Step counter badge */}
                   <div className="step-counter" aria-hidden="true">
@@ -211,8 +226,8 @@ export default function RoadmapsPage({ onBack }) {
             aria-labelledby="panel-title"
           >
             {/* Panel Close trigger */}
-            <button 
-              onClick={() => setSelectedNode(null)} 
+            <button
+              onClick={() => setSelectedNode(null)}
               className="panel-close-btn"
               aria-label="Close learning panel"
               style={{ marginRight: '40px' }} // Shift slightly left to make room for BookmarkButton
@@ -221,7 +236,11 @@ export default function RoadmapsPage({ onBack }) {
             </button>
 
             <BookmarkButton
-              item={{ id: `roadmap-${selectedNode.id}`, type: 'Roadmap', title: `${domainData.title}: ${selectedNode.label}` }}
+              item={{
+                id: `roadmap-${selectedNode.id}`,
+                type: 'Roadmap',
+                title: `${domainData.title}: ${selectedNode.label}`,
+              }}
               style={{ position: 'absolute', top: '16px', right: '16px', zIndex: 20 }}
             />
 
@@ -229,7 +248,9 @@ export default function RoadmapsPage({ onBack }) {
               {/* Header */}
               <div className="panel-header-section">
                 <span className="panel-category-tag">{domainData.title} · Core Step</span>
-                <h3 id="panel-title" className="panel-title">{selectedNode.label}</h3>
+                <h3 id="panel-title" className="panel-title">
+                  {selectedNode.label}
+                </h3>
                 <p className="panel-desc">{selectedNode.description}</p>
               </div>
 
@@ -240,7 +261,9 @@ export default function RoadmapsPage({ onBack }) {
                 </h4>
                 <ul className="concepts-pill-list">
                   {selectedNode.concepts.map((concept, idx) => (
-                    <li key={idx} className="concept-badge-pill">{concept}</li>
+                    <li key={idx} className="concept-badge-pill">
+                      {concept}
+                    </li>
                   ))}
                 </ul>
               </div>
@@ -250,15 +273,17 @@ export default function RoadmapsPage({ onBack }) {
                 <h4 className="panel-section-title">
                   <FileText size={16} /> Official Documentation
                 </h4>
-                <a 
-                  href={selectedNode.docs} 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
+                <a
+                  href={selectedNode.docs}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="resource-card-link docs-link"
                 >
                   <div className="resource-card-body">
                     <span className="resource-title">Official {selectedNode.label} Reference</span>
-                    <span className="resource-desc">Read standard documentations and technical specifications.</span>
+                    <span className="resource-desc">
+                      Read standard documentations and technical specifications.
+                    </span>
                   </div>
                   <ExternalLink size={16} className="card-arrow-icon" />
                 </a>
@@ -271,7 +296,7 @@ export default function RoadmapsPage({ onBack }) {
                 </h4>
                 <div className="resources-vertical-stack">
                   {selectedNode.tutorials.map((tutorial, idx) => (
-                    <a 
+                    <a
                       key={idx}
                       href={tutorial.url}
                       target="_blank"
@@ -295,7 +320,7 @@ export default function RoadmapsPage({ onBack }) {
                 </h4>
                 <div className="resources-vertical-stack">
                   {selectedNode.practice.map((item, idx) => (
-                    <a 
+                    <a
                       key={idx}
                       href={item.url}
                       target="_blank"
@@ -304,7 +329,9 @@ export default function RoadmapsPage({ onBack }) {
                     >
                       <div className="resource-card-body">
                         <span className="resource-title">{item.title}</span>
-                        <span className="resource-desc">Interactive challenges, tests, and playgrounds.</span>
+                        <span className="resource-desc">
+                          Interactive challenges, tests, and playgrounds.
+                        </span>
                       </div>
                       <ExternalLink size={16} className="card-arrow-icon" />
                     </a>

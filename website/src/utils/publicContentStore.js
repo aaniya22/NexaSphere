@@ -48,11 +48,29 @@ export function getLocalEvents(fallbackEvents = []) {
   const stored = toArray(safeJsonParse(window.localStorage.getItem(EVENTS_KEY), []));
   if (!stored.length) return fallbackEvents;
 
-  return mergeEvents(fallbackEvents, stored);
+  // Filter out events that have been tombstoned (deleted while offline)
+  let tombstones = [];
+  try {
+    tombstones = safeJsonParse(window.localStorage.getItem('ns_tombstone_events'), []);
+  } catch (e) {
+    console.warn('Failed to parse tombstone events', e);
+  }
+  const filtered = stored.filter(event => !tombstones.includes(String(event.id)));
+
+  return mergeEvents(fallbackEvents, filtered);
 }
 
 export function mergeEvents(fallbackEvents = [], liveEvents = []) {
-  return mergeById(fallbackEvents, toArray(liveEvents), (previous, event, key) => ({
+  // Filter out tombstoned events from both fallback and live data
+  let tombstones = [];
+  try {
+    tombstones = safeJsonParse(window.localStorage.getItem('ns_tombstone_events'), []);
+  } catch (e) {
+    console.warn('Failed to parse tombstone events', e);
+  }
+  const filteredFallback = fallbackEvents.filter(event => !tombstones.includes(String(event.id)));
+  const filteredLive = liveEvents.filter(event => !tombstones.includes(String(event.id)));
+  return mergeById(filteredFallback, toArray(filteredLive), (previous, event, key) => ({
     ...previous,
     ...event,
     id: event.id ?? previous.id ?? key,
@@ -128,7 +146,12 @@ export function initStorageSyncBridge() {
   if (bridgeInitialized || typeof window === 'undefined') return;
   bridgeInitialized = true;
 
-  const adminOrigin = 'http://localhost:5001';
+  // Read admin origin from VITE_ADMIN_DASHBOARD_URL — already defined in
+  // .env.example for both local dev and production deployments.
+  // Falls back to http://localhost:5001 only when running locally.
+  const adminOrigin =
+    (typeof import.meta !== 'undefined' && import.meta.env?.VITE_ADMIN_DASHBOARD_URL) ||
+    'http://localhost:5001';
   const bridgeUrl = `${adminOrigin}/sync-bridge.html`;
 
   // Check if we're in a cross-origin context (different port)

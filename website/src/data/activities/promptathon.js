@@ -48,7 +48,7 @@ const promptathon = {
     {
       icon: 'Brain',
       title: 'Prompt Engineering',
-      desc: 'Learn to write precise, creative prompts that unlock AI\'s full potential across text, code, and images.',
+      desc: "Learn to write precise, creative prompts that unlock AI's full potential across text, code, and images.",
     },
     {
       icon: 'Zap',

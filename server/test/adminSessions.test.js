@@ -17,6 +17,8 @@ let mockQueriesResult = {
 
 // Intercept PostgreSQL pool connection with a robust mock
 pg.Pool = class MockPool {
+  // Mock event listener attachment to avoid TypeError from pool.on
+  on(event, handler) {}
   async connect() {
     return {
       query: async (sql, params) => {
@@ -219,6 +221,49 @@ test('Failed database updates during throttled touches are caught and do not blo
     await new Promise((resolve) => setTimeout(resolve, 50));
   } finally {
     // Restore pool mock connect
+    pg.Pool.prototype.connect = connectBackup;
+  }
+});
+
+test('adminSessionsRepository recovers from database boot failure on subsequent requests', async () => {
+  let dbOnline = false;
+  let schemaQueriesRun = 0;
+
+  // Intercept connect
+  const connectBackup = pg.Pool.prototype.connect;
+  pg.Pool.prototype.connect = async () => {
+    if (!dbOnline) {
+      throw new Error('Database is offline');
+    }
+    return {
+      query: async (sql, params) => {
+        const sqlLower = sql.toLowerCase();
+        if (sqlLower.includes('create table') || sqlLower.includes('create index')) {
+          schemaQueriesRun++;
+        }
+        return { rows: [], rowCount: 1 };
+      },
+      release: () => {},
+    };
+  };
+
+  try {
+    // Import a fresh copy of the repository to ensure schemaReady is null
+    const freshRepositoryUrl = '../repositories/adminSessionsRepository.js?bust=' + Date.now();
+    const { createAdminSession: freshCreateAdminSession } = await import(freshRepositoryUrl);
+
+    // 1. Database is offline: session creation should fail
+    await assert.rejects(async () => {
+      await freshCreateAdminSession({ username: 'admin' });
+    }, /Database is offline/);
+
+    // 2. Database comes online: session creation should succeed and run schema queries
+    dbOnline = true;
+    const session = await freshCreateAdminSession({ username: 'admin' });
+    assert.ok(session.token);
+    assert.ok(schemaQueriesRun > 0, 'Schema initialization should run upon database recovery');
+
+  } finally {
     pg.Pool.prototype.connect = connectBackup;
   }
 });

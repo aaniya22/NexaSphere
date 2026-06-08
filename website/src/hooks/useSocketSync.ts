@@ -3,7 +3,9 @@ import { useSocketContext } from '../context/SocketContext';
 import { useSocket } from './useSocket';
 import { useWorkspaceStore } from '../store/workspaceStore';
 
-export function useSocketSync(roomId: string, user: any) {
+import type { UserInfo } from '../store/workspaceStore';
+
+export function useSocketSync(roomId: string, user: UserInfo) {
   const { socket, isConnected } = useSocketContext();
   const setDocumentContent = useWorkspaceStore((state) => state.setDocumentContent);
   const setStatus = useWorkspaceStore((state) => state.setStatus);
@@ -85,11 +87,11 @@ export function useSocketSync(roomId: string, user: any) {
   const emitTyping = () => {
     if (!socket) return;
     socket.emit('typing_start', { roomId });
-    
+
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
     }
-    
+
     // Auto-stop typing after 1 second of inactivity
     typingTimeoutRef.current = setTimeout(() => {
       socket.emit('typing_stop', { roomId });

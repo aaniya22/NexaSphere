@@ -9,23 +9,28 @@ import socketClient from '../../utils/socketClient';
 export default function AdminPage({ onBack }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [isLoggedIn, setIsLoggedIn] = useState(() => localStorage.getItem('ns_admin_logged_in') === 'true');
+  const [isLoggedIn, setIsLoggedIn] = useState(
+    () => localStorage.getItem('ns_admin_logged_in') === 'true'
+  );
+  const [token, setToken] = useState(null);
   const [loginData, setLoginData] = useState({ username: '', password: '' });
   const [data, setData] = useState({
     stats: null,
     growth: [],
-    events: []
+    events: [],
   });
 
   const fetchAnalytics = async () => {
     try {
       setLoading(true);
       const base = (import.meta?.env?.VITE_API_BASE || '').replace(/\/+$/, '');
-      
+      const authToken = token || localStorage.getItem('ns_admin_token');
+      const headers = { Authorization: `Bearer ${authToken}` };
+
       const [stats, growth, events] = await Promise.all([
         apiClient(`${base}/api/admin/analytics/stats`, { headers }),
         apiClient(`${base}/api/admin/analytics/growth`, { headers }),
-        apiClient(`${base}/api/admin/analytics/events`, { headers })
+        apiClient(`${base}/api/admin/analytics/events`, { headers }),
       ]);
 
       setData({ stats, growth, events });
@@ -89,7 +94,7 @@ export default function AdminPage({ onBack }) {
               currentData = line.slice(6);
             } else if (line === '' && currentEvent && currentData) {
               const event = { data: currentData };
-              (listeners[currentEvent] || []).forEach(fn => fn(event));
+              (listeners[currentEvent] || []).forEach((fn) => fn(event));
               currentEvent = '';
               currentData = '';
             }
@@ -120,21 +125,27 @@ export default function AdminPage({ onBack }) {
         const parsed = JSON.parse(event.data);
         const payload = parsed.data;
 
-        setData(prev => {
-          const currentStats = prev.stats || { totalUsers: null, activeRegistrations: null, upcomingEvents: null, conversionRate: null };
+        setData((prev) => {
+          const currentStats = prev.stats || {
+            totalUsers: null,
+            activeRegistrations: null,
+            upcomingEvents: null,
+            conversionRate: null,
+          };
           const nextStats = {
             ...currentStats,
             totalUsers: currentStats.totalUsers !== null ? currentStats.totalUsers + 1 : 1,
-            activeRegistrations: currentStats.activeRegistrations !== null ? currentStats.activeRegistrations + 1 : 1
+            activeRegistrations:
+              currentStats.activeRegistrations !== null ? currentStats.activeRegistrations + 1 : 1,
           };
 
           const todayStr = new Date().toISOString().split('T')[0];
           const updatedGrowth = [...(prev.growth || [])];
-          const todayIdx = updatedGrowth.findIndex(g => g.date === todayStr);
+          const todayIdx = updatedGrowth.findIndex((g) => g.date === todayStr);
           if (todayIdx >= 0) {
             updatedGrowth[todayIdx] = {
               ...updatedGrowth[todayIdx],
-              registrations: (updatedGrowth[todayIdx].registrations || 0) + 1
+              registrations: (updatedGrowth[todayIdx].registrations || 0) + 1,
             };
           } else {
             updatedGrowth.push({ date: todayStr, registrations: 1 });
@@ -143,7 +154,7 @@ export default function AdminPage({ onBack }) {
           return {
             ...prev,
             stats: nextStats,
-            growth: updatedGrowth
+            growth: updatedGrowth,
           };
         });
       } catch (err) {
@@ -175,11 +186,16 @@ export default function AdminPage({ onBack }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(loginData),
-        credentials: 'include'
+        credentials: 'include',
       });
 
-      localStorage.setItem('ns_admin_token', result.token);
-      setToken(result.token);
+      if (result.token) {
+        localStorage.setItem('ns_admin_token', result.token);
+        setToken(result.token);
+      }
+      localStorage.setItem('ns_admin_logged_in', 'true');
+      setIsLoggedIn(true);
+      setError(null);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -192,7 +208,7 @@ export default function AdminPage({ onBack }) {
       const base = (import.meta?.env?.VITE_API_BASE || '').replace(/\/+$/, '');
       await fetch(`${base}/api/admin/logout`, {
         method: 'POST',
-        credentials: 'include'
+        credentials: 'include',
       });
     } catch (err) {
       console.error(err);
@@ -206,31 +222,47 @@ export default function AdminPage({ onBack }) {
   if (!isLoggedIn) {
     return (
       <div className="analytics-dashboard" style={{ maxWidth: 400, marginTop: '10vh' }}>
-        <button onClick={onBack} className="btn-back">← Back</button>
+        <button onClick={onBack} className="btn-back">
+          ← Back
+        </button>
         <div className="chart-container" style={{ padding: '2rem' }}>
           <h2 style={{ textAlign: 'center', marginBottom: '1.5rem' }}>Admin Login</h2>
-          <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <input 
-              type="text" 
-              placeholder="Username" 
-              className="input-field" 
+          <form
+            onSubmit={handleLogin}
+            style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}
+          >
+            <input
+              type="text"
+              placeholder="Username"
+              className="input-field"
               value={loginData.username}
-              onChange={e => setLoginData({...loginData, username: e.target.value})}
+              onChange={(e) => setLoginData({ ...loginData, username: e.target.value })}
               required
             />
-            <input 
-              type="password" 
-              placeholder="Password" 
-              className="input-field" 
+            <input
+              type="password"
+              placeholder="Password"
+              className="input-field"
               value={loginData.password}
-              onChange={e => setLoginData({...loginData, password: e.target.value})}
+              onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
               required
             />
             <button type="submit" className="btn btn-primary" disabled={loading}>
               {loading ? 'Authenticating...' : 'Login to Dashboard'}
             </button>
           </form>
-          {error && <p style={{ color: '#f87171', fontSize: '0.9rem', marginTop: '1rem', textAlign: 'center' }}>{error}</p>}
+          {error && (
+            <p
+              style={{
+                color: '#f87171',
+                fontSize: '0.9rem',
+                marginTop: '1rem',
+                textAlign: 'center',
+              }}
+            >
+              {error}
+            </p>
+          )}
         </div>
       </div>
     );
@@ -238,15 +270,34 @@ export default function AdminPage({ onBack }) {
 
   return (
     <div className="analytics-dashboard">
-      <header style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+      <header
+        style={{
+          marginBottom: '2rem',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'flex-start',
+        }}
+      >
         <div>
-          <button onClick={onBack} className="btn-back">← Back to Home</button>
-          <h1 style={{ fontSize: '2rem', marginBottom: '0.5rem', marginTop: '0.5rem' }}>Admin Analytics</h1>
+          <button onClick={onBack} className="btn-back">
+            ← Back to Home
+          </button>
+          <h1 style={{ fontSize: '2rem', marginBottom: '0.5rem', marginTop: '0.5rem' }}>
+            Admin Analytics
+          </h1>
           <p style={{ opacity: 0.7 }}>Visualizing platform growth and event performance.</p>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <button className="btn btn-outline" onClick={fetchAnalytics} disabled={loading}>Refresh</button>
-          <button className="btn btn-outline" onClick={handleLogout} style={{ borderColor: 'rgba(239, 68, 68, 0.5)', color: '#ef4444' }}>Logout</button>
+          <button className="btn btn-outline" onClick={fetchAnalytics} disabled={loading}>
+            Refresh
+          </button>
+          <button
+            className="btn btn-outline"
+            onClick={handleLogout}
+            style={{ borderColor: 'rgba(239, 68, 68, 0.5)', color: '#ef4444' }}
+          >
+            Logout
+          </button>
         </div>
       </header>
 

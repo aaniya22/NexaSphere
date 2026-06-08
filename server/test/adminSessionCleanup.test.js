@@ -12,7 +12,7 @@ import {
 
 describe('Admin Session Cleanup Serverless Resilience', () => {
   const originalEnv = { ...process.env };
-  
+
   // In-memory mock database of sessions
   let mockSessions = [];
   let queryCount = 0;
@@ -34,11 +34,12 @@ describe('Admin Session Cleanup Serverless Resilience', () => {
           if (cleanedSql.includes('insert into admin_sessions')) {
             const [token_hash, username, metadata, expires_at] = params;
             // Evict if exists on conflict
-            mockSessions = mockSessions.filter(s => s.token_hash !== token_hash);
+            mockSessions = mockSessions.filter((s) => s.token_hash !== token_hash);
             const newSession = {
               token_hash,
               username,
-              metadata: typeof metadata === 'string' ? JSON.parse(metadata || '{}') : (metadata || {}),
+              metadata:
+                typeof metadata === 'string' ? JSON.parse(metadata || '{}') : metadata || {},
               created_at: new Date(),
               last_seen_at: new Date(),
               expires_at: new Date(expires_at),
@@ -49,11 +50,14 @@ describe('Admin Session Cleanup Serverless Resilience', () => {
           }
 
           // 3. Handle select session (getAdminSession)
-          if (cleanedSql.includes('select token_hash') && cleanedSql.includes('where token_hash = $1')) {
+          if (
+            cleanedSql.includes('select token_hash') &&
+            cleanedSql.includes('where token_hash = $1')
+          ) {
             const tokenHash = params[0];
             const now = new Date();
             const matching = mockSessions.filter(
-              s => s.token_hash === tokenHash && s.revoked_at === null && s.expires_at > now
+              (s) => s.token_hash === tokenHash && s.revoked_at === null && s.expires_at > now
             );
             return { rows: matching, rowCount: matching.length };
           }
@@ -62,14 +66,14 @@ describe('Admin Session Cleanup Serverless Resilience', () => {
           if (cleanedSql.includes('delete from admin_sessions where token_hash = $1')) {
             const tokenHash = params[0];
             const originalLength = mockSessions.length;
-            mockSessions = mockSessions.filter(s => s.token_hash !== tokenHash);
+            mockSessions = mockSessions.filter((s) => s.token_hash !== tokenHash);
             return { rows: [], rowCount: originalLength - mockSessions.length };
           }
 
           // 5. Handle update last seen
           if (cleanedSql.includes('update admin_sessions set last_seen_at = now()')) {
             const tokenHash = params[0];
-            mockSessions.forEach(s => {
+            mockSessions.forEach((s) => {
               if (s.token_hash === tokenHash) s.last_seen_at = new Date();
             });
             return { rows: [], rowCount: 1 };
@@ -79,7 +83,7 @@ describe('Admin Session Cleanup Serverless Resilience', () => {
           if (cleanedSql.includes('update admin_sessions set revoked_at = now()')) {
             const tokenHash = params[0];
             let affected = 0;
-            mockSessions.forEach(s => {
+            mockSessions.forEach((s) => {
               if (s.token_hash === tokenHash && s.revoked_at === null) {
                 s.revoked_at = new Date();
                 affected++;
@@ -92,14 +96,12 @@ describe('Admin Session Cleanup Serverless Resilience', () => {
           if (cleanedSql.includes('delete from admin_sessions where expires_at <= now()')) {
             const now = new Date();
             const originalLength = mockSessions.length;
-            mockSessions = mockSessions.filter(
-              s => s.expires_at > now && s.revoked_at === null
-            );
+            mockSessions = mockSessions.filter((s) => s.expires_at > now && s.revoked_at === null);
             return { rows: [], rowCount: originalLength - mockSessions.length };
           }
 
           return { rows: [], rowCount: 0 };
-        }
+        },
       };
 
       return await fn(mockClient);
@@ -119,7 +121,11 @@ describe('Admin Session Cleanup Serverless Resilience', () => {
   test('1. Serverless Environment detection skips background timers correctly', (t) => {
     process.env.VERCEL = '1';
     const timer = startAdminSessionCleanup();
-    assert.strictEqual(timer, null, 'Background setInterval timer must be skipped in serverless environment');
+    assert.strictEqual(
+      timer,
+      null,
+      'Background setInterval timer must be skipped in serverless environment'
+    );
   });
 
   test('2. Stateful environment successfully starts background cleanup timers', (t) => {
@@ -127,7 +133,7 @@ describe('Admin Session Cleanup Serverless Resilience', () => {
     delete process.env.AWS_LAMBDA_FUNCTION_NAME;
     delete process.env.LAMBDA_TASK_ROOT;
     delete process.env.NETLIFY;
-    
+
     const timer = startAdminSessionCleanup();
     assert.ok(timer, 'Interval timer must be initialized in long-running stateful environments');
     clearInterval(timer);
@@ -136,13 +142,13 @@ describe('Admin Session Cleanup Serverless Resilience', () => {
   test('3. Request-driven lazy cleanup successfully sweeps expired/revoked sessions', async (t) => {
     // Manually seed mock database
     const now = new Date();
-    
+
     // Expired session
     mockSessions.push({
       token_hash: 'expired_hash',
       username: 'admin',
       expires_at: new Date(now.getTime() - 10000), // Expired 10s ago
-      revoked_at: null
+      revoked_at: null,
     });
 
     // Revoked session
@@ -150,7 +156,7 @@ describe('Admin Session Cleanup Serverless Resilience', () => {
       token_hash: 'revoked_hash',
       username: 'admin',
       expires_at: new Date(now.getTime() + 50000), // Valid expiration
-      revoked_at: new Date()
+      revoked_at: new Date(),
     });
 
     // Active session
@@ -158,14 +164,14 @@ describe('Admin Session Cleanup Serverless Resilience', () => {
       token_hash: 'active_hash',
       username: 'admin',
       expires_at: new Date(now.getTime() + 100000), // Valid expiration
-      revoked_at: null
+      revoked_at: null,
     });
 
     assert.strictEqual(mockSessions.length, 3);
 
     // Bypass throttle guard with short interval env
     process.env.ADMIN_SESSION_CLEANUP_INTERVAL_MS = '1';
-    
+
     // Force and await a lazy cleanup
     await triggerLazyCleanup(true);
 
@@ -184,7 +190,7 @@ describe('Admin Session Cleanup Serverless Resilience', () => {
       token_hash: 'expired_hash',
       username: 'admin',
       expires_at: new Date(Date.now() - 10000),
-      revoked_at: null
+      revoked_at: null,
     });
 
     // First lazy cleanup executes (since lastCleanupTime = 0 or interval is 1ms)
@@ -199,7 +205,7 @@ describe('Admin Session Cleanup Serverless Resilience', () => {
       token_hash: 'expired_hash_2',
       username: 'admin',
       expires_at: new Date(Date.now() - 10000),
-      revoked_at: null
+      revoked_at: null,
     });
 
     // Second trigger immediately after should be throttled and NOT execute
