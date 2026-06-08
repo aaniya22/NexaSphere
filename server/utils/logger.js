@@ -65,16 +65,8 @@ const baseFileFormat = winston.format.combine(
     const { timestamp, level, message, ...args } = info;
     const ts = typeof timestamp === 'string' ? timestamp : new Date().toISOString();
 
-    // Strip out internal Winston symbol keys so they don't print as empty objects
-    const cleanArgs = Object.keys(args).reduce((acc, key) => {
-      if (typeof key === "string" || typeof key === "number") {
-        acc[key] = args[key];
-      }
-      return acc;
-    }, {});
-
-    return `${ts} [${level}]: ${message} ${
-      Object.keys(cleanArgs).length ? JSON.stringify(cleanArgs, null, 2) : ""
+    return `${timestamp} [${level}]: ${message} ${
+      Object.keys(args).length ? JSON.stringify(args, null, 2) : ""
     }`;
   })
 );
