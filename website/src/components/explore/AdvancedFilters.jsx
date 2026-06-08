@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Filter, X, Calendar, Tag, ChevronDown } from 'lucide-react';
+import { Filter, Search, Calendar, Tag, ChevronDown } from 'lucide-react';
 
 export default function AdvancedFilters({ events, onFilterChange }) {
   const [open, setOpen] = useState(false);
