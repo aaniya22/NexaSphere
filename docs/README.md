@@ -4,17 +4,25 @@ Welcome to the NexaSphere documentation. Use the links below to find what you ne
 
 ---
 
-## 📚 Core Docs
+## 📚 Quick Reference
 
-| Document                                          | Description                                                     |
-| ------------------------------------------------- | --------------------------------------------------------------- |
-| [ARCHITECTURE.md](./guides/ARCHITECTURE.md)       | System architecture, data flow, environment variables reference |
-| [SETUP.md](./guides/SETUP.md)                     | Step-by-step local development setup + troubleshooting          |
-| [WORKFLOWS.md](./guides/WORKFLOWS.md)             | All GitHub Actions workflows — triggers, logic, labels          |
-| [DATABASE_MIGRATIONS.md](./DATABASE_MIGRATIONS.md)| Full database migration history and how-to guide                |
-| [database-backups.md](./database-backups.md)      | Database backup and restore procedures                          |
-| [CHANGELOG.md](./CHANGELOG.md)                   | Version history                                                  |
-| [INSTRUCTIONS.md](./INSTRUCTIONS.md)             | Contributor instructions and onboarding                         |
+| Document                                  | Description                                                  |
+| ----------------------------------------- | ------------------------------------------------------------ |
+| [architecture.md](./architecture.md)      | System architecture diagram, component overview, data flow   |
+| [api-reference.md](./api-reference.md)    | REST API endpoints, auth, error codes                        |
+| [deployment.md](./deployment.md)          | Full deployment guide (Vercel / Render / Docker)             |
+| [database-backups.md](./database-backups.md) | Database backup & restore procedures                      |
+| [DATABASE_MIGRATIONS.md](./DATABASE_MIGRATIONS.md) | Running & writing DB migrations                   |
+| [CHANGELOG.md](./CHANGELOG.md)            | Version history                                              |
+| [INSTRUCTIONS.md](./INSTRUCTIONS.md)      | Contributor instructions and onboarding                      |
+
+## 📖 Deep-Dive Guides
+
+| Document                                    | Description                                                     |
+| ------------------------------------------- | --------------------------------------------------------------- |
+| [guides/ARCHITECTURE.md](./guides/ARCHITECTURE.md) | Full system architecture, data flow, environment variables |
+| [guides/SETUP.md](./guides/SETUP.md)               | Step-by-step local development setup + troubleshooting     |
+| [guides/WORKFLOWS.md](./guides/WORKFLOWS.md)       | All GitHub Actions workflows — triggers, logic, labels     |
 
 ---
 
