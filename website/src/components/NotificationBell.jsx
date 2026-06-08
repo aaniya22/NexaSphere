@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bell, MessageCircle, Users, AtSign, Settings, X, CheckCheck, Trash2 } from 'lucide-react';
+import { MessageCircle, Users, AtSign, Settings, X, CheckCheck, Trash2 } from 'lucide-react';
 import { useNotifications } from '../hooks/useNotifications';
 
 const TYPE_CONFIG = {

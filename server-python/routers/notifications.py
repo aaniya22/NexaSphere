@@ -36,6 +36,9 @@ def _verify_service_auth(x_service_auth: Optional[str] = Header(default=None)) -
 # FIX ISSUE 4 ONLY: Declare response_model contract on the route decorator
 @router.post("/join-request", response_model=NotificationResponse)
 async def handle_join_request_notification(
+# FIX ISSUE 2 ONLY: Dropped 'async' so blocking I/O offloads to worker threads safely
+@router.post("/join-request")
+def handle_join_request_notification(
     payload: JoinRequestPayload,
     _: None = Depends(_verify_service_auth),
 ):
