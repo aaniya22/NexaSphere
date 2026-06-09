@@ -47,6 +47,18 @@ function checkGitHubCli() {
     execSync('gh auth status', { stdio: 'ignore' });
     console.log(`✓ GitHub CLI is authenticated.`);
   } catch (error) {
+    if (process.env.GITHUB_TOKEN) {
+      console.log('⚠️  Detecting invalid/unauthenticated GITHUB_TOKEN in environment.');
+      console.log('Clearing GITHUB_TOKEN to fallback to your local GitHub session credentials...');
+      delete process.env.GITHUB_TOKEN;
+      try {
+        execSync('gh auth status', { stdio: 'ignore' });
+        console.log(`✓ GitHub CLI is authenticated (using local credentials).`);
+        return;
+      } catch (retryError) {
+        // Fall through to warning below
+      }
+    }
     console.warn('\n⚠️  Warning: GitHub CLI is not authenticated.');
     console.log('Please run "gh auth login" in your terminal to authenticate before proceeding.');
     console.log('You can still run this script in DRY-RUN mode to parse the issues.\n');
