@@ -35,7 +35,14 @@ export function initializeSocket(serverUrl = getSocketServerUrl()) {
     return null;
   }
 
-  // Clean previous socket before reconnecting
+  // Create/get singleton socket
+  const socket = initCoreSocket(resolvedUrl);
+
+  if (activeSocket === socket) {
+    return socket;
+  }
+
+  // Clean previous socket before reconnecting if URL changed or socket was recreated
   if (activeSocket) {
     activeSocket.removeAllListeners();
 
@@ -45,9 +52,6 @@ export function initializeSocket(serverUrl = getSocketServerUrl()) {
 
     hasAttachedGlobalListeners = false;
   }
-
-  // Create/get singleton socket
-  const socket = initCoreSocket(resolvedUrl);
 
   activeSocket = socket;
 

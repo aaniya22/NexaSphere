@@ -13,7 +13,7 @@ export default defineConfig({
     },
   },
   // Supports Vercel (/) and GitHub Pages (/NexaSphere/) via env var
-  base: process.env.VITE_BASE_PATH || '/',
+  base: process.env.VITE_CDN_URL || process.env.VITE_BASE_PATH || '/',
   plugins: [
     react(),
     sentryVitePlugin({
