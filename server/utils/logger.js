@@ -116,7 +116,7 @@ const logger = winston.createLogger({
   level: globalGatekeeperLevel, // <-- Change this line
   levels,
   format: baseFileFormat,
-  transports,
+  transports: activeTransports,
   exceptionHandlers: isStorageWritable
     ? [
         new DailyRotateFile({

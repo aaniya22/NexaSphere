@@ -82,6 +82,10 @@ export function _onConnection(socket) {
   // Auto-join authenticated admin sockets to admin room
   if (socket.adminAuthenticated) {
     socket.join('admin-room');
+    const role = socket.adminSession?.metadata?.role;
+    if (role && typeof role === 'string') {
+      socket.join(`admin-room:${role}`);
+    }
   }
 
   // Keep track of identify operations to rate limit floods per-socket (Max 3 events per lifetime)
@@ -277,6 +281,10 @@ export function _onConnection(socket) {
       socket.adminSession = session;
       socket.adminAuthenticated = true;
       socket.join('admin-room');
+      const role = session.metadata?.role;
+      if (role && typeof role === 'string') {
+        socket.join(`admin-room:${role}`);
+      }
       logger.info('Admin authenticated via socket event', { socketId: socket.id, username: session.username });
       socket.emit('admin:authenticated', { success: true });
     } catch (e) {
@@ -394,4 +402,31 @@ function _cleanupWorkspaceMembership(socketId) {
   }
 }
 
-export default { initializeSocketIO, getIO, broadcastEvent, emitToRoom, emitToUser, _clearConnectedUsers, _clearWorkspaceRoomMembers, _clearJoinRoomAttempts, _onConnection };
+/**
+ * Emit an event to the admin role-scoped room(s) that have permission
+ * to receive it.
+ *
+ * @param {string|string[]} roles - Role name(s) (e.g. 'membership_admin')
+ * @param {string} eventName - Event name
+ * @param {Object} data - Payload
+ */
+export function emitToRole(roles, eventName, data) {
+  if (!io) return;
+  const list = Array.isArray(roles) ? roles : [roles];
+  const targets = new Set();
+  for (const role of list) {
+    if (role === 'admin' || role === 'super_admin' || role === 'SuperAdmin') {
+      targets.add('admin-room');
+      continue;
+    }
+    if (typeof role === 'string' && role.length > 0) {
+      targets.add(`admin-room:${role}`);
+    }
+  }
+  for (const room of targets) {
+    io.to(room).emit(eventName, data);
+  }
+  logger.debug('Emit to role rooms', { rooms: [...targets], event: eventName });
+}
+
+export default { initializeSocketIO, getIO, broadcastEvent, emitToRoom, emitToUser, emitToRole, _clearConnectedUsers, _clearWorkspaceRoomMembers, _clearJoinRoomAttempts, _onConnection };
