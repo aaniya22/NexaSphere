@@ -1,3 +1,5 @@
+import DOMPurify from 'isomorphic-dompurify';
+
 const HTML_ESCAPE_MAP = {
   '&': '&amp;',
   '<': '&lt;',
@@ -131,10 +133,8 @@ function validateSection(str) {
 function stripHtml(value) {
   if (value == null) return '';
   let text = String(value);
-  text = text.replace(SCRIPT_PATTERN, '');
-  text = text.replace(STYLE_PATTERN, '');
-  text = text.replace(HTML_COMMENT_PATTERN, '');
-  text = text.replace(HTML_TAG_PATTERN, '');
+  // Clean using DOMPurify with no tags/attributes allowed (plain text output)
+  text = DOMPurify.sanitize(text, { ALLOWED_TAGS: [], ALLOWED_ATTR: [] });
   text = text.replace(CONTROL_CHAR_PATTERN, '');
   text = text.replace(NULL_BYTE_PATTERN, '');
   return text;

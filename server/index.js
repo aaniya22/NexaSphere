@@ -48,6 +48,7 @@ import passport from './config/studentOAuth.js';
 import { studentUsersRepository } from './repositories/studentUsersRepository.js';
 import * as studentAuthController from './controllers/studentAuthController.js';
 import { requireStudentAuth } from './middleware/studentAuthMiddleware.js';
+import { xssSanitizer } from './middleware/xssSanitizer.js';
 
 validateLimiters();
 
@@ -203,6 +204,7 @@ app.use(tracingMiddleware);
 
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
+app.use(xssSanitizer);
 app.use(morgan('combined'));
 app.use(performanceMonitor);
 app.use(cookieParser());
