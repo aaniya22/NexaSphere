@@ -1,19 +1,74 @@
-## Description
+# Summary
 
-Please include a summary of the change and which issue is fixed.
-
-Fixes #{issue_number}
+## Related Issue
+Fixes #[ISSUE_NUMBER]
 
 ## Type of Change
+- [ ] Feature
+- [ ] Bug Fix
+- [ ] UI/UX Improvement
+- [ ] Performance Optimization
+- [ ] Security Enhancement
+- [ ] Refactoring
+- [ ] Documentation
+- [ ] Testing
+- [ ] Infrastructure
+- [ ] Integration
 
-- [ ] Bug fix (non-breaking change which fixes an issue)
-- [ ] New feature (non-breaking change which adds functionality)
-- [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
-- [ ] This change requires a documentation update
+## Changes Implemented
 
-## Checklist:
+## Technical Details
 
-- [ ] My code follows the style guidelines of this project
-- [ ] I have performed a self-review of my own code
-- [ ] I have commented my code, particularly in hard-to-understand areas
-- [ ] My changes generate no new warnings
+### Frontend
+
+### Backend
+
+### Database
+
+### API
+
+### Infrastructure
+
+## Screenshots
+
+### Before
+
+### After
+
+## Testing
+
+### Unit Tests
+- [ ]
+
+### Integration Tests
+- [ ]
+
+### E2E Tests
+- [ ]
+
+### Manual Testing
+- [ ]
+
+## Security Review
+
+## Accessibility Review
+
+## Performance Impact
+
+## Breaking Changes
+- [ ] No Breaking Changes
+- [ ] Breaking Changes Documented
+
+## Deployment Notes
+
+## Rollback Plan
+
+## Checklist
+- [ ] Code follows project standards
+- [ ] Tests added or updated
+- [ ] Documentation updated
+- [ ] Security reviewed
+- [ ] Accessibility reviewed
+- [ ] Performance validated
+- [ ] CI/CD passing
+- [ ] Ready for review

@@ -1,4 +1,3 @@
-```java
 package org.nexasphere.controller;
 
 import jakarta.validation.Valid;
@@ -47,8 +46,8 @@ public class CollaborationController {
             @Valid @RequestBody @NonNull JoinRequestEntity request) {
 
         // Sanitize user input fields
-        if (request.getMessage() != null) {
-            request.setMessage(Encode.forHtml(request.getMessage()));
+        if (request.getPitch() != null) {
+            request.setPitch(Encode.forHtml(request.getPitch()));
         }
 
         return ResponseEntity.ok(collaborationService.submitJoinRequest(request));
@@ -66,4 +65,3 @@ public class CollaborationController {
                 .orElse(ResponseEntity.notFound().build());
     }
 }
-```

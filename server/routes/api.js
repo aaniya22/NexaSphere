@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import * as eventsController from '../controllers/eventsController.js';
 import * as activityEventsController from '../controllers/activityEventsController.js';
-import * as adminAuthMiddleware from '../middleware/adminAuthMiddleware.js';
+import { adminAuthMiddleware } from '../middleware/adminAuthMiddleware.js';
 import * as coreTeamController from '../controllers/coreTeamController.js';
 import * as eventRegistrationController from '../controllers/eventRegistrationController.js';
 import * as usersController from '../controllers/usersController.js';

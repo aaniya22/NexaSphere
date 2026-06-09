@@ -15,6 +15,7 @@ import {
   useNavigate,
   useLocation,
   useParams,
+  Navigate,
 } from 'react-router-dom';
 
 import './styles/themes.css';
@@ -70,6 +71,7 @@ import Terminal from './components/developer/Terminal';
 import { useDeveloperMode } from './hooks/useDeveloperMode';
 
 import { BookmarkProvider } from './context/BookmarkContext';
+import { StudentAuthProvider, useStudentAuth } from './context/StudentAuthContext';
 import BookmarksDrawer from './components/bookmarks/BookmarksDrawer';
 import { useTheme } from './hooks/useTheme';
 import { useInteractionEffects } from './hooks/useInteractionEffects';
@@ -101,7 +103,7 @@ const DashboardPage = lazy(() => import('./pages/dashboard/DashboardPage'));
 const AnalyticsPage = lazy(() => import('./pages/analytics/AnalyticsPage'));
 const WorkspacePage = lazy(() => import('./pages/workspace/WorkspacePage'));
 const GamificationDashboard = lazy(() => import('./components/gamification/GamificationDashboard'));
-const NotificationHistoryPage = lazy(() => import('./pages/notifications/NotificationHistoryPage'));
+const LoginPage = lazy(() => import('./pages/login/LoginPage'));
 
 const MNH = 88,
   DNH = 64;
@@ -544,6 +546,16 @@ function AppShell() {
 }
 
 /* ─────────────────────────────────────────────────────
+   RequireAuth Wrapper
+───────────────────────────────────────────────────── */
+function RequireAuth({ children }) {
+  const { isAuthenticated, loading } = useStudentAuth();
+  if (loading) return <PageLoadingSpinner />;
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  return children;
+}
+
+/* ─────────────────────────────────────────────────────
    MainRouter — renders the Navbar + Routes
 ───────────────────────────────────────────────────── */
 function MainRouter({
@@ -807,23 +819,15 @@ function MainRouter({
               element={<EventDetailWrapper onBack={() => nav('/events')} events={eventsData} />}
             />
 
-            {/* ── Discover / Explore ── */}
-            <Route
-              path="/explore"
-              element={
-                <PageIn k="explore">
-                  <ExplorePage onBack={onBackHome} eventsData={eventsData} />
-                </PageIn>
-              }
-            />
-
-            {/* ── Dashboard ── */}
+            {/* ── Dashboard (requires auth) ── */}
             <Route
               path="/dashboard"
               element={
-                <PageIn k="dashboard">
-                  <DashboardPage onBack={onBackHome} />
-                </PageIn>
+                <RequireAuth>
+                  <PageIn k="dashboard">
+                    <DashboardPage onBack={onBackHome} />
+                  </PageIn>
+                </RequireAuth>
               }
             />
 
@@ -959,12 +963,12 @@ function MainRouter({
               }
             />
 
-            {/* ── Notification History ── */}
+            {/* ── Login / SSO ── */}
             <Route
-              path="/notifications"
+              path="/login"
               element={
-                <PageIn k="notifications">
-                  <NotificationHistoryPage />
+                <PageIn k="login">
+                  <LoginPage />
                 </PageIn>
               }
             />

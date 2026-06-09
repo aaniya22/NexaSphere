@@ -89,8 +89,13 @@ function formatSlackMessage(data) {
           ...(data.timestamp
             ? [
                 {
-                  title: 'Timestamp',
-                  value: new Date(data.timestamp).toISOString(),
+                  title: "Timestamp",
+                  value: (() => {
+                    const parsedDate = new Date(data.timestamp);
+                    return !isNaN(parsedDate.getTime()) 
+                      ? parsedDate.toISOString() 
+                      : new Date().toISOString(); // Safe fallback to current time
+                  })(),
                   short: true,
                 },
               ]
@@ -165,8 +170,13 @@ async function sendPerformanceAlert(metrics) {
       body: JSON.stringify(payload),
     });
 
-    if (!response.ok) {
-      logger.error('Failed to send performance alert');
+   if (!response.ok) {
+      logger.error("Failed to send performance alert", {
+        status: response.status,
+        statusText: response.statusText,
+      });
+    } else {
+      logger.info("Performance alert sent successfully");
     }
   } catch (error) {
     logger.error('Error sending performance alert', { error: error.message });

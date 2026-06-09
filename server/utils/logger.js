@@ -10,8 +10,8 @@ import DailyRotateFile from 'winston-daily-rotate-file';
 
 // Create logs directory if it doesn't exist
 // Create logs directory if it doesn't exist (with permission handling)
-import fs from "fs";
-const logsDir = path.join(process.cwd(), "logs");
+import fs from 'fs';
+const logsDir = path.join(process.cwd(), 'logs');
 
 function ensureLogsDirectory() {
   try {
@@ -20,11 +20,11 @@ function ensureLogsDirectory() {
     }
     return true;
   } catch (error) {
-    const fallbackCodes = ["EACCES", "EROFS", "EPERM"];
+    const fallbackCodes = ['EACCES', 'EROFS', 'EPERM'];
     if (fallbackCodes.includes(error.code)) {
       console.warn(
         `[Logger Warning]: Storage is read-only or restricted (${error.code}). ` +
-        `Falling back gracefully to console logging.`
+          `Falling back gracefully to console logging.`
       );
     } else {
       console.error(`[Logger Error]: Unexpected filesystem failure: ${error.message}`);
@@ -89,77 +89,59 @@ const transports = [
 
   // Error logs
   new winston.transports.File({
-    filename: path.join(logsDir, "error.log"),
-    level: "error",
+    filename: path.join(logsDir, 'error.log'),
+    level: 'error',
     format: winston.format.uncolorize(),
   }),
 
   new winston.transports.File({
-    filename: path.join(logsDir, "combined.log"),
+    filename: path.join(logsDir, 'combined.log'),
     level: fileBaselineLevel, // <-- Add this line
     format: winston.format.uncolorize(),
   }),
 
   // Daily rotate logs (requires winston-daily-rotate-file)
   new DailyRotateFile({
-    filename: path.join(logsDir, "application-%DATE%.log"),
-    datePattern: "YYYY-MM-DD",
+    filename: path.join(logsDir, 'application-%DATE%.log'),
+    datePattern: 'YYYY-MM-DD',
     level: fileBaselineLevel, // <-- Add this line
-    maxSize: "20m",
-    maxFiles: "14d",
+    maxSize: '20m',
+    maxFiles: '14d',
     format: winston.format.uncolorize(),
     utc: true,
   }),
 ];
 
-if (isStorageWritable) {
-  activeTransports.push(
-    new winston.transports.File({
-      filename: path.join(logsDir, "error.log"),
-      level: "error",
-      format: winston.format.uncolorize(),
-    }),
-    new winston.transports.File({
-      filename: path.join(logsDir, "combined.log"),
-      format: winston.format.uncolorize(),
-    }),
-    new DailyRotateFile({
-      filename: path.join(logsDir, "application-%DATE%.log"),
-      datePattern: "YYYY-MM-DD",
-      maxSize: "20m",
-      maxFiles: "14d",
-      format: winston.format.uncolorize(),
-      utc: true,
-    })
-  );
-}
-// Create logger instance
 // Create logger instance
 const logger = winston.createLogger({
   level: globalGatekeeperLevel, // <-- Change this line
   levels,
   format: baseFileFormat,
-  transports: activeTransports, 
-  exceptionHandlers: isStorageWritable ? [
-    new DailyRotateFile({
-      filename: path.join(logsDir, "exceptions-%DATE%.log"),
-      datePattern: "YYYY-MM-DD",
-      maxSize: "20m",
-      maxFiles: "14d",
-      format: baseFileFormat, //  FIX: Ensures clean exception dumps
-      utc: true,
-    }),
-  ] : undefined, 
-  rejectionHandlers: isStorageWritable ? [
-    new DailyRotateFile({
-      filename: path.join(logsDir, "rejections-%DATE%.log"),
-      datePattern: "YYYY-MM-DD",
-      maxSize: "20m",
-      maxFiles: "14d",
-      format: baseFileFormat, //  FIX: Ensures clean rejection dumps
-      utc: true,
-    }),
-  ] : undefined, 
+  transports,
+  exceptionHandlers: isStorageWritable
+    ? [
+        new DailyRotateFile({
+          filename: path.join(logsDir, 'exceptions-%DATE%.log'),
+          datePattern: 'YYYY-MM-DD',
+          maxSize: '20m',
+          maxFiles: '14d',
+          format: baseFileFormat, //  FIX: Ensures clean exception dumps
+          utc: true,
+        }),
+      ]
+    : undefined,
+  rejectionHandlers: isStorageWritable
+    ? [
+        new DailyRotateFile({
+          filename: path.join(logsDir, 'rejections-%DATE%.log'),
+          datePattern: 'YYYY-MM-DD',
+          maxSize: '20m',
+          maxFiles: '14d',
+          format: baseFileFormat, //  FIX: Ensures clean rejection dumps
+          utc: true,
+        }),
+      ]
+    : undefined,
 });
 
 export default logger;

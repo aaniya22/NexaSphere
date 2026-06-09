@@ -105,6 +105,12 @@ function normalizePhone(value) {
   return String(value || '').replace(/[^\d]/g, '');
 }
 
+function validateWhatsApp(value) {
+  return String(value ?? '')
+    .replace(/\D/g, '')
+    .slice(0, 30);
+}
+
 const SAFE_URL_PROTOCOLS = /^(https?:\/\/|\/[^\/])/i;
 const URL_MAX_LENGTH = 2048;
 
@@ -143,8 +149,6 @@ function isSafeUrl(value) {
   const trimmed = value.trim();
   if (trimmed.length === 0) return false;
   if (trimmed.length > URL_MAX_LENGTH) return false;
-  // Reject known dangerous protocols explicitly.  The regex below
-  // also catches javascript:, data:, vbscript:, file:, etc.
   if (/^\s*(javascript|data|vbscript|file|about|chrome|jar|mocha):/i.test(trimmed)) {
     return false;
   }
@@ -334,12 +338,6 @@ export function sanitizePortfolioOutput(record) {
 
 export function isSafePortfolioUrl(value) {
   return isSafeUrl(value);
-}
-
-function validateWhatsApp(str) {
-  const v = String(str || '').replace(/[^\d]/g, '');
-  if (v.length !== 10) throw new Error('WhatsApp must be exactly 10 digits');
-  return v;
 }
 
 export {

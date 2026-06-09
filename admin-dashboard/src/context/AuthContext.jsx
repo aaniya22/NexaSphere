@@ -7,13 +7,12 @@ useState,
 } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-saveTokenAndScheduleLogout,
-clearAutoLogoutTimer,
-rehydrateSession,
-getToken,
-removeToken,
-} from './authUtils';
-import { setupAxiosInterceptors } from './axiosInstance';
+  saveTokenAndScheduleLogout,
+  clearAutoLogoutTimer,
+  rehydrateSession,
+  getToken,
+  removeToken,
+} from '../utils/authUtils';
 
 const AuthContext = createContext(null);
 
@@ -26,7 +25,6 @@ const [isAuthenticated, setIsAuthenticated] = useState(!!getToken());
 const logout = useCallback(
 (message = 'Your session has expired. Please log in again.') => {
 clearAutoLogoutTimer();
-
 
   removeToken();
 
@@ -41,8 +39,6 @@ clearAutoLogoutTimer();
   });
 },
 [navigate]
-
-
 );
 
 const login = useCallback(
@@ -50,20 +46,17 @@ const login = useCallback(
 saveTokenAndScheduleLogout(token, logout);
 setIsAuthenticated(true);
 
-
   navigate('/dashboard', {
     replace: true,
   });
 },
 [logout, navigate]
-
-
 );
 
+// On mount: re-hydrate any existing session.
 useEffect(() => {
-setupAxiosInterceptors(navigate);
 rehydrateSession(logout);
-}, [logout, navigate]);
+}, [logout]);
 
 // Cross-tab logout sync
 useEffect(() => {
@@ -74,7 +67,6 @@ event.key === LOGOUT_EVENT_KEY ||
 ) {
 clearAutoLogoutTimer();
 setIsAuthenticated(false);
-
 
     navigate('/login', {
       replace: true,
@@ -90,7 +82,6 @@ window.addEventListener('storage', handleStorageChange);
 return () => {
   window.removeEventListener('storage', handleStorageChange);
 };
-
 
 }, [navigate]);
 

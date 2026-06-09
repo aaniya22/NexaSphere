@@ -64,7 +64,11 @@ export default function CollabPage({ onBack }) {
       })
       .finally(() => setLoading(false));
   }, []);
-
+  useEffect(() => {
+    if (activeTab !== 'find-team') {
+      setSearch('');
+    }
+  }, [activeTab]);
   const handleJoinSubmit = async (requestData) => {
     if (isDemo) {
       alert('Demo mode: Join requests are disabled.');

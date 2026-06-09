@@ -24,27 +24,33 @@ class AuditLogRepository {
     const { adminId, action, ipAddress, userAgent, oldState, newState } = logEntry;
 
     const id = crypto.randomUUID();
+    const delays = [100, 500, 1000];
 
-    try {
-      await withDb(async (client) => {
-        await client.query(
-          `INSERT INTO audit_logs (id, admin_id, action, ip_address, user_agent, old_state, new_state, timestamp)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())`,
-          [
-            id,
-            adminId,
-            action,
-            ipAddress || null,
-            userAgent || null,
-            oldState ? JSON.stringify(oldState) : null,
-            newState ? JSON.stringify(newState) : null,
-          ]
-        );
-      });
-    } catch (err) {
-      // We don't want audit logging failures to necessarily crash the application,
-      // but we do want to log the failure.
-      logger.error('Failed to insert audit log', { error: err.message, logEntry });
+    for (let attempt = 0; attempt <= delays.length; attempt++) {
+      try {
+        await withDb(async (client) => {
+          await client.query(
+            `INSERT INTO audit_logs (id, admin_id, action, ip_address, user_agent, old_state, new_state, timestamp)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())`,
+            [
+              id,
+              adminId,
+              action,
+              ipAddress || null,
+              userAgent || null,
+              oldState ? JSON.stringify(oldState) : null,
+              newState ? JSON.stringify(newState) : null,
+            ]
+          );
+        });
+        return;
+      } catch (err) {
+        if (attempt === delays.length) {
+          logger.error('Failed to insert audit log', { error: err.message, logEntry });
+          return;
+        }
+        await new Promise((resolve) => setTimeout(resolve, delays[attempt]));
+      }
     }
   }
 
