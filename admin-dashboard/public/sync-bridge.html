@@ -11,10 +11,9 @@
      * Sync Bridge — runs in an iframe at the ADMIN DASHBOARD origin.
      *
      * Flow:
-     * 1. Admin dashboard (same origin) updates localStorage and posts
-     *    a message here with the key that changed.
-     * 2. This bridge reads the new value from localStorage and relays
-     *    it to the PARENT window (website) via postMessage.
+     * 1. Website embeds this page and requests allowed public content keys.
+     * 2. This bridge validates the parent origin, reads only allowed keys,
+     *    and relays values to that exact parent origin via postMessage.
      * 3. The website receives the message, updates its own localStorage,
      *    and fires the 'ns-content-updated' event for subscribers.
      *
@@ -22,28 +21,68 @@
      * and relays those too.
      */
 
-    function relayToParent(key, value) {
+    const ALLOWED_SYNC_KEYS = new Set([
+      'ns_db_events',
+      'ns_db_core_team',
+      'ns_db_announcements',
+    ]);
+    const TRUSTED_PARENT_ORIGINS = new Set([
+      'https://nexasphere-glbajaj.vercel.app',
+      'http://localhost:5173',
+      'http://localhost:5175',
+      'http://127.0.0.1:5173',
+      'http://127.0.0.1:5175',
+    ]);
+    const selfOrigin = normalizeOrigin(window.location.origin);
+    if (selfOrigin) TRUSTED_PARENT_ORIGINS.add(selfOrigin);
+
+    let trustedParentOrigin = null;
+
+    function normalizeOrigin(value) {
+      try {
+        return new URL(value).origin;
+      } catch {
+        return null;
+      }
+    }
+
+    function isTrustedParent(origin) {
+      const normalizedOrigin = normalizeOrigin(origin);
+      return normalizedOrigin ? TRUSTED_PARENT_ORIGINS.has(normalizedOrigin) : false;
+    }
+
+    function isAllowedSyncKey(key) {
+      return typeof key === 'string' && ALLOWED_SYNC_KEYS.has(key);
+    }
+
+    function relayToParent(key, value, targetOrigin = trustedParentOrigin) {
+      if (!isAllowedSyncKey(key) || !targetOrigin) return;
+
       if (window.parent && window.parent !== window) {
         window.parent.postMessage({
           type: 'ns-content-updated',
           key: key,
           value: value,
-        }, '*');
+        }, targetOrigin);
       }
     }
 
-    // Listen for messages from the admin dashboard (same origin)
+    // Listen for sync requests from the trusted website parent.
     window.addEventListener('message', (event) => {
-      if (event.data && event.data.type === 'ns-sync' && event.data.key) {
+      if (event.source !== window.parent || !isTrustedParent(event.origin)) return;
+
+      if (event.data && event.data.type === 'ns-sync' && isAllowedSyncKey(event.data.key)) {
+        trustedParentOrigin = normalizeOrigin(event.origin);
         // Read the current value from localStorage and relay it
         const value = localStorage.getItem(event.data.key);
-        relayToParent(event.data.key, value);
+        relayToParent(event.data.key, value, trustedParentOrigin);
       }
     });
 
-    // Also watch for native localStorage changes in this origin
+    // Also watch for native localStorage changes in this origin after
+    // a trusted parent has established the expected postMessage target.
     window.addEventListener('storage', (event) => {
-      if (event.key && event.key.startsWith('ns_db_')) {
+      if (trustedParentOrigin && isAllowedSyncKey(event.key)) {
         relayToParent(event.key, event.newValue);
       }
     });

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 
 const DEFAULT_SOON_THRESHOLD = 60 * 60 * 1000;
 
@@ -8,7 +8,12 @@ function parseDate(value) {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
-export function getEventCountdownStatus({ startDate, endDate, soonThreshold = DEFAULT_SOON_THRESHOLD, now = Date.now() }) {
+export function getEventCountdownStatus({
+  startDate,
+  endDate,
+  soonThreshold = DEFAULT_SOON_THRESHOLD,
+  now = Date.now(),
+}) {
   const start = parseDate(startDate);
   const end = parseDate(endDate);
   const startTime = start?.getTime();
@@ -23,17 +28,21 @@ export function getEventCountdownStatus({ startDate, endDate, soonThreshold = DE
   return 'upcoming';
 }
 
-export default function useCountdown({ startDate, endDate, soonThreshold = DEFAULT_SOON_THRESHOLD }) {
+export default function useCountdown({
+  startDate,
+  endDate,
+  soonThreshold = DEFAULT_SOON_THRESHOLD,
+}) {
   const start = useMemo(() => parseDate(startDate), [startDate]);
   const end = useMemo(() => parseDate(endDate), [endDate]);
 
-  const computeCountdown = () => {
+  const computeCountdown = useCallback(() => {
     const now = Date.now();
     const startTime = start?.getTime();
     const endTime = end?.getTime();
 
-    let status = 'upcoming';
-    let remaining = 0;
+    let status;
+    let remaining;
 
     const isCompleted = endTime && now > endTime;
     const isLive = startTime && now >= startTime && (!endTime || now <= endTime);
@@ -68,7 +77,7 @@ export default function useCountdown({ startDate, endDate, soonThreshold = DEFAU
       start,
       end,
     };
-  };
+  }, [start, end, soonThreshold]);
 
   const [countdown, setCountdown] = useState(computeCountdown);
 
@@ -77,7 +86,7 @@ export default function useCountdown({ startDate, endDate, soonThreshold = DEFAU
       setCountdown(computeCountdown());
     }, 1000);
     return () => window.clearInterval(interval);
-  }, [start, end, soonThreshold]);
+  }, [computeCountdown]);
 
   return countdown;
 }

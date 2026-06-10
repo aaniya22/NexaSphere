@@ -20,7 +20,103 @@ For detailed rules and guidelines, please review our full [Code of Conduct](CODE
 
 ---
 
-## 2. How to Submit an Issue
+## 2. Security Guidelines
+
+Security is a shared responsibility. All contributors must follow these critical guidelines to prevent credential leaks and protect the integrity of NexaSphere.
+
+### Never Commit Credentials
+
+Under no circumstances should any credentials be committed to this repository. This includes:
+
+*   **Passwords** for admin accounts, test accounts, or service accounts
+*   **API Keys** for third-party services (SendGrid, Stripe, AWS, etc.)
+*   **Database connection strings** with embedded passwords
+*   **OAuth tokens** or refresh tokens
+*   **SSH keys** or private certificates
+*   **Email addresses linked to real accounts** (use placeholder test emails like `test@example.com`)
+
+**Credential exposure is a critical security vulnerability** that puts the entire platform at risk. Even "test" or "demo" credentials must never be hardcoded in public repositories.
+
+### Proper Credential Handling
+
+**For Local Development:**
+1. Create `.env` files from provided `.env.example` templates
+2. Never commit `.env` files (they are listed in `.gitignore`)
+3. Populate `.env` files with your own local or test credentials
+4. Use generic placeholder credentials for shared documentation (e.g., `admin@example.com` instead of real emails)
+
+**For Test Credentials Documentation:**
+- Document test account credentials in **private channels** (internal wiki, Notion, Discord DMs)
+- Do NOT include credentials in README files, issue descriptions, commit messages, or repository metadata
+- Provide instructions for contributors to generate or request test credentials rather than publishing shared credentials
+
+**For CI/CD Pipelines:**
+- Use GitHub Secrets to store production credentials
+- Reference secrets in GitHub Actions workflows using `${{ secrets.SECRET_NAME }}`
+- Never log secrets in CI output
+- Rotate all credentials after any accidental exposure
+
+### Secret Scanning
+
+Before committing, ensure no secrets are included:
+
+1. **Pre-Commit Hook** (Recommended):
+   Run `npm run format` and `npm run lint` which catch common secret patterns:
+   ```bash
+   npm run lint
+   ```
+
+2. **Manual Verification**:
+   Review your diff carefully:
+   ```bash
+   git diff
+   ```
+   Look for any password-like strings, API keys, or credentials before pushing.
+
+3. **After a Commit** (Emergency):
+   If you accidentally commit credentials:
+   ```bash
+   # 1. Rotate the exposed credential immediately
+   # 2. Force push to your branch (if not merged):
+   git reset --soft HEAD~1
+   git restore --staged filename
+   # 3. Report to maintainers immediately
+   ```
+
+### Reporting Security Issues
+
+If you discover a security vulnerability (including credential exposure):
+
+1. **Do not create a public issue**
+2. **Do not mention the vulnerability in pull request comments or commit messages**
+3. **Report directly** to the maintainers using one of these methods:
+   - Email: See [SECURITY.md](SECURITY.md) for contact information
+   - Private GitHub issue: Use the repository's private reporting feature
+   - Discord: Contact @Ayushh-Sharmaa directly
+
+### Environment Variable Naming
+
+For clarity and to prevent accidental exposure, follow this naming convention:
+
+*   **Public configuration**: `VITE_*` (safe to be visible in client bundles)
+*   **Server secrets**: `*_SECRET`, `*_KEY`, `*_PASSWORD`, `*_TOKEN` (strictly server-side only)
+*   **Database credentials**: `DB_HOST`, `DB_USER`, `DB_PASSWORD` (keep private)
+
+Example:
+```env
+# Safe for frontend
+VITE_API_URL=https://api.example.com
+VITE_VERSION=1.0.0
+
+# Secret, server-only
+SENDGRID_API_KEY=sg_xxxxxxxxxxxxx
+DATABASE_PASSWORD=SuperSecurePassword123
+JWT_SECRET=your-secret-key
+```
+
+---
+
+## 4. How to Submit an Issue
 
 Issues are the primary way we track bugs, enhancements, and tasks. Before opening a new issue, please search the existing issue tracker to make sure it hasn't already been reported or discussed.
 
@@ -42,7 +138,7 @@ When opening an issue, please use one of our templates and provide as much detai
 
 ---
 
-## 3. How to Submit a Pull Request
+## 5. How to Submit a Pull Request
 
 To contribute code, documentation, or design assets, follow the standard GitHub Pull Request (PR) workflow:
 
@@ -117,7 +213,7 @@ graph TD
 
 ---
 
-## 4. Local Development Setup
+## 6. Local Development Setup
 
 To ensure local environments closely match our staging and production servers, we enforce Node.js version **v20**.
 
@@ -185,7 +281,7 @@ npx playwright test
 
 ---
 
-## 5. Git Commit Message Conventions (Semantic Commits)
+## 7. Git Commit Message Conventions (Semantic Commits)
 ## 🎨 Code Formatting (Prettier)
 
 To maintain a consistent coding style and clean git diffs, NexaSphere uses **Prettier** for automated code formatting. We enforce a unified format across the monorepo using standard rules configured in `.prettierrc.js`.
@@ -284,7 +380,7 @@ Every commit message must follow this structure:
 
 ---
 
-## 6. Coding Style Guidelines
+## 8. Coding Style Guidelines
 
 To keep the codebase uniform and easy to read, all code must adhere to the configured rules.
 
@@ -308,7 +404,7 @@ We use **Prettier** for formatting and **ESLint** for code analysis.
 
 ---
 
-## 7. Code Review Expectations
+## 9. Code Review Expectations
 
 All code changes must be reviewed by at least one maintainer before merging into `main`.
 | Problem                           | Possible Fix                                               |

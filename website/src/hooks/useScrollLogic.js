@@ -52,7 +52,7 @@ export function useBackToTop() {
       window.removeEventListener('scroll', handleScroll);
       btn.removeEventListener('click', handleClick);
     };
-  }, [btnRef.current]);
+  }, [btnRef]);
 }
 
 export function useActiveTabObserver(page, mobile, navTabs, navHeights, setActiveTab) {

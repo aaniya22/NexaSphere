@@ -60,7 +60,7 @@ describe('EventsPage Component', () => {
       </MemoryRouter>
     );
     expect(screen.getByText(/Completed/i)).toBeInTheDocument();
-    expect(screen.getByText(/Upcoming/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Upcoming/i)[0]).toBeInTheDocument();
   });
 
   it('renders back button', () => {

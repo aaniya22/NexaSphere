@@ -1,5 +1,15 @@
 const EVENTS_KEY = 'ns_db_events';
 const TEAM_KEY = 'ns_db_core_team';
+const ANNOUNCEMENTS_KEY = 'ns_db_announcements';
+const ALLOWED_BRIDGE_KEYS = new Set([EVENTS_KEY, TEAM_KEY, ANNOUNCEMENTS_KEY]);
+
+function normalizeOrigin(value) {
+  try {
+    return new URL(value).origin;
+  } catch {
+    return null;
+  }
+}
 
 function safeJsonParse(value, fallback) {
   if (!value) return fallback;
@@ -149,9 +159,10 @@ export function initStorageSyncBridge() {
   // Read admin origin from VITE_ADMIN_DASHBOARD_URL — already defined in
   // .env.example for both local dev and production deployments.
   // Falls back to http://localhost:5001 only when running locally.
-  const adminOrigin =
+  const configuredAdminOrigin =
     (typeof import.meta !== 'undefined' && import.meta.env?.VITE_ADMIN_DASHBOARD_URL) ||
     'http://localhost:5001';
+  const adminOrigin = normalizeOrigin(configuredAdminOrigin) || 'http://localhost:5001';
   const bridgeUrl = `${adminOrigin}/sync-bridge.html`;
 
   // Check if we're in a cross-origin context (different port)
@@ -162,10 +173,14 @@ export function initStorageSyncBridge() {
   iframe.src = bridgeUrl;
   iframe.style.cssText = 'position:fixed;width:0;height:0;border:0;opacity:0;pointer-events:none;';
   iframe.setAttribute('aria-hidden', 'true');
+  iframe.setAttribute('title', 'NexaSphere Sync Bridge');
   iframe.tabIndex = -1;
 
   iframe.onload = () => {
     console.log('[StorageSync] Bridge iframe loaded from', adminOrigin);
+    ALLOWED_BRIDGE_KEYS.forEach((key) => {
+      iframe.contentWindow?.postMessage({ type: 'ns-sync', key }, adminOrigin);
+    });
   };
 
   iframe.onerror = () => {
@@ -176,7 +191,13 @@ export function initStorageSyncBridge() {
 
   // Listen for messages relayed through the bridge
   window.addEventListener('message', (event) => {
-    if (event.data && event.data.type === 'ns-content-updated' && event.data.key) {
+    if (event.origin !== adminOrigin || event.source !== iframe.contentWindow) return;
+
+    if (
+      event.data &&
+      event.data.type === 'ns-content-updated' &&
+      ALLOWED_BRIDGE_KEYS.has(event.data.key)
+    ) {
       // Update our own localStorage to match the admin's
       if (event.data.value !== null) {
         localStorage.setItem(event.data.key, event.data.value);

@@ -6,20 +6,12 @@
 import * as Sentry from '@sentry/node';
 
 let nodeProfilingIntegration = null;
-try {
-  // Optional dependency: native bindings may be unavailable on some platforms.
-  // If profiling cannot be loaded, fall back to Sentry without profiling.
-  const profiling = await import('@sentry/profiling-node');
-  nodeProfilingIntegration = profiling.nodeProfilingIntegration;
-} catch (error) {
-  nodeProfilingIntegration = null;
-}
 
 /**
  * Initialize Sentry for backend monitoring
  * @param {Object} app - Express app instance
  */
-function initializeSentry(app) {
+async function initializeSentry(app) {
   const isDevelopment = process.env.NODE_ENV === 'development';
   const dsn = process.env.SENTRY_DSN;
 
@@ -28,16 +20,20 @@ function initializeSentry(app) {
     return;
   }
 
+  // Safely lazy-load profiling runtime inside async scope to prevent startup syntax failure
+  if (!nodeProfilingIntegration) {
+    try {
+      const profiling = await import('@sentry/profiling-node');
+      nodeProfilingIntegration = profiling.nodeProfilingIntegration;
+    } catch (error) {
+      nodeProfilingIntegration = null;
+    }
+  }
+
   Sentry.init({
     dsn: dsn,
     environment: process.env.NODE_ENV || 'development',
     integrations: [
-      new Sentry.Integrations.Http({ tracing: true }),
-      new Sentry.Integrations.Express({
-        app: true,
-        request: true,
-        serverName: true,
-      }),
       ...(nodeProfilingIntegration ? [nodeProfilingIntegration()] : []),
     ],
     tracesSampleRate: isDevelopment ? 1.0 : 0.1,
@@ -45,14 +41,8 @@ function initializeSentry(app) {
     attachStacktrace: true,
   });
 
-  // The request handler must be the first middleware on the app
-  app.use(Sentry.Handlers.requestHandler());
-
-  // TracingHandler creates a trace for every incoming request
-  app.use(Sentry.Handlers.tracingHandler());
-
   return Sentry;
-}
+};
 
 /**
  * Add Sentry error handler middleware
@@ -60,7 +50,7 @@ function initializeSentry(app) {
  */
 function addSentryErrorHandler(app) {
   // The error handler must be the last middleware on the app
-  app.use(Sentry.Handlers.errorHandler());
+  Sentry.setupExpressErrorHandler(app);
 }
 
 /**

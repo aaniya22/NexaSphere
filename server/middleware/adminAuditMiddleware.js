@@ -45,6 +45,14 @@ export function adminAuditMiddleware(req, res, next) {
       const action = `${req.method} ${req.originalUrl}`;
       const ipAddress = req.ip || req.connection.remoteAddress;
       const userAgent = req.get('user-agent');
+      const timestamp = new Date().toISOString();
+
+      const riskLevel =
+        req.method === 'DELETE'
+          ? 'HIGH'
+          : req.method === 'PATCH'
+            ? 'MEDIUM'
+            : 'LOW';
 
       // req.oldState is optionally populated by pre-handlers
       const oldState = req.oldState || null;
@@ -68,6 +76,8 @@ export function adminAuditMiddleware(req, res, next) {
         userAgent,
         oldState,
         newState,
+        timestamp,
+        riskLevel,
       });
     }
   });

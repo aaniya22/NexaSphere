@@ -26,11 +26,28 @@ export const getEventStats = wrapAsync(async (req, res) => {
   const attendanceRate =
     stats.confirmed > 0 ? Math.round((stats.attended / stats.confirmed) * 100) : 0;
 
+  const predictedAttendance = Math.round(stats.confirmed * 1.15);
+
+const popularityScore =
+  stats.confirmed > 0
+    ? Math.min(100, Math.round((stats.confirmed / (stats.confirmed + waitlist.length)) * 100))
+    : 0;
+
+const resourceRecommendation =
+  predictedAttendance > 100
+    ? 'High Resources Required'
+    : predictedAttendance > 50
+      ? 'Medium Resources Required'
+      : 'Low Resources Required';
+
   return res.json({
     eventId,
     eventName: event.name,
     stats,
     attendanceRate,
+    predictedAttendance,
+    popularityScore,
+    resourceRecommendation,
     departmentBreakdown,
     yearBreakdown,
     waitlist,

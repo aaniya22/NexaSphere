@@ -2,24 +2,13 @@ import { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageCircle, Users, AtSign, Settings, X, CheckCheck, Trash2 } from 'lucide-react';
 import { useNotifications } from '../hooks/useNotifications';
-
+import { formatRelativeTime } from '../utils/formatRelativeTime';
 const TYPE_CONFIG = {
   message: { icon: <MessageCircle size={16} />, color: 'var(--c1)', bg: 'rgba(204,17,17,0.15)' },
   connection: { icon: <Users size={16} />, color: '#9999ff', bg: 'rgba(90,90,255,0.15)' },
   mention: { icon: <AtSign size={16} />, color: '#f59e0b', bg: 'rgba(245,158,11,0.15)' },
   system: { icon: <Settings size={16} />, color: '#34d399', bg: 'rgba(52,211,153,0.15)' },
 };
-
-function timeAgo(isoString) {
-  if (!isoString) return 'just now';
-  const date = new Date(isoString);
-  if (isNaN(date.getTime())) return 'just now';
-  const diff = Math.floor((Date.now() - date) / 1000);
-  if (diff < 60) return `${diff}s ago`;
-  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-  return `${Math.floor(diff / 86400)}d ago`;
-}
 
 export default function NotificationBell() {
   const {
@@ -351,7 +340,7 @@ export default function NotificationBell() {
                             opacity: 0.7,
                           }}
                         >
-                          {timeAgo(n.createdAt)}
+                          {formatRelativeTime(n.createdAt)}
                         </div>
                       </div>
 

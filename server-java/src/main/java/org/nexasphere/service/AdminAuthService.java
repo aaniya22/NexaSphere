@@ -1,4 +1,3 @@
-```java
 package org.nexasphere.service;
 
 import jakarta.annotation.PostConstruct;
@@ -114,4 +113,3 @@ public class AdminAuthService {
         }
     }
 }
-```

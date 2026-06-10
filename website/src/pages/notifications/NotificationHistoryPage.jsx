@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import apiClient from '../../utils/apiClient';
-
+import { formatRelativeTime } from '../../utils/formatRelativeTime';
 const TYPE_ICONS = {
   message: '💬',
   connection: '🔗',
@@ -182,7 +182,7 @@ export default function NotificationHistoryPage({ userId = 'global' }) {
               <div
                 style={{ fontSize: '0.75rem', color: 'var(--t2)', marginTop: '4px', opacity: 0.6 }}
               >
-                {n.createdAt ? new Date(n.createdAt).toLocaleString() : ''}
+                {formatRelativeTime(n.createdAt)}
               </div>
             </div>
             {!n.isRead && (

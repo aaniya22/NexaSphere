@@ -163,6 +163,11 @@ async function readLocalPortfolios() {
   return JSON.parse(raw);
 }
 
+async function writeLocalPortfolios(data) {
+  await ensureLocalFile();
+  await fs.writeFile(PORTFOLIOS_FILE, JSON.stringify(data, null, 2), 'utf8');
+}
+
 function mapRow(row) {
   if (!row) return null;
   const raw = {
@@ -233,6 +238,9 @@ export const portfolioRepository = {
       roadmaps: portfolio.roadmaps || [],
       bio: portfolio.bio || '',
       title: portfolio.title || '',
+      avatarUrl: portfolio.avatarUrl || '',
+      education: portfolio.education || [],
+      workExperience: portfolio.workExperience || [],
       createdAt: portfolio.createdAt,
       updatedAt: portfolio.updatedAt,
     });
@@ -367,7 +375,37 @@ export const portfolioRepository = {
       }
     }
 
-    throw new Error('Portfolio storage is unavailable. Please try again later.');
+    // Local file fallback
+    return await portfolioMutex.runExclusive(async () => {
+      const portfolios = await readLocalPortfolios();
+      const now = new Date().toISOString();
+      const existing = portfolios[sanitizedUsername] || { createdAt: now };
+
+      const updatedPortfolio = {
+        username: sanitizedUsername,
+        passkeyHash,
+        theme,
+        visibleSections,
+        socialLinks,
+        customDomain,
+        seoMetadata,
+        skills,
+        badges,
+        projects,
+        roadmaps,
+        bio,
+        title,
+        avatarUrl,
+        education,
+        workExperience,
+        createdAt: existing.createdAt,
+        updatedAt: now,
+      };
+      portfolios[sanitizedUsername] = updatedPortfolio;
+      await writeLocalPortfolios(portfolios);
+
+      return sanitizePortfolioOutput(updatedPortfolio);
+    });
   },
 
   async listAll() {
@@ -396,6 +434,13 @@ export const portfolioRepository = {
   },
 };
 
+function resetState() {
+  schemaReady = null;
+  schemaOk = false;
+  lastDbFailTime = 0;
+}
+
 export const __portfolioRepositoryInternals = {
   ensureSchema,
+  resetState,
 };

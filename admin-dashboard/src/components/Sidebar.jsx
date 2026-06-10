@@ -6,9 +6,7 @@ import { useFocusTrap } from '../hooks/useFocusTrap';
 import { PermissionGuard } from './PermissionGuard';
 
 /* Public website URL */
-const WEBSITE_URL =
-  import.meta.env.VITE_WEBSITE_URL ||
-  'http://localhost:5175';
+const WEBSITE_URL = import.meta.env.VITE_WEBSITE_URL || 'http://localhost:5175';
 
 const links = [
   {
@@ -91,7 +89,6 @@ const links = [
 ];
 
 export function Sidebar() {
-
   const { email, logout } = useAuth();
 
   const location = useLocation();
@@ -105,7 +102,6 @@ export function Sidebar() {
   const firstNavLinkRef = useRef(null);
 
   const close = () => {
-
     setOpen(false);
 
     // Restore focus to hamburger button
@@ -114,77 +110,49 @@ export function Sidebar() {
 
   // Focus first link when sidebar opens
   useEffect(() => {
-
     if (open) {
-
       firstNavLinkRef.current?.focus();
     }
   }, [open]);
 
   // ESC closes sidebar
   useEffect(() => {
-
     function handleKeyDown(event) {
-
       if (event.key === 'Escape' && open) {
-
         close();
       }
     }
 
-    document.addEventListener(
-      'keydown',
-      handleKeyDown
-    );
+    document.addEventListener('keydown', handleKeyDown);
 
     return () => {
-
-      document.removeEventListener(
-        'keydown',
-        handleKeyDown
-      );
+      document.removeEventListener('keydown', handleKeyDown);
     };
   }, [open]);
 
   // Trap focus inside mobile sidebar
   useEffect(() => {
-
     if (!open || !sidebarRef.current) return;
 
-    const focusableElements =
-      sidebarRef.current.querySelectorAll(
-        'a, button, [tabindex]:not([tabindex="-1"])'
-      );
+    const focusableElements = sidebarRef.current.querySelectorAll(
+      'a, button, [tabindex]:not([tabindex="-1"])'
+    );
 
-    const firstElement =
-      focusableElements[0];
+    const firstElement = focusableElements[0];
 
-    const lastElement =
-      focusableElements[
-        focusableElements.length - 1
-      ];
+    const lastElement = focusableElements[focusableElements.length - 1];
 
     function trapFocus(event) {
-
       if (event.key !== 'Tab') return;
 
       if (event.shiftKey) {
-
-        if (
-          document.activeElement === firstElement
-        ) {
-
+        if (document.activeElement === firstElement) {
           event.preventDefault();
 
           lastElement.focus();
         }
-
       } else {
-
-        if (
-          document.activeElement === lastElement
-        ) {
-
+        if (document.activeElement === lastElement) {
           event.preventDefault();
 
           firstElement.focus();
@@ -192,90 +160,49 @@ export function Sidebar() {
       }
     }
 
-    document.addEventListener(
-      'keydown',
-      trapFocus
-    );
+    document.addEventListener('keydown', trapFocus);
 
     return () => {
-
-      document.removeEventListener(
-        'keydown',
-        trapFocus
-      );
+      document.removeEventListener('keydown', trapFocus);
     };
   }, [open]);
 
   return (
     <>
-
       {/* Mobile Hamburger */}
 
       <button
         ref={hamburgerRef}
         className="sidebar-hamburger"
-        aria-label={
-          open
-            ? 'Close navigation menu'
-            : 'Open navigation menu'
-        }
+        aria-label={open ? 'Close navigation menu' : 'Open navigation menu'}
         aria-expanded={open}
         aria-controls="admin-sidebar"
-        onClick={() =>
-          setOpen((o) => !o)
-        }
+        onClick={() => setOpen((o) => !o)}
       >
-        <span
-          className={`ham-line${
-            open ? ' open' : ''
-          }`}
-        />
+        <span className={`ham-line${open ? ' open' : ''}`} />
 
-        <span
-          className={`ham-line${
-            open ? ' open' : ''
-          }`}
-        />
+        <span className={`ham-line${open ? ' open' : ''}`} />
 
-        <span
-          className={`ham-line${
-            open ? ' open' : ''
-          }`}
-        />
+        <span className={`ham-line${open ? ' open' : ''}`} />
       </button>
 
       {/* Mobile Backdrop */}
 
-      {open && (
-        <div
-          className="sidebar-backdrop"
-          onClick={close}
-          aria-hidden="true"
-        />
-      )}
+      {open && <div className="sidebar-backdrop" onClick={close} aria-hidden="true" />}
 
       <aside
         id="admin-sidebar"
         ref={sidebarRef}
-        className={`sidebar${
-          open ? ' sidebar-open' : ''
-        }`}
+        className={`sidebar${open ? ' sidebar-open' : ''}`}
         role="navigation"
         aria-label="Admin Sidebar Navigation"
       >
-
         {/* Branding */}
 
         <div className="sidebar-brand">
+          <span className="brand-dot" aria-hidden="true" />
 
-          <span
-            className="brand-dot"
-            aria-hidden="true"
-          />
-
-          <span>
-            NexaSphere Admin
-          </span>
+          <span>NexaSphere Admin</span>
         </div>
 
         {/* Back To Website */}
@@ -291,87 +218,21 @@ export function Sidebar() {
             gap: '8px',
             padding: '8px 20px',
             fontSize: '0.75rem',
-            color:
-              'var(--admin-text-muted, #888)',
+            color: 'var(--admin-text-muted, #888)',
             textDecoration: 'none',
-            borderBottom:
-              '1px solid var(--admin-border, rgba(255,255,255,0.06))',
+            borderBottom: '1px solid var(--admin-border, rgba(255,255,255,0.06))',
             marginBottom: '8px',
             transition: 'color 0.2s',
           }}
-          onMouseEnter={(e) =>
-            (e.currentTarget.style.color =
-              'var(--admin-accent, #CC1111)')
-          }
-          onMouseLeave={(e) =>
-            (e.currentTarget.style.color =
-              'var(--admin-text-muted, #888)')
-          }
+          onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--admin-accent, #CC1111)')}
+          onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--admin-text-muted, #888)')}
         >
-          <AdminIcon
-            name="ArrowLeft"
-            size={12}
-            aria-hidden="true"
-          />
-
+          <AdminIcon name="ArrowLeft" size={12} aria-hidden="true" />
           Back to Website
         </a>
 
         {/* Navigation */}
 
-        <nav
-          className="sidebar-nav"
-          aria-label="Dashboard Navigation"
-        >
-
-          {links.map(
-            (
-              { to, label, icon },
-              index
-            ) => {
-
-              const isActive =
-                location.pathname === to;
-
-              return (
-                <NavLink
-                  key={to}
-                  to={to}
-                  end={
-                    to === '/dashboard'
-                  }
-                  ref={
-                    index === 0
-                      ? firstNavLinkRef
-                      : null
-                  }
-                  className={({
-                    isActive,
-                  }) =>
-                    `nav-link${
-                      isActive
-                        ? ' active'
-                        : ''
-                    }`
-                  }
-                  aria-current={
-                    isActive
-                      ? 'page'
-                      : undefined
-                  }
-                  onClick={close}
-                >
-                  <AdminIcon
-                    name={icon}
-                    size={16}
-                    aria-hidden="true"
-                  />
-
-                  {label}
-                </NavLink>
-              );
-            }
-          )}
         <nav className="sidebar-nav">
           {links.map(({ to, label, icon, requiredScope }) => {
             const LinkElement = (
@@ -401,19 +262,11 @@ export function Sidebar() {
         {/* Footer */}
 
         <div className="sidebar-footer">
-
-          <span
-            className="sidebar-email"
-            aria-label={`Logged in as ${email}`}
-          >
+          <span className="sidebar-email" aria-label={`Logged in as ${email}`}>
             {email}
           </span>
 
-          <button
-            className="btn-logout"
-            onClick={logout}
-            aria-label={`Logout ${email}`}
-          >
+          <button className="btn-logout" onClick={logout} aria-label={`Logout ${email}`}>
             Logout
           </button>
         </div>

@@ -1,5 +1,8 @@
 import rateLimit from 'express-rate-limit';
 import logger from '../utils/logger.js';
+import { createRateLimitStore } from '../services/rateLimitService.js';
+
+const suspiciousIPs = new Map();
 
 function parsePositiveInt(value, fallback) {
   const n = parseInt(value, 10);
@@ -29,6 +32,7 @@ export const apiRateLimiter = rateLimit({
   max: API_MAX_REQUESTS,
   standardHeaders: true,
   legacyHeaders: false,
+  store: createRateLimitStore('rate-limit:api:'),
   handler: (req, res, _next, options) => {
     logger.warn('Global API rate limit exceeded', {
       ip: req.ip,
@@ -37,6 +41,19 @@ export const apiRateLimiter = rateLimit({
       limit: options.max,
       windowMs: options.windowMs,
     });
+
+    const currentCount = (suspiciousIPs.get(req.ip) || 0) + 1;
+    suspiciousIPs.set(req.ip, currentCount);
+
+    if (currentCount >= 5) {
+      logger.error('Suspicious activity detected', {
+        ip: req.ip,
+        attempts: currentCount,
+        path: req.originalUrl || req.path,
+        detectedAt: new Date().toISOString(),
+      });
+    }
+
     res.status(options.statusCode).json({
       error: 'Too many requests from this IP, please try again later.',
     });
@@ -51,6 +68,7 @@ export const formRateLimiter = rateLimit({
   max: FORM_MAX_REQUESTS,
   standardHeaders: true,
   legacyHeaders: false,
+  store: createRateLimitStore('rate-limit:form:'),
   handler: (req, res, _next, options) => {
     logger.warn('Rate limit exceeded for public form API', {
       ip: req.ip,
@@ -71,6 +89,7 @@ export const authRateLimiter = rateLimit({
   max: 10,
   standardHeaders: true,
   legacyHeaders: false,
+  store: createRateLimitStore('rate-limit:auth:'),
   message: {
     error: 'Too many login attempts, please try again after a minute.',
   },
@@ -82,6 +101,7 @@ export const notificationRateLimiter = rateLimit({
   max: 60,
   standardHeaders: true,
   legacyHeaders: false,
+  store: createRateLimitStore('rate-limit:notification:'),
   message: {
     error: 'Too many notification requests, please try again later.',
   },
@@ -97,6 +117,7 @@ export const activityAuthRateLimiter = rateLimit({
   max: 10,
   standardHeaders: true,
   legacyHeaders: false,
+  store: createRateLimitStore('rate-limit:activity-auth:'),
   handler: (req, res, next, options) => {
     logger.warn('Activity-event auth rate limit exceeded', {
       ip: req.ip,
@@ -115,6 +136,7 @@ export const portfolioRateLimiter = rateLimit({
   max: 10,
   standardHeaders: true,
   legacyHeaders: false,
+  store: createRateLimitStore('rate-limit:portfolio:'),
   message: {
     error: 'Too many portfolio update attempts from this IP, please try again after 15 minutes.',
   },

@@ -11,9 +11,9 @@
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
     "analyze": "cross-env ANALYZE=true vite build",
-    "lint": "echo 'Linting bypassed' && exit 0",
-    "format:check": "echo 'Format check bypassed' && exit 0",
-    "typecheck": "echo 'Typecheck bypassed' && exit 0"
+    "lint": "eslint src --ext .js,.jsx,.ts,.tsx",
+    "format:check": "prettier --check src",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@fullcalendar/daygrid": "^6.1.20",

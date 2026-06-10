@@ -254,7 +254,7 @@ function notifyContentUpdated(key) {
   // Post to the sync-bridge iframe embedded by the website
   const bridge = document.querySelector('iframe[title="NexaSphere Sync Bridge"]');
   if (bridge?.contentWindow) {
-    bridge.contentWindow.postMessage({ type: 'ns-sync', key }, '*');
+    bridge.contentWindow.postMessage({ type: 'ns-sync', key }, window.location.origin);
   }
 }
 

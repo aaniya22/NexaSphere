@@ -205,11 +205,80 @@ The **Database Migrations CI** workflow (`.github/workflows/db-migrations-ci.yml
 
 | Job                             | Description                                                                                     |
 | ------------------------------- | ----------------------------------------------------------------------------------------------- |
-| `Validate Node.js Migrations`   | Spins up a PostgreSQL service, installs dependencies, runs migrations, and tests rollback.      |
+| `Validate Node.js Migrations`   | Spins up a PostgreSQL service, installs dependencies, runs migrations, validates constraints, and tests rollback. |
 | `Validate Java Migrations`      | Validates Flyway SQL files and checks the Maven build.                                          |
 | `Validate Python Migrations`    | Validates Alembic migration Python files and tests the DB connection.                           |
 | `Check Migration Documentation` | Verifies this file (`DATABASE_MIGRATIONS.md`) exists and all migration directories are present. |
 | `Migration Validation Summary`  | Aggregates all job results and fails the workflow if any job failed.                            |
+
+---
+
+## Blue-Green Migration Strategy
+
+To support zero-downtime database updates during Blue-Green deployments, schema modifications must follow the **Expand and Contract** pattern:
+
+1. **Expand Phase (Additive Changes)**:
+   - Add new columns as nullable or with a default value.
+   - Create new tables or indexes.
+   - Do NOT drop old columns/tables or rename existing ones.
+   - The database schema is backward-compatible, meaning both the old (Blue) and new (Green) application versions can run concurrently on the same database.
+
+2. **Transition Phase (Dual Writes / Data Sync)**:
+   - If migrating data from an old column to a new one, update the application code to write to both columns (dual-write) and read from the old one.
+   - Run a backfill script to sync historical data.
+
+3. **Contract Phase (Destructive Changes)**:
+   - Once the new application version (Green) is fully promoted and stable, and the old version (Blue) is shut down:
+   - Update the application code to read/write only from/to the new schema.
+   - Deploy a final database migration to drop the old columns or tables.
+
+---
+
+## Rollback Plan
+
+Each stack supports rolling back database migrations using their respective CLI commands:
+
+### Node.js (PostgreSQL)
+Run the rollback command to revert the last batch of migrations:
+```bash
+npm --prefix server run migrate:rollback
+```
+To roll back to a specific migration version, inspect the `pgmigrations` table and run down migrations to that revision.
+
+### Java (Flyway)
+Since Flyway Community Edition does not support manual down migrations natively, rollbacks are handled by:
+1. Reverting the application deployment to the previous (Blue) version.
+2. Since schema changes are backward-compatible, no DB rollback is required.
+3. For destructive rollbacks, apply an additive compensating migration (e.g. recreating dropped columns).
+
+### Python (Alembic)
+To revert the most recent migration:
+```bash
+cd server-python
+alembic downgrade -1
+```
+Or downgrade to a specific revision ID:
+```bash
+alembic downgrade <revision_id>
+```
+
+---
+
+## Database Validation Checks
+
+We implement automated data validation checks to verify schema integrity and foreign key constraints before and after migration.
+
+### Validation Script
+A dedicated validation script resides in `server/scripts/validate-database.js`. It performs the following checks:
+1. Verifies that all expected tables exist.
+2. Verifies that critical columns and their datatypes are correct.
+3. Validates data integrity (e.g., checks for orphan entries in relationship tables).
+
+To run the checks manually:
+```bash
+npm --prefix server run db:validate
+```
+This validation script runs automatically as part of the Database Migrations CI pipeline and staging deployment workflows.
 
 ---
 

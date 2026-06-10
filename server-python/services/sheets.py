@@ -1,3 +1,4 @@
+import asyncio
 import os
 from datetime import datetime
 from typing import Any, Dict
@@ -48,12 +49,15 @@ class SheetsService:
         sheet.append_row(row)
 
     async def append_membership(self, form_data: Dict[str, Any]) -> None:
-        self._append_to_worksheet("Membership", form_data)
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(None, self._append_to_worksheet, "Membership", form_data)
 
     async def append_recruitment(self, form_data: Dict[str, Any]) -> None:
-        self._append_to_worksheet("Recruitment", form_data)
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(None, self._append_to_worksheet, "Recruitment", form_data)
 
     async def append_core_team_application(self, form_data: Dict[str, Any]) -> None:
-        self._append_to_worksheet("CoreTeamApplications", form_data)
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(None, self._append_to_worksheet, "CoreTeamApplications", form_data)
 
 sheets_service = SheetsService()

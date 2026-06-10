@@ -52,4 +52,33 @@ router.get('/stream/info', requireAdmin, (req, res) => {
   }
 });
 
+/**
+ * Emergency Alert Status Endpoint
+ * GET /api/admin/emergency-alert
+ *
+ * Returns current emergency alert information
+ * for the admin dashboard.
+ */
+router.get('/emergency-alert', requireAdmin, (req, res) => {
+  try {
+    res.json({
+      success: true,
+      alertActive: false,
+      priority: 'HIGH',
+      message: 'No active emergency alerts',
+      connectedClients: getConnectedSSEClientsCount(),
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    logger.error('Error fetching emergency alert status', {
+      error: error.message,
+    });
+
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch emergency alert status',
+    });
+  }
+});
+
 export default router;
