@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Code, ExternalLink, X, Tag, Users } from 'lucide-react';
 import { projectsData } from '../../data/projectsData';
@@ -17,6 +17,7 @@ const CATEGORIES = [
 export default function ProjectsPage({ onBack }) {
   const [activeCategory, setActiveCategory] = useState('All');
   const [selectedProject, setSelectedProject] = useState(null);
+  const triggerRef = useRef(null);
 
   // Filter projects based on category
   const filteredProjects =
@@ -48,6 +49,11 @@ export default function ProjectsPage({ onBack }) {
   // the captured value approach caused a brief scrollable window when
   // switching directly from one project to another since cleanup ran
   // before the new lock was applied.
+  useEffect(() => {
+    if (!selectedProject && triggerRef.current?.focus) {
+      triggerRef.current.focus();
+    }
+  }, [selectedProject]);
   useEffect(() => {
     if (selectedProject) {
       document.body.style.overflow = 'hidden';
@@ -99,11 +105,15 @@ export default function ProjectsPage({ onBack }) {
               transition={{ duration: 0.3 }}
               key={project.id}
               className="project-card"
-              onClick={() => setSelectedProject(project)}
+              onClick={(e) => {
+                triggerRef.current = e.currentTarget;
+                setSelectedProject(project);
+              }}
               role="button"
               tabIndex={0}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
+                  triggerRef.current = e.currentTarget;
                   setSelectedProject(project);
                 }
               }}

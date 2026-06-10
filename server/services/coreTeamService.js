@@ -82,6 +82,53 @@ export const coreTeamService = {
     return sanitizeCoreTeamMemberRecord(newMember);
   },
 
+  async updateMember(id, input) {
+    const member = coreTeamMemberSchema.parse(input);
+
+    if (HAS_SUPABASE) {
+      const [row] = await supabaseRequest(`core_team_members?id=eq.${encodeURIComponent(id)}`, {
+        method: 'PATCH',
+        body: {
+          name: member.name,
+          role: member.role,
+          year: member.year,
+          branch: member.branch,
+          section: member.section,
+          email: member.email,
+          whatsapp: member.whatsapp,
+          linkedin: member.linkedin ?? null,
+          instagram: member.instagram ?? null,
+          photo_url: member.photoUrl ?? null,
+        },
+      });
+
+      return sanitizeCoreTeamMemberRecord({
+        id: row.id,
+        name: row.name,
+        role: row.role,
+        year: row.year,
+        branch: row.branch,
+        section: row.section,
+        email: row.email,
+        whatsapp: row.whatsapp,
+        linkedin: row.linkedin,
+        instagram: row.instagram,
+        photoUrl: row.photo_url,
+        createdAt: row.created_at,
+      });
+    }
+
+    const content = await readContent();
+    content.coreTeam = content.coreTeam || [];
+    const index = content.coreTeam.findIndex((m) => String(m.id) === String(id));
+    if (index === -1) return null;
+
+    const updated = { ...content.coreTeam[index], ...member, id: content.coreTeam[index].id };
+    content.coreTeam[index] = updated;
+    await writeContent(content);
+    return sanitizeCoreTeamMemberRecord(updated);
+  },
+
   async deleteMember(id) {
     if (HAS_SUPABASE) {
       const rows = await supabaseRequest(`core_team_members?id=eq.${encodeURIComponent(id)}`, {

@@ -128,23 +128,39 @@ function doPost(e) {
       var token = data.token;
       var SECRET_TOKEN = PropertiesService.getScriptProperties().getProperty('MEMBERSHIP_SECRET');
 
-      if (!SECRET_TOKEN || token !== SECRET_TOKEN) {
+      // ── FIXED ADMINISTRATIVE SECURITY LEAK ─────────────────────────────────
+      // Strict Check: Fails instantly if the server secret is unconfigured, 
+      // if the client token is missing, or if they do not match exactly.
+      if (!SECRET_TOKEN || !token || token !== SECRET_TOKEN) {
         return _respond({ ok: false, error: 'Unauthorized' });
       }
+      // ───────────────────────────────────────────────────────────────────────
 
       try {
         var sheet = getOrCreateSheet();
         var rows = sheet.getDataRange().getValues();
+        
+        // Fix: Gracefully handle an empty sheet or a sheet with only headers
+        if (rows.length <= 1) {
+          return _respond({
+            ok: true,
+            count: 0,
+            responses: []
+          });
+        }
+
         var headers = rows[0];
         var responses = [];
 
         for (var i = 1; i < rows.length; i++) {
           var obj = {};
           for (var j = 0; j < headers.length; j++) {
+            // Fix: Replaced arrow function with an explicit callback function 
+            // to guarantee compatibility across legacy Apps Script engines
             var key = headers[j]
               .toString()
               .toLowerCase()
-              .replace(/[^a-z0-9]+(.)/g, (m, chr) => chr.toUpperCase())
+              .replace(/[^a-z0-9]+(.)/g, function(m, chr) { return chr.toUpperCase(); })
               .replace(/[^a-z0-9]/gi, '');
             obj[key] = rows[i][j];
           }
@@ -211,29 +227,17 @@ function doPost(e) {
           '    <p style="margin:6px 0 0;color:rgba(255,255,255,.8);font-size:.9rem;">GL Bajaj Group of Institutions, Mathura</p>',
           '  </div>',
           '  <div style="padding:28px 32px;">',
-          '    <p style="font-size:1rem;color:#e2e8f0;margin-top:0;">Hi <strong>' +
-            recipientName +
-            '</strong>,</p>',
+          '    <p style="font-size:1rem;color:#e2e8f0;margin-top:0;">Hi <strong>' + recipientName + '</strong>,</p>',
           '    <p style="color:#94a3b8;line-height:1.7;">',
           '      Your <strong style="color:#00d4ff;">NexaSphere Membership Form</strong> has been successfully received. 🎉<br/>',
           '      Here is a summary of your submission:',
           '    </p>',
           '    <table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:.88rem;">',
-          '      <tr style="border-bottom:1px solid #1e293b;"><td style="padding:8px 4px;color:#64748b;width:42%;">Full Name</td><td style="padding:8px 4px;color:#e2e8f0;font-weight:600;">' +
-            (data.fullName || '—') +
-            '</td></tr>',
-          '      <tr style="border-bottom:1px solid #1e293b;"><td style="padding:8px 4px;color:#64748b;">Roll Number</td><td style="padding:8px 4px;color:#e2e8f0;font-weight:600;">' +
-            (data.rollNumber || '—') +
-            '</td></tr>',
-          '      <tr style="border-bottom:1px solid #1e293b;"><td style="padding:8px 4px;color:#64748b;">Branch</td><td style="padding:8px 4px;color:#e2e8f0;font-weight:600;">' +
-            (data.branch || '—') +
-            '</td></tr>',
-          '      <tr style="border-bottom:1px solid #1e293b;"><td style="padding:8px 4px;color:#64748b;">Semester</td><td style="padding:8px 4px;color:#e2e8f0;font-weight:600;">' +
-            (data.semester || '—') +
-            '</td></tr>',
-          '      <tr><td style="padding:8px 4px;color:#64748b;">Groups Selected</td><td style="padding:8px 4px;color:#e2e8f0;font-weight:600;">' +
-            groupsText +
-            '</td></tr>',
+          '      <tr style="border-bottom:1px solid #1e293b;"><td style="padding:8px 4px;color:#64748b;width:42%;">Full Name</td><td style="padding:8px 4px;color:#e2e8f0;font-weight:600;">' + (data.fullName || '—') + '</td></tr>',
+          '      <tr style="border-bottom:1px solid #1e293b;"><td style="padding:8px 4px;color:#64748b;">Roll Number</td><td style="padding:8px 4px;color:#e2e8f0;font-weight:600;">' + (data.rollNumber || '—') + '</td></tr>',
+          '      <tr style="border-bottom:1px solid #1e293b;"><td style="padding:8px 4px;color:#64748b;">Branch</td><td style="padding:8px 4px;color:#e2e8f0;font-weight:600;">' + (data.branch || '—') + '</td></tr>',
+          '      <tr style="border-bottom:1px solid #1e293b;"><td style="padding:8px 4px;color:#64748b;">Semester</td><td style="padding:8px 4px;color:#e2e8f0;font-weight:600;">' + (data.semester || '—') + '</td></tr>',
+          '      <tr><td style="padding:8px 4px;color:#64748b;">Groups Selected</td><td style="padding:8px 4px;color:#e2e8f0;font-weight:600;">' + groupsText + '</td></tr>',
           '    </table>',
           '    <div style="background:#1e293b;border-left:3px solid #7b6fff;border-radius:6px;padding:14px 18px;margin:20px 0;">',
           '      <strong style="color:#a78bfa;display:block;margin-bottom:6px;font-size:.82rem;letter-spacing:.06em;text-transform:uppercase;">What Happens Next</strong>',
@@ -286,7 +290,6 @@ function doPost(e) {
           noReply: false,
         });
       } catch (mailErr) {
-        // Email failure should never block the form submission — log and continue.
         console.warn('Confirmation email failed:', mailErr.message);
       }
     }

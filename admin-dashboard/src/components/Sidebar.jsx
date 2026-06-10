@@ -86,6 +86,12 @@ const links = [
     icon: 'FileText',
     requiredScope: 'events:read',
   },
+  {
+    to: '/dashboard/forum',
+    label: 'Forum',
+    icon: 'FileText',
+    requiredScope: 'events:read',
+  },
 ];
 
 export function Sidebar() {

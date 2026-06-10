@@ -13,6 +13,16 @@ const portfolioMutex = new Mutex();
 
 const BCRYPT_ROUNDS = 12;
 
+// Pre-computed bcrypt hash of a fixed dummy string used to ensure
+// constant-time bcrypt comparison for non-existing usernames.
+// This hash is never a valid passkey for any real user.
+const DUMMY_PASSKEY_HASH = bcrypt.hashSync('dummy-timing-constant', BCRYPT_ROUNDS);
+
+async function jitter(min = 20, max = 80) {
+  const delay = Math.floor(Math.random() * (max - min + 1)) + min;
+  return new Promise((resolve) => setTimeout(resolve, delay));
+}
+
 let schemaReady = null;
 let schemaOk = false;
 let lastDbFailTime = 0;
@@ -261,17 +271,19 @@ export const portfolioRepository = {
     const isDbAvailable = await ensureReady();
     const sanitizedUsername = canonicalizeUsername(username);
 
+    let isValid;
+
     if (isDbAvailable) {
       try {
-        return await withDb(async (client) => {
+        isValid = await withDb(async (client) => {
           const { rows } = await client.query(
             'SELECT passkey_hash FROM portfolios WHERE username = $1',
             [sanitizedUsername]
           );
           if (!rows.length) {
-            // Username does not exist yet.
-            // Only allow if the caller has explicitly declared this is a new registration.
-            // Returning true unconditionally here was the authentication bypass vector.
+            // Constant-time: always run bcrypt compare even for non-existing users
+            // to prevent timing-based username enumeration.
+            await verifyHash(passkey, DUMMY_PASSKEY_HASH);
             return allowNew;
           }
           return await verifyHash(passkey, rows[0].passkey_hash);
@@ -281,14 +293,24 @@ export const portfolioRepository = {
       }
     }
 
-    // Local file fallback (read-only cache — fail closed when user is unknown)
-    const portfolios = await readLocalPortfolios();
-    const portfolio = portfolios[sanitizedUsername];
-    if (!portfolio) {
-      // Same guard as the DB path — only allow if explicitly a new registration.
-      return allowNew;
+    if (isValid === undefined) {
+      // Local file fallback (read-only cache — fail closed when user is unknown)
+      const portfolios = await readLocalPortfolios();
+      const portfolio = portfolios[sanitizedUsername];
+      if (!portfolio) {
+        await verifyHash(passkey, DUMMY_PASSKEY_HASH);
+        isValid = allowNew;
+      } else {
+        isValid = await verifyHash(passkey, portfolio.passkeyHash);
+      }
     }
-    return await verifyHash(passkey, portfolio.passkeyHash);
+
+    if (!isValid) {
+      // Add random jitter to further obscure timing differences
+      await jitter();
+    }
+
+    return isValid;
   },
 
   async createOrUpdate(data, isNewRegistration) {

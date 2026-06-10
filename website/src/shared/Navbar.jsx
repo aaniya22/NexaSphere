@@ -13,12 +13,11 @@ const TABS = [
   'Roadmaps',
   'Portfolio',
   'Gamification',
+  'Forum',
   'About',
   'Core Team',
   'Contact',
 ];
-
-
 
 function BookmarkToggle({ onToggle }) {
   return (

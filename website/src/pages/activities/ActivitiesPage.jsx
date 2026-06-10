@@ -305,6 +305,17 @@ function ActivityCard({ a, idx, onNavigate }) {
 export default function ActivitiesPage({ onNavigate, onBack }) {
   useEffect(() => {
     window.scrollTo({ top: 0 });
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    if (prefersReducedMotion) {
+      document
+        .querySelectorAll('#activities-page .pop-in, #activities-page .pop-word')
+        .forEach((el) => {
+          el.classList.add('fired');
+        });
+
+      return;
+    }
     const obs = new IntersectionObserver(
       (entries) => {
         entries.forEach((e) => {

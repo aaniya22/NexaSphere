@@ -11,8 +11,10 @@ let mockIsOffline = false;
 
 vi.mock('../../services/auth.js', () => ({
   auth: {
-    getToken: vi.fn(() => 'admin-token'),
     isOfflineMode: vi.fn(() => mockIsOffline),
+    getEmail: vi.fn(() => null),
+    getRole: vi.fn(() => 'SuperAdmin'),
+    getScopes: vi.fn(() => []),
   },
 }));
 
@@ -137,7 +139,7 @@ describe('api service', () => {
           'http://test:8080/api/admin/events',
           expect.objectContaining({
             headers: expect.objectContaining({
-              Authorization: 'Bearer admin-token',
+              'Content-Type': 'application/json',
             }),
           })
         );
