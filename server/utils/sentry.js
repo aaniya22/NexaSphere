@@ -100,6 +100,34 @@ function addBreadcrumb(data) {
   });
 }
 
+/**
+ * Register system lifecycle event hooks to gracefully close and flush Sentry
+ * @param {number} timeout - Maximum time in ms to wait for pending events to flush
+ */
+function registerSentryShutdown(timeout = 2000) {
+  const signals = ['SIGTERM', 'SIGINT'];
+
+  signals.forEach((signal) => {
+    process.on(signal, async () => {
+      console.log(`[Sentry] Received ${signal}. Flushing pending events...`);
+      
+      try {
+        // close() flushes queued events and disables the SDK from accepting new events
+        const cleanClose = await Sentry.close(timeout);
+        if (cleanClose) {
+          console.log('[Sentry] Successfully flushed buffered telemetry and closed.');
+        } else {
+          console.warn('[Sentry] Flush timeout reached; some events may have been dropped.');
+        }
+      } catch (err) {
+        console.error('[Sentry] Error occurred during graceful shutdown:', err);
+      } finally {
+        process.exit(0);
+      }
+    });
+  });
+}
+
 export {
   Sentry,
   initializeSentry,
@@ -107,4 +135,5 @@ export {
   captureException,
   captureMessage,
   addBreadcrumb,
+  registerSentryShutdown,
 };
