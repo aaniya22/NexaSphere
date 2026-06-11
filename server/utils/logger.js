@@ -67,50 +67,50 @@ const logLayout = winston.format.printf((info) => {
   }`;
 });
 
-// Define clean log format for file transports
-const format = winston.format.combine(
-  winston.format.timestamp({ format: "YYYY-MM-DD HH:mm:ss:ms" }),
+const consoleLevel = process.env.LOG_LEVEL_CONSOLE || 'info';
+const fileBaselineLevel = process.env.LOG_LEVEL_FILE || 'info';
+const globalGatekeeperLevel = process.env.LOG_LEVEL_GLOBAL || 'debug';
+const baseFileFormat = winston.format.combine(
+  winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss:ms' }),
   winston.format.errors({ stack: true }),
   logLayout
 );
 
-// Define transports
-const transports = [
-  // Console transport (Colorizes exclusively for terminal output)
+const activeTransports = [
   new winston.transports.Console({
-    level: consoleLevel, // <-- Add this line
+    level: consoleLevel,
     format: winston.format.combine(
-      winston.format.timestamp({ format: "YYYY-MM-DD HH:mm:ss:ms" }),
+      winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss:ms' }),
       winston.format.errors({ stack: true }),
       winston.format.colorize({ all: true }),
       logLayout
     ),
-  }),
-
-  // Error logs
-  new winston.transports.File({
-    filename: path.join(logsDir, 'error.log'),
-    level: 'error',
-    format: winston.format.uncolorize(),
-  }),
-
-  new winston.transports.File({
-    filename: path.join(logsDir, 'combined.log'),
-    level: fileBaselineLevel, // <-- Add this line
-    format: winston.format.uncolorize(),
-  }),
-
-  // Daily rotate logs (requires winston-daily-rotate-file)
-  new DailyRotateFile({
-    filename: path.join(logsDir, 'application-%DATE%.log'),
-    datePattern: 'YYYY-MM-DD',
-    level: fileBaselineLevel, // <-- Add this line
-    maxSize: '20m',
-    maxFiles: '14d',
-    format: winston.format.uncolorize(),
-    utc: true,
-  }),
+  })
 ];
+
+if (isStorageWritable) {
+  activeTransports.push(
+    new winston.transports.File({
+      filename: path.join(logsDir, 'error.log'),
+      level: 'error',
+      format: winston.format.uncolorize(),
+    }),
+    new winston.transports.File({
+      filename: path.join(logsDir, 'combined.log'),
+      level: fileBaselineLevel,
+      format: winston.format.uncolorize(),
+    }),
+    new DailyRotateFile({
+      filename: path.join(logsDir, 'application-%DATE%.log'),
+      datePattern: 'YYYY-MM-DD',
+      level: fileBaselineLevel,
+      maxSize: '20m',
+      maxFiles: '14d',
+      format: winston.format.uncolorize(),
+      utc: true,
+    })
+  );
+}
 
 // Create logger instance
 const logger = winston.createLogger({
