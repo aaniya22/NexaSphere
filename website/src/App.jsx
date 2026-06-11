@@ -368,7 +368,9 @@ function Cursor() {
 export default function App() {
   return (
     <BrowserRouter>
-      <AppShell />
+      <StudentAuthProvider>
+        <AppShell />
+      </StudentAuthProvider>
     </BrowserRouter>
   );
 }

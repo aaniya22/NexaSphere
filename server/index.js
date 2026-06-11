@@ -51,6 +51,7 @@ import { studentUsersRepository } from './repositories/studentUsersRepository.js
 import * as studentAuthController from './controllers/studentAuthController.js';
 import * as forumController from './controllers/forumController.js';
 import { requireStudentAuth } from './middleware/studentAuthMiddleware.js';
+import { studentAuthService } from './services/studentAuthService.js';
 import * as mentorshipController from './controllers/mentorshipController.js';
 import { xssSanitizer } from './middleware/xssSanitizer.js';
 import { tierRateLimiter } from './middleware/tierRateLimiter.js';
@@ -615,11 +616,32 @@ app.post(
   }
 );
 
-app.post('/api/notifications/mark-read', adminAuth, notificationRateLimiter, async (req, res) => {
+function requireNotificationAuth(req, res, next) {
+  adminAuthMiddleware.requireAdmin(req, res, (err) => {
+    if (!err && req.adminSession) {
+      return next();
+    }
+    requireStudentAuth(req, res, (err2) => {
+      if (!err2 && req.studentUser) {
+        return next();
+      }
+      return res.status(401).json({ error: 'Unauthorized: Authentication required' });
+    });
+  });
+}
+
+app.post('/api/notifications/mark-read', requireNotificationAuth, notificationRateLimiter, async (req, res) => {
   try {
     const { id, userId } = req.body || {};
     if (!id) return res.status(400).json({ error: 'id required' });
-    const uid = userId || 'global';
+    let uid = userId || 'global';
+    if (req.studentUser) {
+      const studentId = req.studentUser.sub || req.studentUser.id;
+      if (userId && userId !== studentId) {
+        return res.status(403).json({ error: 'Forbidden: Cannot modify other users notifications' });
+      }
+      uid = studentId;
+    }
     const ok = await notificationsService.markAsRead(uid, id);
     return res.json({ success: ok });
   } catch (err) {
@@ -629,12 +651,20 @@ app.post('/api/notifications/mark-read', adminAuth, notificationRateLimiter, asy
 
 app.post(
   '/api/notifications/mark-all-read',
-  adminAuth,
+  requireNotificationAuth,
   notificationRateLimiter,
   async (req, res) => {
     try {
       const { userId } = req.body || {};
-      await notificationsService.markAllAsRead(userId || 'global');
+      let uid = userId || 'global';
+      if (req.studentUser) {
+        const studentId = req.studentUser.sub || req.studentUser.id;
+        if (userId && userId !== studentId) {
+          return res.status(403).json({ error: 'Forbidden' });
+        }
+        uid = studentId;
+      }
+      await notificationsService.markAllAsRead(uid);
       return res.json({ success: true });
     } catch (err) {
       return res.status(500).json({ error: err.message });
@@ -642,11 +672,18 @@ app.post(
   }
 );
 
-app.delete('/api/notifications/:id', adminAuth, notificationRateLimiter, async (req, res) => {
+app.delete('/api/notifications/:id', requireNotificationAuth, notificationRateLimiter, async (req, res) => {
   try {
     const id = req.params.id;
-    const userId = req.query.userId || 'global';
-    const removed = await notificationsService.removeNotification(userId, id);
+    let uid = req.query.userId || 'global';
+    if (req.studentUser) {
+      const studentId = req.studentUser.sub || req.studentUser.id;
+      if (req.query.userId && req.query.userId !== studentId) {
+        return res.status(403).json({ error: 'Forbidden' });
+      }
+      uid = studentId;
+    }
+    const removed = await notificationsService.removeNotification(uid, id);
     if (!removed) return res.status(404).json({ error: 'Notification not found' });
     return res.json({ success: true });
   } catch (err) {
@@ -654,10 +691,17 @@ app.delete('/api/notifications/:id', adminAuth, notificationRateLimiter, async (
   }
 });
 
-app.delete('/api/notifications', adminAuth, notificationRateLimiter, async (req, res) => {
+app.delete('/api/notifications', requireNotificationAuth, notificationRateLimiter, async (req, res) => {
   try {
-    const userId = req.query.userId || 'global';
-    await notificationsService.clearAll(userId);
+    let uid = req.query.userId || 'global';
+    if (req.studentUser) {
+      const studentId = req.studentUser.sub || req.studentUser.id;
+      if (req.query.userId && req.query.userId !== studentId) {
+        return res.status(403).json({ error: 'Forbidden' });
+      }
+      uid = studentId;
+    }
+    await notificationsService.clearAll(uid);
     return res.json({ success: true });
   } catch (err) {
     return res.status(500).json({ error: err.message });
@@ -806,6 +850,49 @@ function clearPasskeyAttempts(username, ip) {
 app.get('/api/notifications', async (req, res) => {
   try {
     const userId = req.query.userId || 'global';
+
+    if (userId !== 'global') {
+      let authenticated = false;
+
+      // 1. Try Student Auth
+      let token = null;
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        token = authHeader.slice(7).trim();
+      }
+      if (!token && req.cookies?.ns_student_token) {
+        token = req.cookies.ns_student_token;
+      }
+      if (token) {
+        const payload = studentAuthService.verifyToken(token);
+        if (payload && (payload.sub === userId || payload.id === userId)) {
+          authenticated = true;
+        }
+      }
+
+      // 2. Try Admin Auth
+      if (!authenticated) {
+        let adminToken = null;
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+          adminToken = authHeader.slice(7).trim();
+        }
+        if (!adminToken && req.cookies?.ns_admin_token) {
+          adminToken = req.cookies.ns_admin_token;
+        }
+        if (adminToken) {
+          const { getAdminSession } = await import('./repositories/adminSessionsRepository.js');
+          const session = await getAdminSession(adminToken);
+          if (session) {
+            authenticated = true;
+          }
+        }
+      }
+
+      if (!authenticated) {
+        return res.status(401).json({ error: 'Unauthorized to view these notifications' });
+      }
+    }
+
     const offset = parseInt(req.query.offset, 10) || 0;
     const limit = Math.min(parseInt(req.query.limit, 10) || 100, 500);
     const list = await notificationsService.getNotifications(userId, offset, limit);
