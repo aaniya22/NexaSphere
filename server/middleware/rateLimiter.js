@@ -130,15 +130,21 @@ export const activityAuthRateLimiter = rateLimit({
   },
 });
 
-// Portfolio update rate limiter — 10 requests per IP per 15 minutes
 export const portfolioRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10,
   standardHeaders: true,
   legacyHeaders: false,
   store: createRateLimitStore('rate-limit:portfolio:'),
-  message: {
-    error: 'Too many portfolio update attempts from this IP, please try again after 15 minutes.',
+  handler: (req, res, next, options) => {
+    logger.warn('Portfolio update rate limit exceeded', {
+      ip: req.ip,
+      path: req.originalUrl || req.path,
+      method: req.method,
+    });
+    res.status(options.statusCode).json({
+      error: 'Too many portfolio update attempts from this IP, please try again after 15 minutes.',
+    });
   },
 });
 
