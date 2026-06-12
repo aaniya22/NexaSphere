@@ -18,6 +18,7 @@
 - [🚢 Deployment](#-deployment)
 - [🤝 Contributing](#-contributing)
 - [📚 Documentation](#-documentation)
+- [👥 Contributors](#-contributors)
 - [📄 License](#-license)
 
 ---
