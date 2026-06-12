@@ -1,5 +1,6 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import pg from 'pg';
+import { propagation, context as otelContext } from '@opentelemetry/api';
 
 export const appContext = new AsyncLocalStorage();
 
@@ -21,19 +22,22 @@ pg.Client.prototype.query = function (config, values, callback) {
 const originalFetch = global.fetch;
 global.fetch = function (url, options) {
   const store = appContext.getStore();
-  if (store?.reqId) {
-    options = options || {};
+  options = options || {};
 
-    // We must clone or create headers to avoid mutating a shared object unexpectedly,
-    // but typically fetch options are per-request.
-    if (options.headers instanceof Headers) {
-      options.headers.set('X-Request-ID', store.reqId);
-    } else {
-      options.headers = {
-        ...options.headers,
-        'X-Request-ID': store.reqId,
-      };
-    }
+  const headers = {};
+  if (options.headers instanceof Headers) {
+    options.headers.forEach((value, key) => {
+      headers[key] = value;
+    });
+  } else if (options.headers) {
+    Object.assign(headers, options.headers);
   }
-  return originalFetch.call(this, url, options);
+
+  if (store?.reqId) {
+    headers['X-Request-ID'] = store.reqId;
+  }
+
+  propagation.inject(otelContext.active(), headers);
+
+  return originalFetch.call(this, url, { ...options, headers });
 };

@@ -86,7 +86,7 @@ export function useSocketSync(roomId: string, user: UserInfo) {
 
   const emitTyping = () => {
     if (!socket) return;
-    socket.emit('typing_start', { roomId });
+    socket.emit('typing_start', { roomId, user: { name: user.name } });
 
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);

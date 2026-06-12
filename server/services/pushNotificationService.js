@@ -1,16 +1,9 @@
-/**
- * Firebase Cloud Messaging Service
- * Handles push notifications for mobile and web
- */
-
 import admin from 'firebase-admin';
 import logger from '../utils/logger.js';
+import { CircuitBreaker, circuitBreakerRegistry } from '../utils/circuitBreaker.js';
 
 let messaging = null;
 
-/**
- * Initialize Firebase Admin SDK
- */
 export function initializeFirebase() {
   try {
     if (!admin.apps.length) {
@@ -24,6 +17,44 @@ export function initializeFirebase() {
 
     messaging = admin.messaging();
     logger.info('Firebase Cloud Messaging initialized');
+
+    const _rawSend = messaging.send.bind(messaging);
+    const _rawSendMulticast = messaging.sendMulticast.bind(messaging);
+    const _rawSubscribeToTopic = messaging.subscribeToTopic.bind(messaging);
+
+    circuitBreakerRegistry.register(
+      'fcm-send',
+      new CircuitBreaker(_rawSend, {
+        name: 'fcm-send',
+        failureThreshold: 3,
+        successThreshold: 2,
+        coolDownPeriod: 10000,
+        maxCoolDownPeriod: 60000,
+      })
+    );
+
+    circuitBreakerRegistry.register(
+      'fcm-multicast',
+      new CircuitBreaker(_rawSendMulticast, {
+        name: 'fcm-multicast',
+        failureThreshold: 3,
+        successThreshold: 2,
+        coolDownPeriod: 10000,
+        maxCoolDownPeriod: 60000,
+      })
+    );
+
+    circuitBreakerRegistry.register(
+      'fcm-subscribe',
+      new CircuitBreaker(_rawSubscribeToTopic, {
+        name: 'fcm-subscribe',
+        failureThreshold: 3,
+        successThreshold: 2,
+        coolDownPeriod: 10000,
+        maxCoolDownPeriod: 60000,
+      })
+    );
+
     return messaging;
   } catch (error) {
     logger.warn('Firebase not configured - push notifications disabled', {
@@ -33,16 +64,10 @@ export function initializeFirebase() {
   }
 }
 
-/**
- * Get messaging instance
- */
 export function getMessaging() {
   return messaging;
 }
 
-/**
- * Send push notification to user
- */
 export async function sendPushNotification(userToken, notification) {
   if (!messaging) {
     logger.warn('Push notifications not available');
@@ -87,21 +112,23 @@ export async function sendPushNotification(userToken, notification) {
       },
     };
 
-    const response = await messaging.send(message);
+    const fcmBreaker = circuitBreakerRegistry.get('fcm-send');
+    const response = fcmBreaker ? await fcmBreaker.execute(message) : await messaging.send(message);
     logger.info('Push notification sent', { response, title: notification.title });
     return response;
   } catch (error) {
-    logger.error('Failed to send push notification', {
-      error: error.message,
-      token: userToken,
-    });
+    if (error.code === 'CIRCUIT_OPEN') {
+      logger.warn('FCM circuit breaker is OPEN, skipping push notification');
+    } else {
+      logger.error('Failed to send push notification', {
+        error: error.message,
+        token: userToken,
+      });
+    }
     return null;
   }
 }
 
-/**
- * Send push notification to multiple users
- */
 export async function sendMulticastNotification(userTokens, notification) {
   if (!messaging || !userTokens.length) return null;
 
@@ -121,10 +148,16 @@ export async function sendMulticastNotification(userTokens, notification) {
       },
     };
 
-    const response = await messaging.sendMulticast({
-      tokens: userTokens,
-      ...message,
-    });
+    const fcmBreaker = circuitBreakerRegistry.get('fcm-multicast');
+    const response = fcmBreaker
+      ? await fcmBreaker.execute({
+          tokens: userTokens,
+          ...message,
+        })
+      : await messaging.sendMulticast({
+          tokens: userTokens,
+          ...message,
+        });
 
     logger.info('Multicast notification sent', {
       successCount: response.successCount,
@@ -133,30 +166,37 @@ export async function sendMulticastNotification(userTokens, notification) {
 
     return response;
   } catch (error) {
-    logger.error('Multicast notification failed', { error: error.message });
+    if (error.code === 'CIRCUIT_OPEN') {
+      logger.warn('FCM multicast circuit breaker is OPEN');
+    } else {
+      logger.error('Multicast notification failed', { error: error.message });
+    }
     return null;
   }
 }
 
-/**
- * Subscribe user to topic
- */
 export async function subscribeToTopic(tokens, topic) {
   if (!messaging) return null;
 
   try {
-    await messaging.subscribeToTopic(tokens, topic);
+    const fcmBreaker = circuitBreakerRegistry.get('fcm-subscribe');
+    if (fcmBreaker) {
+      await fcmBreaker.execute(tokens, topic);
+    } else {
+      await messaging.subscribeToTopic(tokens, topic);
+    }
     logger.info('Users subscribed to topic', { topic, count: tokens.length });
     return true;
   } catch (error) {
-    logger.error('Topic subscription failed', { error: error.message, topic });
+    if (error.code === 'CIRCUIT_OPEN') {
+      logger.warn('FCM subscribe circuit breaker is OPEN');
+    } else {
+      logger.error('Topic subscription failed', { error: error.message, topic });
+    }
     return false;
   }
 }
 
-/**
- * Send notification to topic
- */
 export async function sendToTopic(topic, notification) {
   if (!messaging) return null;
 
@@ -177,11 +217,16 @@ export async function sendToTopic(topic, notification) {
       },
     };
 
-    const response = await messaging.send(message);
+    const fcmBreaker = circuitBreakerRegistry.get('fcm-send');
+    const response = fcmBreaker ? await fcmBreaker.execute(message) : await messaging.send(message);
     logger.info('Topic notification sent', { topic, response });
     return response;
   } catch (error) {
-    logger.error('Topic notification failed', { error: error.message, topic });
+    if (error.code === 'CIRCUIT_OPEN') {
+      logger.warn('FCM circuit breaker is OPEN, skipping topic notification');
+    } else {
+      logger.error('Topic notification failed', { error: error.message, topic });
+    }
     return null;
   }
 }

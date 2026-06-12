@@ -37,7 +37,30 @@ async function initializeSentry(app) {
     tracesSampleRate: isDevelopment ? 1.0 : 0.1,
     profilesSampleRate: isDevelopment ? 1.0 : 0.1,
     attachStacktrace: true,
+    beforeSend(event, hint) {
+      const error = hint.originalException;
+      if (error) {
+        // Group by error name and first line of error message
+        event.fingerprint = [
+          '{{ default }}',
+          error.name || 'Error',
+          (error.message || '').split('\n')[0]
+        ];
+      }
+      return event;
+    }
   });
+
+  try {
+    const os = await import('os');
+    Sentry.setContext('environment_metadata', {
+      'Node version': process.version,
+      'OS': os.platform(),
+      'OS Release': os.release(),
+    });
+  } catch (err) {
+    // Graceful fallback if os import fails
+  }
 
   return Sentry;
 }

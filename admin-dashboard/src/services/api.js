@@ -882,6 +882,18 @@ export const api = {
       notifyContentUpdated('ns_db_announcements');
     },
   },
+  circuitBreaker: {
+    getMetrics: () => fetchWithAuth('/api/admin/circuit-breaker/metrics'),
+    reset: (name) =>
+      fetchWithAuth(`/api/admin/circuit-breaker/reset/${encodeURIComponent(name)}`, {
+        method: 'POST',
+      }),
+    retry: (name) =>
+      fetchWithAuth(`/api/admin/circuit-breaker/retry/${encodeURIComponent(name)}`, {
+        method: 'POST',
+      }),
+  },
+
   forum: {
     getAll: async (params = {}) => {
       const query = new URLSearchParams(params).toString();

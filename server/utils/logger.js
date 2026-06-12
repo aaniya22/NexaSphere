@@ -4,11 +4,10 @@
  */
 
 import winston from 'winston';
-import { appContext } from '../config/appContext.js';
 import path from 'path';
 import DailyRotateFile from 'winston-daily-rotate-file';
+import { getLogContext } from './logContext.js';
 
-// Create logs directory if it doesn't exist
 // Create logs directory if it doesn't exist (with permission handling)
 import fs from 'fs';
 const logsDir = path.join(process.cwd(), 'logs');
@@ -58,19 +57,53 @@ winston.addColors(colors);
 // Define base log layout template
 const logLayout = winston.format.printf((info) => {
   const { timestamp, level, message, ...args } = info;
+const LOG_FORMAT = (process.env.LOG_FORMAT || 'text').toLowerCase();
 
-  const ts = timestamp ? timestamp.slice(0, 19).replace("T", " ") : "";
+const correlationFormat = winston.format((info) => {
+  const ctx = getLogContext();
+  Object.assign(info, ctx);
+  return info;
+});
 
+const jsonFormat = winston.format.combine(
+  winston.format.timestamp(),
+  winston.format.errors({ stack: true }),
+  correlationFormat(),
+  winston.format.json()
+);
+
+const logLayout = winston.format.printf((info) => {
+  const { timestamp, level, message, ...args } = info;
+  const ts = timestamp ? timestamp.slice(0, 19).replace('T', ' ') : '';
   return `${ts} [${level}]: ${message} ${
-    Object.keys(args).length ? JSON.stringify(args, null, 2) : ""
+    Object.keys(args).length ? JSON.stringify(args, null, 2) : ''
   }`;
 });
 
 // Define clean log format for file transports
 const baseFileFormat = winston.format.combine(
   winston.format.timestamp({ format: "YYYY-MM-DD HH:mm:ss:ms" }),
+const textFormat = winston.format.combine(
+  winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss:ms' }),
   winston.format.errors({ stack: true }),
-  logLayout
+  winston.format.splat(),
+  winston.format.printf((info) => {
+    const { timestamp, level, message, ...args } = info;
+    const ts = typeof timestamp === 'string' ? timestamp : new Date().toISOString();
+
+    // Strip out internal Winston symbol keys so they don't print as empty objects
+    const cleanArgs = Object.keys(args).reduce((acc, key) => {
+      if (typeof key === "string" || typeof key === "number") {
+        acc[key] = args[key];
+      }
+      return acc;
+    }, {});
+
+    // REMOVED 'null, 2' to keep metadata on a single unified line
+    return `${ts} [${level}]: ${message} ${
+      Object.keys(args).length ? JSON.stringify(args) : ""
+    }`;
+  })
 );
 
 // Determine runtime levels: Console is dynamic, historical files maintain info baseline
@@ -91,6 +124,25 @@ const activeTransports = [
       winston.format.colorize({ all: true }),
       logLayout
     ),
+const baseFileFormat = LOG_FORMAT === 'json' ? jsonFormat : textFormat;
+
+const consoleLevel = process.env.LOG_LEVEL_CONSOLE || 'info';
+const fileBaselineLevel = process.env.LOG_LEVEL_FILE || 'info';
+const globalGatekeeperLevel = process.env.LOG_LEVEL_GLOBAL || 'debug';
+
+const activeTransports = [
+  new winston.transports.Console({
+    level: consoleLevel,
+    format:
+      LOG_FORMAT === 'json'
+        ? baseFileFormat
+        : winston.format.combine(
+            winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss:ms' }),
+            winston.format.errors({ stack: true }),
+            winston.format.colorize({ all: true }),
+            correlationFormat(),
+            logLayout
+          ),
   }),
 ];
 

@@ -1,5 +1,6 @@
 import { eventsRepository } from '../repositories/eventsRepository.js';
 import { eventSchema } from '../validators/eventSchemas.js';
+import { recordEventCreated } from '../observability/metrics.js';
 
 export const eventsService = {
   async listEvents({ page = 1, limit = 20 } = {}) {
@@ -8,7 +9,9 @@ export const eventsService = {
 
   async createEvent(input) {
     const event = eventSchema.parse(input);
-    return eventsRepository.create(event);
+    const created = await eventsRepository.create(event);
+    recordEventCreated();
+    return created;
   },
 
   async updateEvent(id, input) {

@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import apiClient from '../utils/apiClient';
 
-const StudentAuthContext = createContext(null);
+export const StudentAuthContext = createContext(null);
 
 const TOKEN_KEY = 'ns_student_token';
 
@@ -16,8 +16,16 @@ export function StudentAuthProvider({ children }) {
       });
       setUser(data.user);
       localStorage.setItem(TOKEN_KEY, token);
+      if (data.user) {
+        localStorage.setItem('ns_user', JSON.stringify({
+          id: data.user.sub || data.user.id,
+          email: data.user.email,
+          name: data.user.name,
+        }));
+      }
     } catch {
       localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem('ns_user');
       setUser(null);
     }
   }, []);
@@ -52,6 +60,7 @@ export function StudentAuthProvider({ children }) {
       // ignore
     }
     localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem('ns_user');
     setUser(null);
   }, []);
 

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import http from 'node:http';
+import { setWithDbOverride } from '../repositories/db.js';
 
 process.env.NODE_ENV = 'test';
 process.env.ADMIN_USERNAME = 'admin';
@@ -11,6 +12,29 @@ process.env.JWT_SECRET = 'secret_super_long_secret_key_that_is_safe_and_long_eno
 process.env.PORT = '0';
 
 test('Push Subscription Validation and Memory Safety', async (t) => {
+  setWithDbOverride(async (fn) => {
+    const mockClient = {
+      query: async (sql, params) => {
+        if (sql.includes('admin_sessions')) {
+          return {
+            rows: [
+              {
+                username: 'admin',
+                metadata: { role: 'SuperAdmin' },
+                created_at: new Date().toISOString(),
+                last_seen_at: new Date().toISOString(),
+                expires_at: new Date(Date.now() + 3600000).toISOString()
+              }
+            ],
+            rowCount: 1
+          };
+        }
+        return { rows: [], rowCount: 1 };
+      }
+    };
+    return fn(mockClient);
+  });
+
   const { default: app } = await import('../index.js');
   const server = http.createServer(app);
   await new Promise((resolve) => server.listen(0, resolve));
@@ -23,7 +47,10 @@ test('Push Subscription Validation and Memory Safety', async (t) => {
         port: port,
         path: path,
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer mock-token'
+        },
       };
 
       const req = http.request(options, (res) => {
@@ -84,6 +111,7 @@ test('Push Subscription Validation and Memory Safety', async (t) => {
       assert.equal(res.status, 200, 'Expected 200 OK');
     });
   } finally {
+    setWithDbOverride(null);
     server.close();
   }
 });

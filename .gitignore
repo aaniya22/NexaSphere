@@ -23,6 +23,7 @@ admin-dashboard/dist/
 .env.*.local
 .env.production
 .env.staging
+vault-secrets.json
 
 # ── Vite ──────────────────────────────────────────────────────────
 *.local
@@ -128,3 +129,4 @@ issues*.json
 ci-logs.txt
 *_EXAMPLE*.js
 *_EXAMPLE*.jsx
+vault-secrets.json

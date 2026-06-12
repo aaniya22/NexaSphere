@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useContext } from 'react';
 import socketClient from '../utils/socketClient';
 import { buildUrl, getApiBase, getSocketServerUrl } from '../utils/runtimeConfig';
+import { StudentAuthContext } from '../context/StudentAuthContext';
 
 function getAuthHeaders() {
-  const token = localStorage.getItem('ns_admin_token');
+  const token = localStorage.getItem('ns_student_token') || localStorage.getItem('ns_admin_token');
   return token
     ? { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
     : { 'Content-Type': 'application/json' };
@@ -11,6 +12,11 @@ function getAuthHeaders() {
 export function useNotifications() {
   const [notifications, setNotifications] = useState([]);
   const [isOpen, setIsOpen] = useState(false);
+
+  const authContext = useContext(StudentAuthContext);
+  const user = authContext?.user;
+  const userId = user?.sub || user?.id || user?.userId;
+  const userEmail = user?.email;
 
   const unreadCount = notifications.filter((n) => !n.isRead).length;
 
@@ -21,25 +27,27 @@ export function useNotifications() {
     // Fetch persisted notifications from server (if available)
     (async () => {
       try {
-        const storedUser = localStorage.getItem('ns_user');
-        let userId = null;
-        if (storedUser) {
-          try {
-            const user = JSON.parse(storedUser);
-            userId = user?.id || user?.userId;
-          } catch (e) {
-            console.error('Error parsing stored user info', e);
+        let resolvedUserId = userId;
+        if (!resolvedUserId) {
+          const storedUser = localStorage.getItem('ns_user');
+          if (storedUser) {
+            try {
+              const u = JSON.parse(storedUser);
+              resolvedUserId = u?.id || u?.userId;
+            } catch (e) {
+              console.error('Error parsing stored user info', e);
+            }
           }
         }
 
         const fetchUrls = [buildUrl(getApiBase(), '/api/notifications')];
-        if (userId) {
-          fetchUrls.push(buildUrl(getApiBase(), `/api/notifications?userId=${userId}`));
+        if (resolvedUserId) {
+          fetchUrls.push(buildUrl(getApiBase(), `/api/notifications?userId=${resolvedUserId}`));
         }
 
         const responses = await Promise.all(
           fetchUrls.map((url) =>
-            fetch(url).then((res) => (res.ok ? res.json() : { notifications: [] }))
+            fetch(url, { headers: getAuthHeaders() }).then((res) => (res.ok ? res.json() : { notifications: [] }))
           )
         );
 
@@ -71,9 +79,10 @@ export function useNotifications() {
     }
 
     // Personalised socket identification (user-specific notification channel)
-    // requires an authenticated user session. The app currently has no auth
-    // system — when one is added, call socketClient.identifyUser(userId, email)
-    // and socketClient.joinRoom(`user-${userId}`) here using the session data.
+    if (userId) {
+      socketClient.identifyUser(userId, userEmail);
+      socketClient.joinRoom(`user-${userId}`);
+    }
 
     // Join general notification and announcement channels
     socketClient.joinRoom('notifications-room');
@@ -168,13 +177,15 @@ export function useNotifications() {
       socketClient.off('event-reminder', handleReminder);
       socketClient.off('attendance-marked', handleAttendance);
 
-      // When auth is implemented, call socketClient.leaveRoom(`user-${userId}`) here.
+      if (userId) {
+        socketClient.leaveRoom(`user-${userId}`);
+      }
       socketClient.leaveRoom('notifications-room');
       socketClient.leaveRoom('global-announcements');
 
       // DO NOT disconnect the shared socket here
     };
-  }, []);
+  }, [userId, userEmail]);
 
   const markAsRead = useCallback((id) => {
     setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)));

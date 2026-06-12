@@ -1,5 +1,6 @@
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 generator client {
@@ -94,3 +95,21 @@ model Log {
   user        User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 }
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+}
+
+model AuditLog {
+  id        String      @id @default(uuid())
+  actorId   String
+  action    AuditAction
+  entity    String
+  entityId  String
+  oldValues Json?
+  newValues Json?
+  timestamp DateTime    @default(now())
+}
+

@@ -1,4 +1,5 @@
 import webpush from 'web-push';
+import { CircuitBreaker, circuitBreakerRegistry } from '../utils/circuitBreaker.js';
 
 const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || '';
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || '';
@@ -10,12 +11,30 @@ if (hasVapid) {
   webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
 }
 
+async function _sendNotification(subscription, payload) {
+  return webpush.sendNotification(subscription, JSON.stringify(payload));
+}
+
+const webPushBreaker = circuitBreakerRegistry.register(
+  'web-push',
+  new CircuitBreaker(_sendNotification, {
+    name: 'web-push',
+    failureThreshold: 3,
+    successThreshold: 2,
+    coolDownPeriod: 15000,
+    maxCoolDownPeriod: 120000,
+  })
+);
+
 export async function sendWebPush(subscription, payload) {
   if (!hasVapid) return null;
   try {
-    const result = await webpush.sendNotification(subscription, JSON.stringify(payload));
+    const result = await webPushBreaker.execute(subscription, payload);
     return result;
   } catch (err) {
+    if (err.code === 'CIRCUIT_OPEN') {
+      return null;
+    }
     if (err.statusCode === 410 || err.statusCode === 404) {
       return { expired: true };
     }

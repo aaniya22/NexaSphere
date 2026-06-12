@@ -6,6 +6,7 @@
 import logger from '../utils/logger.js';
 import { captureException } from '../utils/sentry.js';
 import { sendSlackAlert } from '../utils/slack.js';
+import { logError } from '../services/errorTrackingService.js';
 
 function resolveUserId(req) {
   return req.user?.id || req.adminSession?.username || null;
@@ -46,6 +47,19 @@ const errorHandler = (err, req, res, next) => {
     userId: resolveUserId(req),
     timestamp: new Date().toISOString(),
   });
+
+  if (process.env.ENABLE_ERROR_TRACKING !== 'false') {
+    logError(err, {
+      status,
+      url: req.originalUrl,
+      method: req.method,
+      userId: resolveUserId(req),
+      ipAddress: req.ip,
+      headers: req.headers,
+      queryParams: req.query,
+      requestBody: req.body,
+    });
+  }
 
   // Capture to Sentry
   captureException(err, {

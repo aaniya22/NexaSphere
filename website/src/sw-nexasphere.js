@@ -22,6 +22,7 @@ import { registerRoute, NavigationRoute } from 'workbox-routing';
 import { StaleWhileRevalidate, CacheFirst, NetworkFirst } from 'workbox-strategies';
 import { ExpirationPlugin } from 'workbox-expiration';
 import { CacheableResponsePlugin } from 'workbox-cacheable-response';
+import { BackgroundSyncPlugin } from 'workbox-background-sync';
 
 // ── Core Workbox setup ────────────────────────────────────────────────────────
 
@@ -113,7 +114,7 @@ registerRoute(
   })
 );
 
-// 5. API GET requests — StaleWhileRevalidate
+// 5. API GET requests — NetworkFirst
 // Auth/token endpoints are explicitly EXCLUDED (never cached)
 registerRoute(
   ({ url, request }) =>
@@ -123,8 +124,9 @@ registerRoute(
     !url.pathname.includes('/token') &&
     !url.pathname.includes('/login') &&
     !url.pathname.includes('/logout'),
-  new StaleWhileRevalidate({
+  new NetworkFirst({
     cacheName: 'nexasphere-api-cache',
+    networkTimeoutSeconds: 5,
     plugins: [
       new CacheableResponsePlugin({ statuses: [200] }),
       new ExpirationPlugin({
@@ -135,11 +137,12 @@ registerRoute(
   })
 );
 
-// 6. Dashboard, analytics, notifications — slightly longer SWR window
+// 6. Dashboard, analytics, notifications — slightly longer NetworkFirst window
 registerRoute(
   ({ url }) => /\/api\/(dashboard|analytics|notifications|profile)/i.test(url.pathname),
-  new StaleWhileRevalidate({
+  new NetworkFirst({
     cacheName: 'nexasphere-dashboard-cache',
+    networkTimeoutSeconds: 5,
     plugins: [
       new CacheableResponsePlugin({ statuses: [200] }),
       new ExpirationPlugin({
@@ -164,6 +167,47 @@ registerRoute(
       }),
     ],
   })
+);
+
+// 8. Offline Background Sync for API POST, PUT, DELETE operations
+const bgSyncPlugin = new BackgroundSyncPlugin('apiSyncQueue', {
+  maxRetentionTime: 24 * 60, // Retry for up to 24 hours (in minutes)
+});
+
+registerRoute(
+  ({ url }) => url.pathname.startsWith('/api/') && !url.pathname.includes('/auth/'),
+  new NetworkFirst({
+    cacheName: 'nexasphere-api-mutations',
+    plugins: [
+      new CacheableResponsePlugin({ statuses: [0, 200] }),
+      bgSyncPlugin,
+    ],
+  }),
+  'POST'
+);
+
+registerRoute(
+  ({ url }) => url.pathname.startsWith('/api/') && !url.pathname.includes('/auth/'),
+  new NetworkFirst({
+    cacheName: 'nexasphere-api-mutations',
+    plugins: [
+      new CacheableResponsePlugin({ statuses: [0, 200] }),
+      bgSyncPlugin,
+    ],
+  }),
+  'PUT'
+);
+
+registerRoute(
+  ({ url }) => url.pathname.startsWith('/api/') && !url.pathname.includes('/auth/'),
+  new NetworkFirst({
+    cacheName: 'nexasphere-api-mutations',
+    plugins: [
+      new CacheableResponsePlugin({ statuses: [0, 200] }),
+      bgSyncPlugin,
+    ],
+  }),
+  'DELETE'
 );
 
 // ── Background Sync ───────────────────────────────────────────────────────────

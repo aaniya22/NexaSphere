@@ -1,3 +1,5 @@
+import { CircuitBreaker, circuitBreakerRegistry } from '../utils/circuitBreaker.js';
+
 export const SUPABASE_URL = process.env.SUPABASE_URL || '';
 export const SUPABASE_SERVICE_KEY =
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY || '';
@@ -33,3 +35,16 @@ export async function supabaseRequest(pathname, { method = 'GET', body } = {}) {
   const text = await res.text();
   return text ? JSON.parse(text) : [];
 }
+
+const _rawSupabaseRequest = supabaseRequest;
+
+export const supabaseBreaker = circuitBreakerRegistry.register(
+  'storage-supabase',
+  new CircuitBreaker(_rawSupabaseRequest, {
+    name: 'storage-supabase',
+    failureThreshold: 3,
+    successThreshold: 2,
+    coolDownPeriod: 10000,
+    maxCoolDownPeriod: 60000,
+  })
+);

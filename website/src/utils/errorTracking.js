@@ -32,6 +32,24 @@ export const initializeSentry = (environment = import.meta.env.MODE) => {
       /google-analytics/i,
     ],
     enabled: !isDevelopment, // Only enable in production
+    beforeSend(event, hint) {
+      const error = hint.originalException;
+      if (error) {
+        // Group by error name and first line of error message
+        event.fingerprint = [
+          '{{ default }}',
+          error.name || 'Error',
+          (error.message || '').split('\n')[0]
+        ];
+      }
+      return event;
+    }
+  });
+
+  Sentry.setContext('environment_metadata', {
+    'Node version': 'N/A (Browser)',
+    'OS': navigator.userAgentData?.platform || navigator.platform || 'Unknown',
+    'OS Release': navigator.userAgent || 'Unknown',
   });
 };
 

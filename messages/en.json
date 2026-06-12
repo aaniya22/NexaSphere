@@ -1,0 +1,90 @@
+{
+  "General": {
+    "title": "NexaSphere",
+    "description": "GL Bajaj Student-Driven Tech Ecosystem",
+    "join": "Join as Member",
+    "apply": "Apply for Core Team",
+    "learnMore": "Learn More",
+    "home": "Home",
+    "activities": "Activities",
+    "events": "Events",
+    "projects": "Projects",
+    "roadmaps": "Roadmaps",
+    "portfolio": "Portfolio",
+    "gamification": "Gamification",
+    "about": "About",
+    "coreTeam": "Core Team",
+    "contact": "Contact",
+    "loading": "Loading...",
+    "search": "Search...",
+    "save": "Save Changes",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "actions": "Actions",
+    "success": "Success",
+    "error": "Error"
+  },
+  "Auth": {
+    "login": "Login to NexaSphere",
+    "register": "Create Account",
+    "email": "Email Address",
+    "password": "Password",
+    "confirmPassword": "Confirm Password",
+    "forgotPassword": "Forgot Password?",
+    "signIn": "Sign In",
+    "signUp": "Sign Up",
+    "signOut": "Sign Out",
+    "emailPlaceholder": "you@example.com",
+    "passwordPlaceholder": "Enter your secure password",
+    "noAccount": "Don't have an account?",
+    "hasAccount": "Already have an account?",
+    "welcomeBack": "Welcome back, developer!",
+    "verificationSent": "A verification email has been sent to your inbox."
+  },
+  "Errors": {
+    "unauthorized": "Authentication required. Please log in.",
+    "forbidden": "Forbidden. You do not have permission to access this resource.",
+    "notFound": "The requested resource could not be found.",
+    "internalServerError": "An unexpected server error occurred. Please try again later.",
+    "badRequest": "Invalid request parameters provided.",
+    "networkError": "Network error. Please check your internet connection.",
+    "sessionExpired": "Your session has expired. Please log in again."
+  },
+  "Validation": {
+    "required": "This field is required.",
+    "invalidEmail": "Please enter a valid email address.",
+    "passwordTooShort": "Password must be at least 8 characters long.",
+    "passwordsMustMatch": "Passwords do not match.",
+    "invalidInput": "Invalid input detected.",
+    "numberRequired": "This value must be a number."
+  },
+  "Dashboard": {
+    "welcome": "Welcome back to Dashboard",
+    "overview": "Overview Statistics",
+    "totalMembers": "Total Members",
+    "activeProjects": "Active Projects",
+    "upcomingEvents": "Upcoming Events",
+    "systemLogs": "System Activity Logs",
+    "analytics": "Performance & Web Analytics",
+    "sidebar": {
+      "dashboard": "Dashboard",
+      "events": "Events Management",
+      "registrations": "Event Registrations",
+      "scanner": "Ticket QR Scanner",
+      "analytics": "Analytics Panel",
+      "activityEvents": "Activity Log Stream",
+      "membership": "Member Directory",
+      "recruitment": "Recruitment Module",
+      "certificates": "Certificate Issuer",
+      "announcements": "Global Announcements",
+      "settings": "Settings"
+    },
+    "stats": {
+      "members": "Members",
+      "activities": "Activities Completed",
+      "eventsDone": "Events Done",
+      "ideas": "Ideas Conceived"
+    }
+  }
+}

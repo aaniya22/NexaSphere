@@ -9,6 +9,7 @@ import * as Sentry from '@sentry/react';
 import { ThemeProvider } from './context/theme/ThemeProvider';
 import GlobalErrorBoundary from './components/GlobalErrorBoundary';
 import { initSyncManager } from './utils/syncManager.js';
+import reportWebVitals from './reportWebVitals.js';
 
 // ── Sentry error tracking ─────────────────────────────────────────────────────
 initializeSentry();
@@ -49,6 +50,15 @@ _updateSW = registerSW({
   },
 });
 
+// Trigger an immediate check for updates on app load
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.ready.then((registration) => {
+    registration.update().catch((err) => {
+      console.warn('[PWA] Service worker update check failed on app load:', err);
+    });
+  });
+}
+
 initSyncManager();
 
 createRoot(document.getElementById('root')).render(
@@ -62,3 +72,13 @@ createRoot(document.getElementById('root')).render(
     </HelmetProvider>
   </StrictMode>
 );
+
+// Performance monitoring (Web Vitals) sent to analytics backend
+reportWebVitals((metric) => {
+  const body = JSON.stringify(metric);
+  if (navigator.sendBeacon) {
+    navigator.sendBeacon('/api/performance/vitals', body);
+  } else {
+    fetch('/api/performance/vitals', { body, method: 'POST', keepalive: true });
+  }
+});

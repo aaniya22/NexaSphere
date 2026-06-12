@@ -37,7 +37,8 @@
     "concurrently": "^10.0.0",
     "husky": "^9.1.7",
     "lint-staged": "^17.0.6",
-    "prettier": "^3.8.3"
+    "prettier": "^3.8.3",
+    "prisma": "^5.12.1"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [
@@ -57,18 +58,13 @@
     "lightningcss-linux-x64-musl": "1.32.0"
   },
   "dependencies": {
-    "jwt-decode": "^4.0.0"
-    "@rollup/rollup-linux-arm64-gnu": "4.61.0",
-    "@rollup/rollup-linux-arm64-musl": "4.60.0",
-    "@rollup/rollup-linux-x64-gnu": "4.61.1",
-    "@rollup/rollup-linux-x64-musl": "4.60.0"
-  },
-  "dependencies": {
     "jwt-decode": "^4.0.0",
     "@rollup/rollup-linux-arm64-gnu": "4.61.1",
     "@rollup/rollup-linux-arm64-musl": "4.60.0",
     "@rollup/rollup-linux-x64-gnu": "4.61.1",
     "@rollup/rollup-linux-x64-musl": "4.60.0",
-    "lru-cache": "^11.5.1"
+    "lru-cache": "^11.5.1",
+    "next-intl": "^4.13.0"
+    "@prisma/client": "^5.12.1"
   }
 }

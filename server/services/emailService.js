@@ -3,13 +3,13 @@ import ejs from 'ejs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs/promises';
+import { CircuitBreaker, circuitBreakerRegistry } from '../utils/circuitBreaker.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const isProduction = process.env.NODE_ENV === 'production';
 
-// Validation logic for necessary environment variables in production
 if (isProduction) {
   const requiredEnvVars = ['SMTP_HOST', 'SMTP_PORT', 'SMTP_USER', 'SMTP_PASS'];
   const missingVars = requiredEnvVars.filter((key) => !process.env[key]);
@@ -23,7 +23,7 @@ if (isProduction) {
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || 'smtp.ethereal.email',
   port: parseInt(process.env.SMTP_PORT || '587', 10),
-  secure: process.env.SMTP_SECURE === 'true', // true for 465, false for other ports
+  secure: process.env.SMTP_SECURE === 'true',
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
@@ -32,18 +32,27 @@ const transporter = nodemailer.createTransport({
 
 const defaultFrom = process.env.EMAIL_FROM || '"NexaSphere Team" <noreply@nexasphere.com>';
 
-/**
- * Compile and render an EJS template from the templates directory.
- */
+async function _sendMail(mailOptions) {
+  return transporter.sendMail(mailOptions);
+}
+
+const emailBreaker = circuitBreakerRegistry.register(
+  'smtp',
+  new CircuitBreaker(_sendMail, {
+    name: 'smtp',
+    failureThreshold: 3,
+    successThreshold: 2,
+    coolDownPeriod: 15000,
+    maxCoolDownPeriod: 120000,
+  })
+);
+
 async function renderTemplate(templateName, data) {
   const templatePath = path.join(__dirname, 'templates', `${templateName}.ejs`);
   const templateStr = await fs.readFile(templatePath, 'utf-8');
   return ejs.render(templateStr, data);
 }
 
-/**
- * Send an email with HTML generated from a template.
- */
 export async function sendEmail({ to, subject, templateName, data, from = defaultFrom }) {
   try {
     const html = await renderTemplate(templateName, data);
@@ -55,7 +64,6 @@ export async function sendEmail({ to, subject, templateName, data, from = defaul
       html,
     };
 
-    // If running in development without proper SMTP credentials, simulate email sending.
     if (!isProduction && (!process.env.SMTP_USER || !process.env.SMTP_PASS)) {
       console.log(`[Email Service - DEV] Would send email to: ${to}`);
       console.log(`[Email Service - DEV] Subject: ${subject}`);
@@ -63,18 +71,19 @@ export async function sendEmail({ to, subject, templateName, data, from = defaul
       return { success: true, simulated: true };
     }
 
-    const info = await transporter.sendMail(mailOptions);
+    const info = await emailBreaker.execute(mailOptions);
     console.log(`[Email Service] Message sent successfully: ${info.messageId}`);
     return { success: true, messageId: info.messageId };
   } catch (error) {
-    console.error(`[Email Service] Error sending email:`, error);
+    if (error.code === 'CIRCUIT_OPEN') {
+      console.warn(`[Email Service] SMTP circuit breaker is OPEN, skipping email to ${to}`);
+    } else {
+      console.error(`[Email Service] Error sending email:`, error);
+    }
     return { success: false, error };
   }
 }
 
-/**
- * Send a Welcome & Verification Email
- */
 export async function sendWelcomeVerificationEmail(to, name, verifyUrl) {
   return sendEmail({
     to,
@@ -84,9 +93,6 @@ export async function sendWelcomeVerificationEmail(to, name, verifyUrl) {
   });
 }
 
-/**
- * Send a Password Reset Email
- */
 export async function sendPasswordResetEmail(to, name, resetUrl) {
   return sendEmail({
     to,
@@ -96,11 +102,7 @@ export async function sendPasswordResetEmail(to, name, resetUrl) {
   });
 }
 
-/**
- * Send an Event RSVP Confirmation Email
- */
 export async function sendRSVPConfirmationEmail(to, name, eventDetails) {
-  // eventDetails should include: eventName, eventDate, eventLocation, eventTime, eventUrl
   return sendEmail({
     to,
     subject: `RSVP Confirmed: ${eventDetails.eventName}`,

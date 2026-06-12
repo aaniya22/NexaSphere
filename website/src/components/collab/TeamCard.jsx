@@ -18,6 +18,7 @@ export default function TeamCard({ team, onJoin }) {
         gap: '16px',
         background: 'var(--surface)',
         border: '1px solid rgba(255, 255, 255, 0.08)',
+        height: '100%',
       }}
       onMouseEnter={(e) => {
         e.currentTarget.style.transform = 'translateY(-4px) scale(1.02)';
@@ -44,7 +45,14 @@ export default function TeamCard({ team, onJoin }) {
             {team.hackathonName}
           </p>
         </div>
-        <div style={{ display: 'flex', gap: '6px' }}>
+        <div
+          style={{
+            display: 'flex',
+            gap: '6px',
+            flexWrap: 'wrap',
+            minHeight: '32px',
+          }}
+        >
           {team.vacantRoles?.map((role) => (
             <span
               key={role}
@@ -64,7 +72,16 @@ export default function TeamCard({ team, onJoin }) {
         </div>
       </div>
 
-      <p style={{ margin: 0, fontSize: '0.95rem', color: 'var(--t2)', lineHeight: 1.5 }}>
+      <p
+        style={{
+          margin: 0,
+          fontSize: '0.95rem',
+          color: 'var(--t2)',
+          lineHeight: 1.5,
+          minHeight: '72px',
+          overflow: 'hidden',
+        }}
+      >
         {team.description}
       </p>
 

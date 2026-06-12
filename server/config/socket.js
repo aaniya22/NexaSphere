@@ -281,7 +281,7 @@ export function _onConnection(socket) {
   socket.on('document_change', (data) => {
     const { roomId, ...payload } = data;
     if (roomId && _isWorkspaceMember(roomId, socket.id)) {
-      socket.to(roomId).emit('document_change', payload);
+      socket.to(roomId).emit('document_change', { roomId, ...payload });
     }
   });
 
@@ -293,9 +293,9 @@ export function _onConnection(socket) {
   });
 
   socket.on('typing_start', (data) => {
-    const { roomId, ...payload } = data;
+    const { roomId, user, ...payload } = data;
     if (roomId && _isWorkspaceMember(roomId, socket.id)) {
-      socket.to(roomId).emit('typing_start', { socketId: socket.id, ...payload });
+      socket.to(roomId).emit('typing_start', { socketId: socket.id, user, ...payload });
     }
   });
 

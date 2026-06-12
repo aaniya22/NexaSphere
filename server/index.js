@@ -1,19 +1,30 @@
 import 'dotenv/config';
+import { initObservability } from './observability/index.js';
+import { setTraceIdResolver } from './utils/logContext.js';
+import { getActiveTraceId } from './observability/tracing.js';
 import helmet from 'helmet';
 import express from 'express';
-import { body, validationResult } from 'express-validator';
 import cors from 'cors';
 import morgan from 'morgan';
+import { EventEmitter } from 'events';
+import { google } from 'googleapis';
 import { promises as fs } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import crypto from 'crypto';
 import { adminAuthMiddleware } from './middleware/adminAuthMiddleware.js';
 import analyticsRouter from './routes/analytics.js';
 import apiRouter from './routes/api.js';
-import { initializeSocketIO } from './config/socket.js';
+import { initializeSocketIO, emitToRoom, getRoom } from './config/socket.js';
 import adminStreamRouter from './routes/adminStream.js';
 import documentationRouter from './routes/documentation.js';
 import monitoringRouter from './routes/monitoring.js';
+import healthRouter from './routes/health.js';
+import coreTeamRouter from './routes/coreTeam.js';
+import formsRouter from './routes/forms.js';
+import portfolioRouter from './routes/portfolio.js';
+import notificationsRouter from './routes/notifications.js';
+import adminRouter from './routes/admin.js';
 import { performanceMonitor } from './middleware/performanceMonitor.js';
 import { tracingMiddleware } from './middleware/tracingMiddleware.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
@@ -22,6 +33,8 @@ import {
   apiRateLimiter,
   formRateLimiter,
   notificationRateLimiter,
+  activityAuthRateLimiter,
+  portfolioRateLimiter,
   validateLimiters,
 } from './middleware/rateLimiter.js';
 import {
@@ -33,22 +46,26 @@ import { portfolioRepository } from './repositories/portfolioRepository.js';
 import { portfolioContentSchema, portfolioPutSchema } from './validators/portfolioSchemas.js';
 import { searchController } from './controllers/searchController.js';
 import { pushSubscriptionsRepository } from './repositories/pushSubscriptionsRepository.js';
+import { Mutex } from 'async-mutex';
+import { CircuitBreaker, circuitBreakerRegistry } from './utils/circuitBreaker.js';
 import { getPublicAppUrl } from './utils/publicAppUrl.js';
 import * as eventsController from './controllers/eventsController.js';
 import * as activityEventsController from './controllers/activityEventsController.js';
+import * as streamController from './controllers/streamController.js';
 import * as coreTeamController from './controllers/coreTeamController.js';
 import * as formsController from './controllers/formsController.js';
 import { eventsService } from './services/eventsService.js';
 import { coreTeamService } from './services/coreTeamService.js';
 import notificationsService from './services/notificationsService.js';
 import { notificationPreferencesRepository } from './repositories/notificationPreferencesRepository.js';
-import { supabaseRequest, HAS_SUPABASE } from './storage/supabaseClient.js';
+import { HAS_SUPABASE } from './storage/supabaseClient.js';
 import cookieParser from 'cookie-parser';
 import passport from './config/studentOAuth.js';
 import { studentUsersRepository } from './repositories/studentUsersRepository.js';
 import * as studentAuthController from './controllers/studentAuthController.js';
 import * as forumController from './controllers/forumController.js';
 import { requireStudentAuth } from './middleware/studentAuthMiddleware.js';
+import { studentAuthService } from './services/studentAuthService.js';
 import * as mentorshipController from './controllers/mentorshipController.js';
 import { xssSanitizer } from './middleware/xssSanitizer.js';
 import { tierRateLimiter } from './middleware/tierRateLimiter.js';
@@ -61,7 +78,26 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const CONTENT_FILE = path.join(__dirname, 'data', 'content.json');
 
+const REQUIRED_ENV_VARS = ['CORS_ORIGIN', 'ADMIN_EVENT_PASSWORD'];
+
+function validateEnvironment() {
+  const missing = REQUIRED_ENV_VARS.filter((env) => !process.env[env]);
+
+  if (missing.length > 0) {
+    throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
+  }
+
+  console.log('Environment validation passed');
+}
+
+validateEnvironment();
+
 const app = express();
+
+setTraceIdResolver(getActiveTraceId);
+initObservability(app);
+
+const useStructuredHttpLog = (process.env.LOG_FORMAT || '').toLowerCase() === 'json';
 
 // Trust the first reverse proxy hop (e.g., Vercel, Render, Nginx, Cloudflare)
 // to correctly populate req.ip and securely discard spoofed X-Forwarded-For headers
@@ -205,6 +241,41 @@ app.use(
   })
 );
 app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", 'https://challenges.cloudflare.com'],
+        styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+        fontSrc: ["'self'", 'data:', 'https://fonts.gstatic.com'],
+        imgSrc: [
+          "'self'",
+          'data:',
+          'https:',
+          'https://api.dicebear.com',
+          'https://images.unsplash.com',
+        ],
+        connectSrc: [
+          "'self'",
+          'https://challenges.cloudflare.com',
+          'https://*.ingest.sentry.io',
+          'https://*.ingest.us.sentry.io',
+          process.env.FRONTEND_URL || 'http://localhost:5173',
+          `wss://${process.env.DOMAIN || 'localhost'}`,
+        ],
+        frameSrc: ["'self'", 'https://challenges.cloudflare.com', 'https://maps.google.com'],
+        scriptSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+        fontSrc: ["'self'", 'https://fonts.gstatic.com'],
+        imgSrc: ["'self'", 'data:', 'https:'],
+        connectSrc: [
+          "'self'",
+          process.env.FRONTEND_URL || 'http://localhost:5173',
+          `wss://${process.env.DOMAIN || 'localhost'}`,
+        ],
+        objectSrc: ["'none'"],
+        upgradeInsecureRequests: [],
+      },
   cors({
     origin: (origin, callback) => {
       if (!origin) {
@@ -230,7 +301,9 @@ app.use(tracingMiddleware);
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 app.use(xssSanitizer);
-app.use(morgan('combined'));
+if (!useStructuredHttpLog) {
+  app.use(morgan('combined'));
+}
 app.use(performanceMonitor);
 app.use(cookieParser());
 
@@ -259,20 +332,20 @@ function requestLogger(req, res, next) {
   next();
 }
 
-app.use(requestLogger);
+if (!useStructuredHttpLog) {
+  app.use(requestLogger);
+}
 
-// ── Health check (required by Render, Railway, and load balancers) ──
-app.get('/health', (_req, res) => {
-  res.json({ status: 'ok', service: 'nexasphere-api', timestamp: new Date().toISOString() });
-});
-app.get('/api/health', (_req, res) => {
-  res.json({ status: 'ok', service: 'nexasphere-api', timestamp: new Date().toISOString() });
-});
-
-// Mount monitoring + API documentation routes
+// Mount route modules
 app.use('/api/monitoring', monitoringRouter);
 app.use('/api', documentationRouter);
 app.use('/', apiRouter);
+app.use('/', healthRouter);
+app.use('/', coreTeamRouter);
+app.use('/api', formsRouter);
+app.use('/api', portfolioRouter);
+app.use('/api', notificationsRouter);
+app.use('/api/admin', adminRouter);
 app.use('/', syncRouter);
 
 const adminAuth = adminAuthMiddleware.requireAdmin;
@@ -328,42 +401,607 @@ async function ensureContentFile() {
     await fs.writeFile(CONTENT_FILE, JSON.stringify(defaultContent, null, 2), 'utf8');
   }
 }
+const fileMutex = new Mutex();
 
-// REST Endpoints
-app.get('/healthz', async (req, res) => {
-  try {
-    const list = await eventsService.listEvents({ page: 1, limit: 1 });
-    res.json({
-      ok: true,
-      events: list?.total ?? 0,
-      storage: HAS_SUPABASE ? 'supabase' : 'file',
-    });
-  } catch (e) {
-    res.status(503).json({
-      ok: false,
-      error: e?.message || 'Health check failed',
-      storage: HAS_SUPABASE ? 'supabase' : 'file',
+export async function runWithFileLock(callback) {
+  return await fileMutex.runExclusive(callback);
+}
+
+async function readContent() {
+  await ensureContentFile();
+  const raw = await fs.readFile(CONTENT_FILE, 'utf8');
+  return JSON.parse(raw);
+}
+
+async function writeContent(content) {
+  await ensureContentFile();
+  await fs.writeFile(CONTENT_FILE, JSON.stringify(content, null, 2), 'utf8');
+}
+
+let contentLock = Promise.resolve();
+
+function withContentLock(fn) {
+  let release;
+  const next = new Promise((resolve) => {
+    release = resolve;
+  });
+  const current = contentLock;
+  contentLock = next;
+  return current.then(() => fn()).finally(() => release());
+}
+
+const _rawSupabaseRequest = async function _rawSupabaseRequest(
+  pathname,
+  { method = 'GET', body } = {}
+) {
+  if (!HAS_SUPABASE) throw new Error('Supabase is not configured');
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${pathname}`, {
+    method,
+    headers: {
+      apikey: SUPABASE_SERVICE_KEY,
+      Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+      'Content-Type': 'application/json',
+      Prefer: method === 'GET' ? 'count=exact' : 'return=representation',
+    },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Supabase error (${res.status}): ${text}`);
+  }
+  const text = await res.text();
+  return text ? JSON.parse(text) : [];
+};
+
+export const supabaseRequest = _rawSupabaseRequest;
+
+export const supabaseBreaker = circuitBreakerRegistry.register(
+  'index-supabase',
+  new CircuitBreaker(_rawSupabaseRequest, {
+    name: 'index-supabase',
+    failureThreshold: 5,
+    successThreshold: 2,
+    coolDownPeriod: 10000,
+    maxCoolDownPeriod: 60000,
+  })
+);
+
+// Paginated variant: appends LIMIT/OFFSET to a PostgREST GET request and reads
+// the total row count from the Content-Range response header (sent when
+// Prefer: count=exact is set). Returns { rows, total } instead of a bare array.
+async function supabasePaginatedRequest(pathname, page, limit) {
+  if (!HAS_SUPABASE) throw new Error('Supabase is not configured');
+  const offset = (page - 1) * limit;
+  const separator = pathname.includes('?') ? '&' : '?';
+  const url = `${SUPABASE_URL}/rest/v1/${pathname}${separator}limit=${limit}&offset=${offset}`;
+  const res = await fetch(url, {
+    method: 'GET',
+    headers: {
+      apikey: SUPABASE_SERVICE_KEY,
+      Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+      'Content-Type': 'application/json',
+      Prefer: 'count=exact',
+    },
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Supabase error (${res.status}): ${text}`);
+  }
+  const text = await res.text();
+  const rows = text ? JSON.parse(text) : [];
+  // Content-Range format from PostgREST: "0-19/150" or "*/0" when empty
+  const contentRange = res.headers.get('content-range') || '';
+  const totalMatch = contentRange.match(/\/(\d+)$/);
+  const total = totalMatch ? parseInt(totalMatch[1], 10) : rows.length;
+  return { rows, total };
+}
+
+// Parses ?page and ?limit from a request query object, clamps to safe bounds,
+// and returns normalised integers. Defaults: page=1, limit=20, cap=100.
+function parsePagination(query) {
+  const page = Math.max(1, parseInt(query.page, 10) || 1);
+  const limit = Math.min(100, Math.max(1, parseInt(query.limit, 10) || 20));
+  return { page, limit };
+}
+
+function toSafeString(value, max = 4000) {
+  return String(value ?? '')
+    .trim()
+    .slice(0, max);
+}
+
+function validateWhatsApp(str) {
+  const v = String(str || '').trim();
+  if (!/^\d{10}$/.test(v)) throw new Error('WhatsApp must be exactly 10 digits');
+  return v;
+}
+
+function validateSection(str) {
+  const v = String(str || '')
+    .trim()
+    .toUpperCase();
+  if (!/^[A-Z]$/.test(v)) throw new Error('Section must be a single letter (A-Z)');
+  return v;
+}
+
+function sanitizeEvent(input = {}) {
+  const status = input.status === 'upcoming' ? 'upcoming' : 'completed';
+  const tags = Array.isArray(input.tags)
+    ? input.tags
+        .map((t) => toSafeString(t, 40))
+        .filter(Boolean)
+        .slice(0, 12)
+    : String(input.tags || '')
+        .split(',')
+        .map((t) => t.trim())
+        .filter(Boolean)
+        .slice(0, 12);
+
+  return {
+    id:
+      toSafeString(input.id || input.shortName || input.name, 80)
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '') || `event-${Date.now()}`,
+    name: toSafeString(input.name, 120),
+    shortName: toSafeString(input.shortName || input.name, 60),
+    date: toSafeString(input.date, 80),
+    description: toSafeString(input.description, 1200),
+    status,
+    icon: toSafeString(input.icon || 'Pin', 32),
+    tags,
+  };
+}
+
+function normalizePhone(value) {
+  return String(value || '').replace(/[^\d]/g, '');
+}
+
+async function canManageActivityEvent({ name, email, phone, password }) {
+  const expectedPassword = process.env.ADMIN_EVENT_PASSWORD;
+  // Use constant-time comparison to prevent timing-based password recovery.
+  if (!timingSafeStringEqual(String(password ?? ''), expectedPassword)) {
+    return false;
+  }
+  const n = String(name || '')
+    .trim()
+    .toLowerCase();
+  const e = String(email || '')
+    .trim()
+    .toLowerCase();
+  const p = normalizePhone(phone);
+
+  const members = await listCoreTeamStore();
+  return members.some(
+    (m) =>
+      m.name.toLowerCase() === n && m.email.toLowerCase() === e && normalizePhone(m.whatsapp) === p
+  );
+}
+
+async function listEventsStore({ page = 1, limit = 20 } = {}) {
+  if (HAS_SUPABASE) {
+    const { rows, total } = await supabasePaginatedRequest(
+      'events?select=*&order=created_at.desc',
+      page,
+      limit
+    );
+    return {
+      events: rows.map((r) =>
+        sanitizeEventRecord({
+          id: r.id,
+          name: r.name,
+          shortName: r.short_name || r.shortName || r.name,
+          date: r.date_text || r.date,
+          description: r.description,
+          status: r.status,
+          icon: r.icon || 'Pin',
+          tags: Array.isArray(r.tags) ? r.tags : [],
+          createdAt: r.created_at,
+          updatedAt: r.updated_at,
+        })
+      ),
+      total,
+    };
+  }
+  const content = await readContent();
+  const all = (content.events || []).map((event) => sanitizeEventRecord(event));
+  const total = all.length;
+  const start = (page - 1) * limit;
+  return { events: all.slice(start, start + limit), total };
+}
+
+function sanitizeEventRecord(event) {
+  return event;
+}
+
+async function createEventStore(event) {
+  if (HAS_SUPABASE) {
+    let payload = {
+      id: event.id,
+      name: event.name,
+      short_name: event.shortName,
+      date_text: event.date,
+      description: event.description,
+      status: event.status,
+      icon: event.icon,
+      tags: event.tags,
+    };
+
+    let row;
+    try {
+      [row] = await supabaseRequest('events', {
+        method: 'POST',
+        body: [payload],
+      });
+    } catch (e) {
+      // Retry with suffix if id collision occurs.
+      payload = { ...payload, id: `${event.id}-${Date.now()}` };
+      [row] = await supabaseRequest('events', {
+        method: 'POST',
+        body: [payload],
+      });
+    }
+    return sanitizeEventRecord({
+      id: row.id,
+      name: row.name,
+      shortName: row.short_name || row.name,
+      date: row.date_text,
+      description: row.description,
+      status: row.status,
+      icon: row.icon || 'Pin',
+      tags: Array.isArray(row.tags) ? row.tags : [],
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
     });
   }
-});
 
-// Event channels/content
-app.get('/api/content/events', eventsController.listEvents);
-app.get('/api/content/activity-events/:activityKey', activityEventsController.listActivityEvents);
-app.post(
-  '/api/content/activity-events/:activityKey',
-  protectedActionRateLimiter,
-  activityEventsController.addActivityEvent
-);
-app.delete(
-  '/api/content/activity-events/:activityKey/:eventId',
-  protectedActionRateLimiter,
-  activityEventsController.deleteActivityEvent
-);
+  // Safe atomic fallback operation preventing data loss using async-mutex
+  return withContentLock(async () => {
+    const content = await readContent();
+    content.events.unshift({
+      ...event,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+    await writeContent(content);
+    return sanitizeEventRecord(content.events[0]);
+  });
+}
+async function updateEventStore(id, patch) {
+  if (HAS_SUPABASE) {
+    const [row] = await supabaseRequest(`events?id=eq.${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      body: {
+        name: patch.name,
+        short_name: patch.shortName,
+        date_text: patch.date,
+        description: patch.description,
+        status: patch.status,
+        icon: patch.icon,
+        tags: patch.tags,
+        updated_at: new Date().toISOString(),
+      },
+    });
+    if (!row) return null;
+    return sanitizeEventRecord({
+      id: row.id,
+      name: row.name,
+      shortName: row.short_name || row.name,
+      date: row.date_text,
+      description: row.description,
+      status: row.status,
+      icon: row.icon || 'Pin',
+      tags: Array.isArray(row.tags) ? row.tags : [],
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+    });
+  }
+  return withContentLock(async () => {
+    const content = await readContent();
+    const idx = content.events.findIndex((e) => e.id === id);
+    if (idx < 0) return null;
+    content.events[idx] = {
+      ...content.events[idx],
+      ...patch,
+      id,
+      updatedAt: new Date().toISOString(),
+    };
+    await writeContent(content);
+    return sanitizeEventRecord(content.events[idx]);
+  });
+}
 
-// Admin Auth Endpoints
-app.post('/api/admin/login', authRateLimiter, adminAuthMiddleware.login);
-app.post('/api/admin/logout', adminAuth, adminAuthMiddleware.logout);
+async function deleteEventStore(id) {
+  if (HAS_SUPABASE) {
+    const rows = await supabaseRequest(`events?id=eq.${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    });
+    return Array.isArray(rows) && rows.length > 0;
+  }
+  return withContentLock(async () => {
+    const content = await readContent();
+    const before = content.events.length;
+    content.events = content.events.filter((e) => e.id !== id);
+    if (content.events.length === before) return false;
+    await writeContent(content);
+    return true;
+  });
+}
+
+async function listActivityEventsStore(activityKey, { page = 1, limit = 20 } = {}) {
+  if (HAS_SUPABASE) {
+    const { rows, total } = await supabasePaginatedRequest(
+      `activity_events?activity_key=eq.${encodeURIComponent(activityKey)}&select=*&order=created_at.desc`,
+      page,
+      limit
+    );
+    return {
+      events: rows.map((r) =>
+        sanitizeActivityEventRecord({
+          id: r.id,
+          name: r.name,
+          date: r.date_text || r.date,
+          tagline: r.tagline,
+          description: r.description,
+          status: r.status || 'completed',
+          createdAt: r.created_at,
+        })
+      ),
+      total,
+    };
+  }
+  const content = await readContent();
+  const all = (content.activityEvents?.[activityKey] || []).map((event) =>
+    sanitizeActivityEventRecord(event)
+  );
+  const total = all.length;
+  const start = (page - 1) * limit;
+  return { events: all.slice(start, start + limit), total };
+}
+
+function sanitizeActivityEventRecord(event) {
+  if (!event || typeof event !== 'object') return event;
+  const { createdBy, ...safe } = event;
+  return safe;
+}
+
+async function createActivityEventStore(activityKey, event) {
+  if (HAS_SUPABASE) {
+    const [row] = await supabaseRequest('activity_events', {
+      method: 'POST',
+      body: [
+        {
+          id: event.id,
+          activity_key: activityKey,
+          name: event.name,
+          date_text: event.date,
+          tagline: event.tagline,
+          description: event.description,
+          status: event.status,
+          created_by_name: event.createdBy?.name || '',
+          created_by_email: event.createdBy?.email || '',
+          created_by_phone: event.createdBy?.phone || '',
+        },
+      ],
+    });
+    return sanitizeActivityEventRecord({
+      id: row.id,
+      name: row.name,
+      date: row.date_text,
+      tagline: row.tagline,
+      description: row.description,
+      status: row.status || 'completed',
+      createdAt: row.created_at,
+    });
+  }
+  return withContentLock(async () => {
+    const content = await readContent();
+    content.activityEvents = content.activityEvents || {};
+    content.activityEvents[activityKey] = content.activityEvents[activityKey] || [];
+    content.activityEvents[activityKey].unshift(event);
+    await writeContent(content);
+    return sanitizeActivityEventRecord(event);
+  });
+}
+
+async function deleteActivityEventStore(activityKey, eventId) {
+  if (HAS_SUPABASE) {
+    const rows = await supabaseRequest(
+      `activity_events?activity_key=eq.${encodeURIComponent(activityKey)}&id=eq.${encodeURIComponent(eventId)}`,
+      { method: 'DELETE' }
+    );
+    return Array.isArray(rows) && rows.length > 0;
+  }
+  return withContentLock(async () => {
+    const content = await readContent();
+    content.activityEvents = content.activityEvents || {};
+    const list = content.activityEvents[activityKey] || [];
+    const next = list.filter((e) => e.id !== eventId);
+    if (next.length === list.length) return false;
+    content.activityEvents[activityKey] = next;
+    await writeContent(content);
+    return true;
+  });
+}
+
+async function listCoreTeamStore() {
+  if (HAS_SUPABASE) {
+    const rows = await supabaseRequest('core_team_members?select=*&order=created_at.asc');
+    return rows.map((r) =>
+      sanitizeCoreTeamMemberRecord({
+        id: r.id,
+        name: r.name,
+        role: r.role,
+        year: r.year,
+        branch: r.branch,
+        section: r.section,
+        email: r.email,
+        whatsapp: r.whatsapp,
+        linkedin: r.linkedin,
+        instagram: r.instagram,
+        photoUrl: r.photo_url,
+        createdAt: r.created_at,
+      })
+    );
+  }
+  const content = await readContent();
+  return (content.coreTeam || []).map((member) => sanitizeCoreTeamMemberRecord(member));
+}
+
+function sanitizeCoreTeamMemberRecord(member) {
+  return member;
+}
+
+async function createCoreTeamStore(member) {
+  if (HAS_SUPABASE) {
+    const [row] = await supabaseRequest('core_team_members', {
+      method: 'POST',
+      body: [
+        {
+          name: member.name,
+          role: member.role,
+          year: member.year,
+          branch: member.branch,
+          section: member.section,
+          email: member.email,
+          whatsapp: member.whatsapp,
+          linkedin: member.linkedin,
+          instagram: member.instagram,
+          photo_url: member.photoUrl,
+        },
+      ],
+    });
+    return sanitizeCoreTeamMemberRecord({
+      id: row.id,
+      name: row.name,
+      role: row.role,
+      year: row.year,
+      branch: row.branch,
+      section: row.section,
+      email: row.email,
+      whatsapp: row.whatsapp,
+      linkedin: row.linkedin,
+      instagram: row.instagram,
+      photoUrl: row.photo_url,
+      createdAt: row.created_at,
+    });
+  }
+  return withContentLock(async () => {
+    const content = await readContent();
+    content.coreTeam = content.coreTeam || [];
+    const newMember = {
+      ...member,
+      id: crypto.randomUUID(),
+      createdAt: new Date().toISOString(),
+    };
+    content.coreTeam.push(newMember);
+    await writeContent(content);
+    return sanitizeCoreTeamMemberRecord(newMember);
+  });
+}
+
+async function deleteCoreTeamStore(id) {
+  if (HAS_SUPABASE) {
+    const rows = await supabaseRequest(`core_team_members?id=eq.${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    });
+    return Array.isArray(rows) && rows.length > 0;
+  }
+  return withContentLock(async () => {
+    const content = await readContent();
+    content.coreTeam = content.coreTeam || [];
+    const before = content.coreTeam.length;
+    content.coreTeam = content.coreTeam.filter((m) => String(m.id) !== String(id));
+    if (content.coreTeam.length === before) return false;
+    await writeContent(content);
+    return true;
+  });
+}
+
+async function appendToSupabaseForms(formType, payload) {
+  if (!HAS_SUPABASE) return false;
+  try {
+    await supabaseRequest('form_submissions', {
+      method: 'POST',
+      body: [
+        {
+          form_type: formType,
+          full_name: toSafeString(payload.fullName, 140),
+          college_email: toSafeString(payload.collegeEmail, 140),
+          whatsapp: toSafeString(payload.whatsapp, 40),
+          payload,
+        },
+      ],
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// Constant-time string comparison that does not short-circuit on the first
+// mismatched character. Both operands are encoded to UTF-8 Buffers of equal
+// length before the comparison so response time is independent of how many
+// leading characters match. Returns false immediately if either value is empty,
+// so callers cannot exploit a zero-length buffer edge case.
+function timingSafeStringEqual(a, b) {
+  const sa = String(a ?? '');
+  const sb = String(b ?? '');
+  if (!sa.length || !sb.length) return sa === sb;
+  const ba = Buffer.from(sa, 'utf8');
+  const bb = Buffer.from(sb, 'utf8');
+  // Buffers must be the same byte length for timingSafeEqual. Pad the shorter
+  // one so the comparison always runs the full loop.
+  if (ba.length !== bb.length) {
+    const maxLen = Math.max(ba.length, bb.length);
+    const paddedA = Buffer.alloc(maxLen);
+    const paddedB = Buffer.alloc(maxLen);
+    ba.copy(paddedA);
+    bb.copy(paddedB);
+    // The length mismatch already means they cannot be equal, but we still run
+    // the full comparison so the execution time is data-independent.
+    crypto.timingSafeEqual(paddedA, paddedB);
+    return false;
+  }
+  return crypto.timingSafeEqual(ba, bb);
+}
+
+// Per-IP failed-attempt tracking for the activity-event auth endpoints.
+// Mirrors the passkey lockout pattern used for portfolio mutations below.
+const failedActivityAuthAttempts = new Map();
+const ACTIVITY_AUTH_MAX_ATTEMPTS = 5;
+const ACTIVITY_AUTH_LOCKOUT_MS = 15 * 60 * 1000;
+
+function checkActivityAuthLockout(ip) {
+  const entry = failedActivityAuthAttempts.get(ip);
+  if (!entry) return null;
+  if (Date.now() > entry.lockoutUntil) {
+    failedActivityAuthAttempts.delete(ip);
+    return null;
+  }
+  return entry;
+}
+
+function recordFailedActivityAuth(ip) {
+  const entry = failedActivityAuthAttempts.get(ip) || {
+    count: 0,
+    lockoutUntil: 0,
+  };
+  entry.count += 1;
+  if (entry.count >= ACTIVITY_AUTH_MAX_ATTEMPTS) {
+    entry.lockoutUntil = Date.now() + ACTIVITY_AUTH_LOCKOUT_MS;
+    entry.count = 0;
+  }
+  failedActivityAuthAttempts.set(ip, entry);
+  return entry;
+}
+
+function clearActivityAuthAttempts(ip) {
+  failedActivityAuthAttempts.delete(ip);
+}
+
+// Admin Analytics & Metrics (mounted with admin auth)
 app.use('/api/admin/analytics', adminAuth, analyticsRouter);
 app.use('/api/admin/metrics', adminAuth, adminStreamRouter);
 
@@ -375,11 +1013,28 @@ app.get('/api/auth/github/callback', studentAuthController.githubCallback);
 app.get('/api/auth/me', requireStudentAuth, studentAuthController.getMe);
 app.post('/api/auth/logout', studentAuthController.logout);
 
-// Event Admin Management
+// ── Event Admin Management ──
 app.get('/api/admin/events', adminAuth, eventsController.adminListEvents);
 app.post('/api/admin/events', adminAuth, eventsController.adminCreateEvent);
 app.put('/api/admin/events/:id', adminAuth, eventsController.adminUpdateEvent);
 app.delete('/api/admin/events/:id', adminAuth, eventsController.adminDeleteEvent);
+
+// Live Streaming
+app.get('/api/streams', streamController.listStreams);
+app.get('/api/streams/event/:eventId', streamController.getStreamByEvent);
+app.get('/api/streams/:id', streamController.getStream);
+app.post('/api/streams', streamController.createStream);
+app.put('/api/streams/:id', streamController.updateStream);
+app.patch('/api/streams/:id/status', streamController.setStreamStatus);
+app.delete('/api/streams/:id', streamController.deleteStream);
+app.post('/api/streams/:id/chat', streamController.addChatMessage);
+app.get('/api/streams/:id/chat', streamController.listChatMessages);
+app.post('/api/streams/:id/polls', streamController.createPoll);
+app.get('/api/streams/:id/polls', streamController.listPolls);
+app.post('/api/streams/polls/:pollId/vote', streamController.votePoll);
+app.patch('/api/streams/polls/:pollId/close', streamController.closePoll);
+app.patch('/api/streams/chat/:messageId/moderate', streamController.moderateChatMessage);
+app.get('/api/admin/streams', adminAuth, streamController.adminListAll);
 
 // Public listings
 app.get('/api/content/team', async (req, res) => {
@@ -403,10 +1058,26 @@ app.get('/api/content/team', async (req, res) => {
 });
 
 // Admin Team Management
-app.get('/api/admin/core-team', adminAuthMiddleware.requireScope('settings:admin'), coreTeamController.adminListCoreTeamMembers);
-app.post('/api/admin/core-team', adminAuthMiddleware.requireScope('settings:admin'), coreTeamController.adminAddCoreTeamMember);
-app.put('/api/admin/core-team/:id', adminAuthMiddleware.requireScope('settings:admin'), coreTeamController.adminUpdateCoreTeamMember);
-app.delete('/api/admin/core-team/:id', adminAuthMiddleware.requireScope('settings:admin'), coreTeamController.adminDeleteCoreTeamMember);
+app.get(
+  '/api/admin/core-team',
+  adminAuthMiddleware.requireScope('settings:admin'),
+  coreTeamController.adminListCoreTeamMembers
+);
+app.post(
+  '/api/admin/core-team',
+  adminAuthMiddleware.requireScope('settings:admin'),
+  coreTeamController.adminAddCoreTeamMember
+);
+app.put(
+  '/api/admin/core-team/:id',
+  adminAuthMiddleware.requireScope('settings:admin'),
+  coreTeamController.adminUpdateCoreTeamMember
+);
+app.delete(
+  '/api/admin/core-team/:id',
+  adminAuthMiddleware.requireScope('settings:admin'),
+  coreTeamController.adminDeleteCoreTeamMember
+);
 
 // Dynamic forms
 app.post('/api/forms/membership', formRateLimiter, formsController.makeHandleForm('membership'));
@@ -425,30 +1096,76 @@ app.post(
 );
 
 // Admin membership responses
-app.get('/api/admin/membership', adminAuth, async (req, res) => {
-  const scriptUrl = process.env.MEMBERSHIP_SCRIPT_URL;
-  const secret = process.env.MEMBERSHIP_SECRET;
-
-  if (!scriptUrl || !secret) {
-    return res.json({ responses: [] });
+async function _rawMembershipFetch(scriptUrl, secret) {
+  const response = await fetch(scriptUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'getResponses', token: secret }),
+  });
+  if (!response.ok) {
+    throw new Error(`Google Apps Script returned ${response.status}`);
   }
+  return response.json();
+}
 
+const membershipBreaker = circuitBreakerRegistry.register(
+  'membership-gas',
+  new CircuitBreaker(_rawMembershipFetch, {
+    name: 'membership-gas',
+    failureThreshold: 3,
+    successThreshold: 2,
+    coolDownPeriod: 15000,
+    maxCoolDownPeriod: 120000,
+  })
+);
+
+app.get('/api/admin/membership', adminAuth, async (req, res) => {
   try {
-    const response = await fetch(scriptUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'getResponses', token: secret }),
-    });
+    const scriptUrl = process.env.MEMBERSHIP_SCRIPT_URL;
+    const secret = process.env.MEMBERSHIP_SECRET;
 
-    if (!response.ok) {
-      throw new Error(`Google Apps Script returned ${response.status}`);
+    if (!scriptUrl || !secret) {
+      return res.json({ responses: [] });
     }
 
-    const data = await response.json();
+    const data = await membershipBreaker.execute(scriptUrl, secret);
     return res.json({ responses: data.responses || [] });
   } catch (err) {
+    if (err.code === 'CIRCUIT_OPEN') {
+      console.warn('[Membership] Circuit breaker is OPEN, returning empty responses');
+      return res.json({ responses: [] });
+    }
     console.error('[Membership] Failed to fetch responses:', err.message);
     return res.status(500).json({ error: 'Failed to fetch membership responses' });
+  }
+});
+
+// Circuit Breaker Admin API
+app.get('/api/admin/circuit-breaker/metrics', adminAuth, async (req, res) => {
+  const metrics = circuitBreakerRegistry.getAllMetrics();
+  return res.json({ circuitBreakers: metrics });
+});
+
+app.post('/api/admin/circuit-breaker/reset/:name', adminAuth, async (req, res) => {
+  const { name } = req.params;
+  const ok = circuitBreakerRegistry.reset(name);
+  if (!ok) {
+    return res.status(404).json({ error: `No circuit breaker found: "${name}"` });
+  }
+  return res.json({ ok: true, message: `Circuit breaker "${name}" reset to CLOSED` });
+});
+
+app.post('/api/admin/circuit-breaker/retry/:name', adminAuth, async (req, res) => {
+  const { name } = req.params;
+  try {
+    const breaker = circuitBreakerRegistry.get(name);
+    if (!breaker) {
+      return res.status(404).json({ error: `No circuit breaker found: "${name}"` });
+    }
+    const result = await breaker.manualRetry();
+    return res.json({ ok: true, state: breaker.state, result });
+  } catch (err) {
+    return res.json({ ok: false, error: err.message });
   }
 });
 
@@ -575,26 +1292,62 @@ app.post(
   }
 );
 
-app.post('/api/notifications/mark-read', adminAuth, notificationRateLimiter, async (req, res) => {
-  try {
-    const { id, userId } = req.body || {};
-    if (!id) return res.status(400).json({ error: 'id required' });
-    const uid = userId || 'global';
-    const ok = await notificationsService.markAsRead(uid, id);
-    return res.json({ success: ok });
-  } catch (err) {
-    return res.status(500).json({ error: err.message });
+function requireNotificationAuth(req, res, next) {
+  adminAuthMiddleware.requireAdmin(req, res, (err) => {
+    if (!err && req.adminSession) {
+      return next();
+    }
+    requireStudentAuth(req, res, (err2) => {
+      if (!err2 && req.studentUser) {
+        return next();
+      }
+      return res.status(401).json({ error: 'Unauthorized: Authentication required' });
+    });
+  });
+}
+
+app.post(
+  '/api/notifications/mark-read',
+  requireNotificationAuth,
+  notificationRateLimiter,
+  async (req, res) => {
+    try {
+      const { id, userId } = req.body || {};
+      if (!id) return res.status(400).json({ error: 'id required' });
+      let uid = userId || 'global';
+      if (req.studentUser) {
+        const studentId = req.studentUser.sub || req.studentUser.id;
+        if (userId && userId !== studentId) {
+          return res
+            .status(403)
+            .json({ error: 'Forbidden: Cannot modify other users notifications' });
+        }
+        uid = studentId;
+      }
+      const ok = await notificationsService.markAsRead(uid, id);
+      return res.json({ success: ok });
+    } catch (err) {
+      return res.status(500).json({ error: err.message });
+    }
   }
-});
+);
 
 app.post(
   '/api/notifications/mark-all-read',
-  adminAuth,
+  requireNotificationAuth,
   notificationRateLimiter,
   async (req, res) => {
     try {
       const { userId } = req.body || {};
-      await notificationsService.markAllAsRead(userId || 'global');
+      let uid = userId || 'global';
+      if (req.studentUser) {
+        const studentId = req.studentUser.sub || req.studentUser.id;
+        if (userId && userId !== studentId) {
+          return res.status(403).json({ error: 'Forbidden' });
+        }
+        uid = studentId;
+      }
+      await notificationsService.markAllAsRead(uid);
       return res.json({ success: true });
     } catch (err) {
       return res.status(500).json({ error: err.message });
@@ -602,27 +1355,51 @@ app.post(
   }
 );
 
-app.delete('/api/notifications/:id', adminAuth, notificationRateLimiter, async (req, res) => {
-  try {
-    const id = req.params.id;
-    const userId = req.query.userId || 'global';
-    const removed = await notificationsService.removeNotification(userId, id);
-    if (!removed) return res.status(404).json({ error: 'Notification not found' });
-    return res.json({ success: true });
-  } catch (err) {
-    return res.status(500).json({ error: err.message });
+app.delete(
+  '/api/notifications/:id',
+  requireNotificationAuth,
+  notificationRateLimiter,
+  async (req, res) => {
+    try {
+      const id = req.params.id;
+      let uid = req.query.userId || 'global';
+      if (req.studentUser) {
+        const studentId = req.studentUser.sub || req.studentUser.id;
+        if (req.query.userId && req.query.userId !== studentId) {
+          return res.status(403).json({ error: 'Forbidden' });
+        }
+        uid = studentId;
+      }
+      const removed = await notificationsService.removeNotification(uid, id);
+      if (!removed) return res.status(404).json({ error: 'Notification not found' });
+      return res.json({ success: true });
+    } catch (err) {
+      return res.status(500).json({ error: err.message });
+    }
   }
-});
+);
 
-app.delete('/api/notifications', adminAuth, notificationRateLimiter, async (req, res) => {
-  try {
-    const userId = req.query.userId || 'global';
-    await notificationsService.clearAll(userId);
-    return res.json({ success: true });
-  } catch (err) {
-    return res.status(500).json({ error: err.message });
+app.delete(
+  '/api/notifications',
+  requireNotificationAuth,
+  notificationRateLimiter,
+  async (req, res) => {
+    try {
+      let uid = req.query.userId || 'global';
+      if (req.studentUser) {
+        const studentId = req.studentUser.sub || req.studentUser.id;
+        if (req.query.userId && req.query.userId !== studentId) {
+          return res.status(403).json({ error: 'Forbidden' });
+        }
+        uid = studentId;
+      }
+      await notificationsService.clearAll(uid);
+      return res.json({ success: true });
+    } catch (err) {
+      return res.status(500).json({ error: err.message });
+    }
   }
-});
+);
 
 app.post('/api/notifications', adminAuth, notificationRateLimiter, async (req, res) => {
   try {
@@ -766,6 +1543,49 @@ function clearPasskeyAttempts(username, ip) {
 app.get('/api/notifications', async (req, res) => {
   try {
     const userId = req.query.userId || 'global';
+
+    if (userId !== 'global') {
+      let authenticated = false;
+
+      // 1. Try Student Auth
+      let token = null;
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        token = authHeader.slice(7).trim();
+      }
+      if (!token && req.cookies?.ns_student_token) {
+        token = req.cookies.ns_student_token;
+      }
+      if (token) {
+        const payload = studentAuthService.verifyToken(token);
+        if (payload && (payload.sub === userId || payload.id === userId)) {
+          authenticated = true;
+        }
+      }
+
+      // 2. Try Admin Auth
+      if (!authenticated) {
+        let adminToken = null;
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+          adminToken = authHeader.slice(7).trim();
+        }
+        if (!adminToken && req.cookies?.ns_admin_token) {
+          adminToken = req.cookies.ns_admin_token;
+        }
+        if (adminToken) {
+          const { getAdminSession } = await import('./repositories/adminSessionsRepository.js');
+          const session = await getAdminSession(adminToken);
+          if (session) {
+            authenticated = true;
+          }
+        }
+      }
+
+      if (!authenticated) {
+        return res.status(401).json({ error: 'Unauthorized to view these notifications' });
+      }
+    }
+
     const offset = parseInt(req.query.offset, 10) || 0;
     const limit = Math.min(parseInt(req.query.limit, 10) || 100, 500);
     const list = await notificationsService.getNotifications(userId, offset, limit);
@@ -816,73 +1636,6 @@ app.put('/api/notifications/preferences/bulk', async (req, res) => {
   }
 });
 
-app.put('/api/portfolio', protectedActionRateLimiter, async (req, res) => {
-  try {
-    const body = req.body || {};
-    const ip = req.ip || req.headers['x-forwarded-for'] || 'unknown';
-
-    // 1. Validate credentials up front.  Anything below this point
-    //    trusts the username + passkey pair.
-    const credentials = portfolioPutSchema.safeParse({
-      username: body.username,
-      passkey: body.passkey,
-    });
-    if (!credentials.success) {
-      const firstIssue = credentials.error.issues[0];
-      return res.status(400).json({ error: firstIssue?.message || 'Invalid request body' });
-    }
-    const { username, passkey } = credentials.data;
-
-    // 2. Validate the content body.  This rejects XSS payloads such
-    //    as javascript: URLs and unknown protocol schemes before
-    //    the data ever reaches the repository.  The repository
-    //    re-sanitizes as defense-in-depth.
-    const content = portfolioContentSchema.safeParse(body);
-    if (!content.success) {
-      const firstIssue = content.error.issues[0];
-      return res.status(400).json({
-        error:
-          `Invalid portfolio content: ${firstIssue?.path?.join('.') || ''} ${firstIssue?.message || ''}`.trim(),
-      });
-    }
-
-    const existingPortfolio = await portfolioRepository.getByUsername(username);
-    const isNewRegistration = !existingPortfolio;
-
-    const lockout = checkPasskeyLockout(username, ip);
-    if (lockout) {
-      return res.status(429).json({
-        error: 'Too many failed passkey attempts. Please try again later.',
-      });
-    }
-
-    const isAuthorized = await portfolioRepository.verifyPasskey(username, passkey, {
-      allowNew: isNewRegistration,
-    });
-    if (!isAuthorized) {
-      recordFailedPasskeyAttempt(username, ip);
-      return res.status(401).json({ error: 'Incorrect passkey for this username' });
-    }
-
-    clearPasskeyAttempts(username, ip);
-
-    const saved = await portfolioRepository.createOrUpdate({
-      ...content.data,
-      username,
-      passkey,
-    });
-    return res.json({ ok: true, portfolio: saved });
-  } catch (err) {
-    if (err.code === '23505') {
-      return res
-        .status(409)
-        .json({ error: 'Username already exists. Another request may have just created it.' });
-    }
-    console.error('Error saving portfolio:', err);
-    return res.status(500).json({ error: err.message || 'Internal server error' });
-  }
-});
-
 // ── Forum / Q&A ──
 app.get('/api/forum/categories', forumController.listCategories);
 app.get('/api/forum/threads', forumController.listThreads);
@@ -921,7 +1674,6 @@ app.get('/api/admin/mentors', adminAuth, mentorshipController.adminListMentors);
 app.get('/api/search', searchController.search);
 app.get('/api/search/trending', searchController.trending);
 app.get('/api/recommendations', searchController.recommendations);
-
 // Must be registered after all routes.
 app.use(notFoundHandler);
 addSentryErrorHandler(app);

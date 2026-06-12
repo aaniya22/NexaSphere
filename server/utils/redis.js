@@ -1,5 +1,6 @@
 import Redis from 'ioredis';
 import logger from './logger.js';
+import { recordCacheHit, recordCacheMiss } from '../observability/metrics.js';
 
 let redisClient = null;
 
@@ -34,8 +35,10 @@ export async function getCachedQuery(key, queryFn, ttlSeconds = 300) {
   try {
     cached = await client.get(key);
     if (cached) {
+      recordCacheHit();
       return JSON.parse(cached);
     }
+    recordCacheMiss();
   } catch (err) {
     logger.warn('Redis cache read error, falling back to database query:', err);
   }
