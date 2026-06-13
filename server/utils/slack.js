@@ -179,7 +179,7 @@ async function sendPerformanceAlert(metrics) {
  * @param {number} threshold - Error rate threshold
  */
 async function sendErrorRateAlert(errorRate, threshold) {
-  sendSlackAlert({
+  await sendSlackAlert({
     title: `⚠️ Error Rate Alert`,
     message: `Error rate (${errorRate.toFixed(2)}%) has exceeded threshold (${threshold}%)`,
     severity: errorRate > threshold * 2 ? "critical" : "warning",
