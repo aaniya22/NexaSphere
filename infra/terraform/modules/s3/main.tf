@@ -15,7 +15,7 @@ resource "aws_s3_bucket_public_access_block" "media" {
 resource "aws_s3_bucket_versioning" "media" {
   bucket = aws_s3_bucket.media.id
   versioning_configuration {
-    status = var.environment == "production" ? "Enabled" : "Suspended"
+    status = "Enabled"
   }
 }
 
@@ -98,6 +98,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "backups" {
 }
 
 resource "aws_s3_bucket" "terraform_state" {
+  # checkov:skip=CKV2_AWS_62:Event notifications are not required for terraform state bucket
   bucket = "nexasphere-terraform-state"
   tags   = { Name = "nexasphere-terraform-state" }
 }

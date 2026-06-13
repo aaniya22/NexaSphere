@@ -120,7 +120,7 @@ horizontal scaling.
 
 Sessions are stored under the Redis key pattern:
 
-```
+```text
 session:admin:{sha256_hash_of_token}
 ```
 
@@ -141,7 +141,7 @@ session:admin:{sha256_hash_of_token}
 ### Session Lifecycle
 
 | Event | Action |
-|-------|--------|
+| --- | --- |
 | **Login** | A new key is written to Redis with an 8-hour TTL. Node.js backend also writes to PostgreSQL for audit. |
 | **Validation** | Both services compute `SHA-256(token)` and perform a Redis `GET`. No cross-service HTTP calls. |
 | **Logout** | The Redis key is deleted immediately (`DEL`), revoking the session. PostgreSQL is updated for audit. |
@@ -152,7 +152,7 @@ session:admin:{sha256_hash_of_token}
 The following environment variables configure the Redis connection:
 
 | Variable | Default | Description |
-|----------|---------|-------------|
+| --- | --- | --- |
 | `REDIS_HOST` | `localhost` | Redis server hostname |
 | `REDIS_PORT` | `6379` | Redis server port |
 | `REDIS_PASSWORD` | *(empty)* | Redis AUTH password |
@@ -172,4 +172,3 @@ The following environment variables configure the Redis connection:
 - **Graceful degradation**: If Redis is unreachable during login, the
   PostgreSQL session is still created. Validation will fail gracefully with a
   500 status until Redis connectivity is restored.
-

@@ -86,6 +86,8 @@ jobs:
           NODE_ENV: test
           DATABASE_URL: postgresql://nexasphere:nexasphere@localhost:5432/nexasphere_test
           PORT: 8080
+          CORS_ORIGIN: http://localhost:5175
+          ADMIN_EVENT_PASSWORD: StrongEventPassword123!
         timeout-minutes: 2
 
       - name: Wait for server
