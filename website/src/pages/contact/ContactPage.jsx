@@ -160,8 +160,10 @@ function ContactCard({ icon, label, value, href, delay = 0, color }) {
 /* ── Map Section ── */
 function MapSection() {
   const [loaded, setLoaded] = useState(false);
+  const [failed, setFailed] = useState(false);
   const [show, setShow] = useState(false);
   const ref = useRef(null);
+  const timeoutRef = useRef(null);
 
   useEffect(() => {
     const obs = new IntersectionObserver(
@@ -176,6 +178,26 @@ function MapSection() {
     if (ref.current) obs.observe(ref.current);
     return () => obs.disconnect();
   }, []);
+
+  useEffect(() => {
+    if (!show) return;
+    timeoutRef.current = setTimeout(() => {
+      setFailed(true);
+      setLoaded(true);
+    }, 10000);
+    return () => clearTimeout(timeoutRef.current);
+  }, [show]);
+
+  const handleMapLoad = () => {
+    clearTimeout(timeoutRef.current);
+    setLoaded(true);
+  };
+
+  const handleMapError = () => {
+    clearTimeout(timeoutRef.current);
+    setFailed(true);
+    setLoaded(true);
+  };
 
   return (
     <div ref={ref} className="pop-in map-wrapper" style={{ maxWidth: 900, margin: '0 auto' }}>
@@ -285,6 +307,40 @@ function MapSection() {
           </div>
         )}
 
+        {loaded && failed && (
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 12,
+              zIndex: 2,
+              background: 'var(--card)',
+              padding: '24px',
+              textAlign: 'center',
+            }}
+          >
+            <div style={{ fontSize: '2rem' }}>📍</div>
+            <p style={{ color: 'var(--t2)', fontSize: '.9rem', margin: 0 }}>
+              Map could not be loaded.
+            </p>
+            <p style={{ color: 'var(--t3)', fontSize: '.8rem', margin: 0 }}>
+              Mathura – Delhi Highway (NH-2), Near Crossing Republic, Mathura, UP 281406
+            </p>
+            <a
+              href="https://maps.google.com/?q=GL+Bajaj+Group+of+Institutions,+Mathura,+Uttar+Pradesh"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: 'var(--c1)', fontSize: '.85rem', marginTop: 4 }}
+            >
+              View on Google Maps →
+            </a>
+          </div>
+        )}
+
         {show && (
           <iframe
             src={MAP_EMBED}
@@ -294,14 +350,15 @@ function MapSection() {
               border: 0,
               display: 'block',
               filter: 'saturate(.9) contrast(1.05)',
-              opacity: loaded ? 1 : 0,
+              opacity: loaded && !failed ? 1 : 0,
               transition: 'opacity .5s ease',
             }}
             allowFullScreen=""
             loading="lazy"
             referrerPolicy="no-referrer-when-downgrade"
             title="GL Bajaj Group of Institutions, Mathura"
-            onLoad={() => setLoaded(true)}
+            onLoad={handleMapLoad}
+            onError={handleMapError}
           />
         )}
 
