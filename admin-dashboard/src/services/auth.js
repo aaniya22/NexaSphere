@@ -14,7 +14,7 @@ export const auth = {
     const res = await fetch(`${API_BASE}/api/admin/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: cleanEmail, password: cleanPassword }),
+      body: JSON.stringify({ username: cleanEmail, password: cleanPassword }),
       credentials: 'include',
     });
 
