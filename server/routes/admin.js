@@ -22,6 +22,12 @@ import {
   deactivateReadOnlyMode,
   getReadOnlyStatus,
   createIncidentLog,
+} from '../routes/readOnlyMode.js';
+import {
+  activateReadOnlyMode,
+  deactivateReadOnlyMode,
+  getReadOnlyStatus,
+  createIncidentLog,
 } from '../utils/readOnlyMode.js';
 
 const router = Router();
@@ -99,6 +105,22 @@ router.get('/api/admin/database-recovery', adminAuth, (req, res) => {
 
 router.get('/api/admin/database-audit-log', adminAuth, (req, res) => {
   res.json(createRecoveryAuditLog());
+});
+
+router.get('/api/admin/read-only-status', adminAuth, (req, res) => {
+  res.json(getReadOnlyStatus());
+});
+
+router.post('/api/admin/read-only-enable', adminAuth, (req, res) => {
+  res.json(activateReadOnlyMode());
+});
+
+router.post('/api/admin/read-only-disable', adminAuth, (req, res) => {
+  res.json(deactivateReadOnlyMode());
+});
+
+router.get('/api/admin/read-only-log', adminAuth, (req, res) => {
+  res.json(createIncidentLog());
 });
 
 router.get('/api/admin/read-only-status', adminAuth, (req, res) => {
