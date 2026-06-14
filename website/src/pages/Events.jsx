@@ -45,7 +45,6 @@ const Events = () => {
   // Fix 2: useCallback — stable function reference, won't invalidate React.memo
   const handleSelect = useCallback((id) => {
     setSelectedEvent(id);
-    console.log('Selected event id:', id);
   }, []);
 
   return (
