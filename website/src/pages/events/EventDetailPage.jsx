@@ -839,9 +839,9 @@ export default function EventDetailPage({ event, activityColor, activityIcon, on
             <section>
               <SectionHeader icon="Mic2" title="Presenters" color={color} />
               <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                {event.topics?.map((t, i) => (
+                {event.topics?.map((t) => (
                   <PersonChip
-                    key={i}
+                    key={t.speaker}
                     name={t.speaker}
                     role="Presenter"
                     color={color}
@@ -863,7 +863,7 @@ export default function EventDetailPage({ event, activityColor, activityIcon, on
                 }}
               >
                 {event.topics?.map((t, i) => (
-                  <TopicCard key={i} topic={t} index={i} color={color} />
+                  <TopicCard key={t.title || t.speaker} topic={t} index={i} color={color} />
                 ))}
               </div>
             </section>
@@ -873,8 +873,8 @@ export default function EventDetailPage({ event, activityColor, activityIcon, on
             <section>
               <SectionHeader icon="Clapperboard" title="Video Presentors & Anchor" color={color} />
               <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                {event.videoPresenter?.map((p, i) => (
-                  <PersonChip key={i} name={p.name} role={p.role} color={color} icon="Video" />
+                {event.videoPresenter?.map((p) => (
+                  <PersonChip key={p.name} name={p.name} role={p.role} color={color} icon="Video" />
                 ))}
                 {event.anchor && (
                   <PersonChip
@@ -892,8 +892,14 @@ export default function EventDetailPage({ event, activityColor, activityIcon, on
             <section>
               <SectionHeader icon="Zap" title="Volunteers — The Unsung Heroes" color={color} />
               <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                {event.volunteers.map((v, i) => (
-                  <PersonChip key={i} name={v.name} role="Volunteer" color={color} icon="Zap" />
+                {event.volunteers.map((v) => (
+                  <PersonChip
+                    key={v.name}
+                    name={v.name}
+                    role="Volunteer"
+                    color={color}
+                    icon="Zap"
+                  />
                 ))}
               </div>
             </section>
@@ -910,7 +916,7 @@ export default function EventDetailPage({ event, activityColor, activityIcon, on
                 }}
               >
                 {event.acknowledgements.map((a, i) => (
-                  <AckCard key={i} ack={a} color={color} />
+                  <AckCard key={a.name || a.title} ack={a} color={color} />
                 ))}
               </div>
             </section>
