@@ -111,6 +111,52 @@ export async function withDb(fn) {
     }
   }
 
+  const originalQuery = client.query;
+  client.query = function (config, values, callback) {
+    const start = Date.now();
+    
+    let cb = callback;
+    if (typeof values === 'function') {
+      cb = values;
+    }
+    
+    const handleStats = (err) => {
+      const duration = Date.now() - start;
+      const sqlText = typeof config === 'string' ? config : (config?.text || 'unknown');
+      import('../config/appContext.js').then(({ appContext }) => {
+        const store = appContext.getStore();
+        if (store?.traceEntry) {
+          store.traceEntry.queries.push({
+            sql: sqlText.trim().replace(/\s+/g, ' ').slice(0, 100),
+            durationMs: duration,
+            success: !err
+          });
+        }
+      }).catch(() => {});
+    };
+
+    if (typeof cb === 'function') {
+      const wrappedCallback = (err, result) => {
+        handleStats(err);
+        cb(err, result);
+      };
+      if (typeof values === 'function') {
+        return originalQuery.call(this, config, wrappedCallback);
+      }
+      return originalQuery.call(this, config, values, wrappedCallback);
+    }
+    
+    return originalQuery.call(this, config, values, callback)
+      .then(res => {
+        handleStats(null);
+        return res;
+      })
+      .catch(err => {
+        handleStats(err);
+        throw err;
+      });
+  };
+
   try {
     return await fn(client);
   } finally {

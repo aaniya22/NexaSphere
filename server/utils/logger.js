@@ -71,7 +71,18 @@ const jsonFormat = winston.format.combine(
 
 const logLayout = winston.format.printf((info) => {
   const { timestamp, level, message, ...args } = info;
-  const ts = timestamp ? timestamp.slice(0, 19).replace('T', ' ') : '';
+  let ts = '';
+  if (timestamp) {
+    if (typeof timestamp === 'string') {
+      ts = timestamp.slice(0, 19).replace('T', ' ');
+    } else if (timestamp instanceof Date) {
+      ts = timestamp.toISOString().slice(0, 19).replace('T', ' ');
+    } else if (typeof timestamp.toISOString === 'function') {
+      ts = timestamp.toISOString().slice(0, 19).replace('T', ' ');
+    } else {
+      ts = String(timestamp);
+    }
+  }
   return `${ts} [${level}]: ${message} ${
     Object.keys(args).length ? JSON.stringify(args, null, 2) : ''
   }`;

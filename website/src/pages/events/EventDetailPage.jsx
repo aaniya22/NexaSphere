@@ -13,18 +13,19 @@ function Typewriter({ text, speed = 10 }) {
   const [done, setDone] = useState(false);
   const ref = useRef(null);
   const started = useRef(false);
+  const intervalRef = useRef(null);
   useEffect(() => {
     const obs = new IntersectionObserver(
       ([e]) => {
         if (e.isIntersecting && !started.current) {
           started.current = true;
           let i = 0;
-          const t = setInterval(() => {
+          intervalRef.current = setInterval(() => {
             setDisplayed(text.slice(0, i + 1));
             i++;
             if (i >= text.length) {
               setDone(true);
-              clearInterval(t);
+              clearInterval(intervalRef.current);
             }
           }, speed);
         }
@@ -32,7 +33,10 @@ function Typewriter({ text, speed = 10 }) {
       { threshold: 0.3 }
     );
     if (ref.current) obs.observe(ref.current);
-    return () => obs.disconnect();
+    return () => {
+      obs.disconnect();
+      clearInterval(intervalRef.current);
+    };
   }, [text, speed]);
   return (
     <span ref={ref}>
@@ -472,7 +476,7 @@ export default function EventDetailPage({ event, activityColor, activityIcon, on
   const [regSubmitting, setRegSubmitting] = useState(false);
   useEffect(() => {
     window.scrollTo({ top: 0 });
-    setTimeout(() => setMounted(true), 60);
+    const mountTimer = setTimeout(() => setMounted(true), 60);
 
     // Local scroll-reveal observer — sub-pages mount after the global observer ran
     const obs = new IntersectionObserver(
@@ -491,11 +495,16 @@ export default function EventDetailPage({ event, activityColor, activityIcon, on
         '#event-detail-page .pop-in, #event-detail-page .pop-left, #event-detail-page .pop-right, #event-detail-page .pop-scale'
       )
       .forEach((el) => obs.observe(el));
-    return () => obs.disconnect();
+    return () => {
+      clearTimeout(mountTimer);
+      obs.disconnect();
+    };
   }, []);
 
   const isUpcoming = event.status === 'upcoming';
-  const canRegister = isUpcoming && event.capacity > 0;
+  const eventEnd = event.endDate ?? event.startDate ?? event.date;
+  const isInFuture = eventEnd ? new Date(eventEnd) > new Date() : isUpcoming;
+  const canRegister = isUpcoming && isInFuture && event.capacity > 0;
 
   const handleRegField = (field) => (e) => setRegForm((f) => ({ ...f, [field]: e.target.value }));
   const handleRegistration = async (e) => {

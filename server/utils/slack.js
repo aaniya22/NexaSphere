@@ -29,29 +29,41 @@ const slackBreaker = circuitBreakerRegistry.register(
   })
 );
 
-/**
- * Send Slack alert
- * @param {Object} alertData - Alert data
- */
-async function sendSlackAlert(alertData) {
+async function dispatchToSlack(payload, alertContext) {
   const webhookUrl = process.env.SLACK_WEBHOOK_URL;
 
   if (!webhookUrl) {
-    logger.warn('Slack webhook URL not configured. Skipping alert.');
+    logger.warn(`Slack webhook URL not configured. Skipping ${alertContext}.`);
     return;
   }
 
   try {
-    const payload = formatSlackMessage(alertData);
-    await slackBreaker.execute(webhookUrl, payload);
-    logger.info('Slack alert sent successfully', { alertType: alertData.title });
-  } catch (error) {
-    if (error.code === 'CIRCUIT_OPEN') {
-      logger.warn('Slack circuit breaker is OPEN, skipping alert');
+    const response = await fetch(webhookUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      logger.error(`Failed to send ${alertContext}`, {
+        status: response.status,
+        statusText: response.statusText,
+      });
     } else {
-      logger.error('Error sending Slack alert', { error: error.message });
+      logger.info(`Slack ${alertContext} sent successfully`);
     }
+  } catch (error) {
+    logger.error(`Error sending ${alertContext}`, { error: error.message });
   }
+}
+
+async function sendSlackAlert(alertData) {
+  const payload = formatSlackMessage(alertData);
+  const context = alertData.title ? `alert: ${alertData.title}` : "Slack alert";
+  
+  await dispatchToSlack(payload, context);
 }
 
 /**
@@ -185,72 +197,40 @@ function formatSlackMessage(data) {
  * @param {Object} metrics - Performance metrics
  */
 async function sendPerformanceAlert(metrics) {
-  const webhookUrl = process.env.SLACK_WEBHOOK_URL;
-
-  if (!webhookUrl) {
-    return;
-  }
-
-  try {
-    const payload = {
-      attachments: [
-        {
-          color: metrics.errorRate > 5 ? 'danger' : 'warning',
-          blocks: [
-            {
-              type: 'header',
-              text: {
-                type: 'plain_text',
-                text: '📊 Performance Alert',
-                emoji: true,
-              },
-            },
-            {
-              type: 'section',
-              fields: [
-                { type: 'mrkdwn', text: `*Error Rate:*\n${metrics.errorRate.toFixed(2)}%` },
-                { type: 'mrkdwn', text: `*Threshold:*\n5%` },
-                { type: 'mrkdwn', text: `*Total Requests:*\n${metrics.totalRequests}` },
-                { type: 'mrkdwn', text: `*Total Errors:*\n${metrics.totalErrors}` },
-              ],
-            },
-            {
-              type: 'context',
-              elements: [
-                {
-                  type: 'plain_text',
-                  text: 'NexaSphere Performance Monitoring',
-                },
-              ],
-            },
-          ],
-        },
-      ],
-    };
-
-    const response = await fetch(webhookUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
+  const payload = {
+    attachments: [
+      {
+        color: metrics.errorRate > 5 ? "danger" : "warning",
+        title: "📊 Performance Alert",
+        fields: [
+          {
+            title: "Error Rate",
+            value: `${metrics.errorRate.toFixed(2)}%`,
+            short: true,
+          },
+          {
+            title: "Total Requests",
+            value: metrics.totalRequests.toString(),
+            short: true,
+          },
+          {
+            title: "Total Errors",
+            value: metrics.totalErrors.toString(),
+            short: true,
+          },
+          {
+            title: "Threshold",
+            value: "5%",
+            short: true,
+          },
+        ],
+        footer: "NexaSphere Performance Monitoring",
+        ts: Math.floor(Date.now() / 1000),
       },
-      body: JSON.stringify(payload),
-    });
+    ],
+  };
 
-    if (!response.ok) {
-      logger.error('Failed to send performance alert', {
-        status: response.status,
-        statusText: response.statusText,
-      });
-    } else {
-      logger.info('Performance alert sent successfully');
-    }
-    await slackBreaker.execute(webhookUrl, payload);
-    logger.info('Performance alert sent successfully');
-  } catch (error) {
-    if (error.code !== 'CIRCUIT_OPEN') {
-      logger.error('Error sending performance alert', { error: error.message });
-    }
-  }
+  await dispatchToSlack(payload, "performance alert");
 }
 
 /**
@@ -259,7 +239,7 @@ async function sendPerformanceAlert(metrics) {
  * @param {number} threshold - Error rate threshold
  */
 async function sendErrorRateAlert(errorRate, threshold) {
-  sendSlackAlert({
+  await sendSlackAlert({
     title: `⚠️ Error Rate Alert`,
     message: `Error rate (${errorRate.toFixed(2)}%) has exceeded threshold (${threshold}%)`,
     severity: errorRate > threshold * 2 ? 'critical' : 'warning',

@@ -35,8 +35,6 @@ public class BearerTokenAuthFilter extends OncePerRequestFilter {
                                     @org.springframework.lang.NonNull HttpServletResponse response,
                                     @org.springframework.lang.NonNull FilterChain filterChain)
             throws ServletException, IOException {
-        tokenService.cleanupExpired();
-
         String header = request.getHeader(HttpHeaders.AUTHORIZATION);
         String token = extractBearerToken(header);
 

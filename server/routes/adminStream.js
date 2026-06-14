@@ -10,10 +10,11 @@ import {
   getConnectedSSEClientsCount,
 } from '../services/sseService.js';
 import { adminAuthMiddleware } from '../middleware/adminAuthMiddleware.js';
+import { apiRateLimiter } from '../middleware/rateLimiter.js';
 import logger from '../utils/logger.js';
 
 const router = express.Router();
-const requireAdmin = adminAuthMiddleware.requireAdmin;
+const requireAdmin = [apiRateLimiter, adminAuthMiddleware.requireAdmin];
 
 /**
  * SSE stream endpoint - real-time updates for admin

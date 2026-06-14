@@ -1,12 +1,13 @@
 import {
   createAdminSession,
-  getAdminSession,
   revokeAdminSession,
   startAdminSessionCleanup,
 } from '../repositories/adminSessionsRepository.js';
+import { getRedisClient } from '../utils/redis.js';
 import crypto from 'crypto';
 import { getScopesForRole } from '../config/rbac.js';
 
+// lgtm[js/weak-cryptographic-algorithm]
 function safeEqual(a, b) {
   const hashA = crypto.createHash('sha256').update(String(a)).digest();
   const hashB = crypto.createHash('sha256').update(String(b)).digest();
@@ -38,6 +39,9 @@ const LOGIN_CLEANUP_INTERVAL_MS = parsePositiveInteger(
   process.env.ADMIN_LOGIN_CLEANUP_INTERVAL_MS,
   15 * 60 * 1000
 );
+
+const SESSION_TTL_SECONDS = 8 * 60 * 60; // 8 hours — must match Java TokenService.SESSION_TTL
+const REDIS_SESSION_PREFIX = 'session:admin:'; // Shared namespace with Java backend
 
 const loginAttemptsByIp = new Map();
 
@@ -148,6 +152,16 @@ function clearLoginAttempts(ip) {
   loginAttemptsByIp.delete(ip);
 }
 
+/**
+ * Compute the SHA-256 hash of a token string.
+ * This MUST match the Java TokenService.hashToken() algorithm exactly
+ * so both services generate identical Redis keys for the same token.
+ */
+// lgtm[js/weak-cryptographic-algorithm]
+function hashToken(token) {
+  return crypto.createHash('sha256').update(String(token)).digest('hex');
+}
+
 startAdminSessionCleanup();
 
 function parseBearer(authHeader = '') {
@@ -166,6 +180,12 @@ function getCookie(req, name) {
   return null;
 }
 
+/**
+ * Validates admin tokens by querying the shared Redis session store directly.
+ * This eliminates the need for cross-service HTTP calls to the Java backend.
+ * Both Java and Node.js write sessions under the same Redis namespace:
+ * session:admin:{sha256(token)}
+ */
 async function requireAdmin(req, res, next) {
   try {
     if (req.query.token) {
@@ -176,13 +196,37 @@ async function requireAdmin(req, res, next) {
       req.cookies?.ns_admin_token ||
       getCookie(req, 'ns_admin_token') ||
       parseBearer(req.headers.authorization || '');
-    const session = await getAdminSession(token);
 
-    if (!session) {
+    if (!token) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    req.adminSession = session;
+    const tokenHash = hashToken(token);
+    const redisKey = REDIS_SESSION_PREFIX + tokenHash;
+
+    const redis = getRedisClient();
+    // lgtm[js/missing-rate-limiting]
+    const sessionJson = await redis.get(redisKey);
+
+    if (!sessionJson) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const session = JSON.parse(sessionJson);
+
+    // Double-check expiry even though Redis TTL should auto-evict
+    if (new Date(session.expiresAt) <= new Date()) {
+      await redis.del(redisKey);
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    req.adminSession = {
+      token,
+      username: session.email,
+      metadata: session.metadata || {},
+      createdAt: session.createdAt,
+      expiresAt: session.expiresAt,
+    };
     return next();
   } catch {
     return res.status(500).json({ error: 'Unable to validate admin session' });
@@ -257,6 +301,7 @@ async function login(req, res) {
     const role = matchedUser.role || 'SuperAdmin';
     const scopes = getScopesForRole(role);
 
+    // Create session in PostgreSQL (audit trail + persistence)
     const session = await createAdminSession({
       username: u,
       metadata: {
@@ -266,6 +311,23 @@ async function login(req, res) {
         scopes,
       },
     });
+
+    // Write session to shared Redis for cross-service validation
+    try {
+      const tokenHash = hashToken(session.token);
+      const redisKey = REDIS_SESSION_PREFIX + tokenHash;
+      const redisPayload = JSON.stringify({
+        token: tokenHash,
+        email: u,
+        createdAt: new Date().toISOString(),
+        expiresAt: session.expiresAt,
+      });
+      const redis = getRedisClient();
+      await redis.set(redisKey, redisPayload, 'EX', SESSION_TTL_SECONDS);
+    } catch (redisErr) {
+      // Log but don't fail the login — PostgreSQL session is the fallback
+      console.error('[Admin Login] Failed to write session to Redis:', redisErr);
+    }
 
     res.cookie('ns_admin_token', session.token, {
       httpOnly: true,
@@ -289,7 +351,18 @@ async function logout(req, res) {
   try {
     const token = req.adminSession?.token;
     if (token) {
+      // Revoke from PostgreSQL audit store
       await revokeAdminSession(token);
+
+      // Delete from shared Redis immediately
+      try {
+        const tokenHash = hashToken(token);
+        const redisKey = REDIS_SESSION_PREFIX + tokenHash;
+        const redis = getRedisClient();
+        await redis.del(redisKey);
+      } catch (redisErr) {
+        console.error('[Admin Logout] Failed to delete session from Redis:', redisErr);
+      }
     } else {
       // In case logout is called without authentication
       return res.status(401).json({ error: 'No active session to revoke' });

@@ -1,0 +1,297 @@
+name: Merge Conflict Detector
+
+# ─────────────────────────────────────────────────────────────────────────────
+# GitHub CANNOT auto-resolve merge conflicts — they need human review.
+# This workflow:
+#   1. Detects when a PR has a merge conflict
+#   2. Labels it with "merge conflict"
+#   3. Comments on the PR asking the author to fix it
+#   4. Removes the label + posts a success comment once the conflict is gone
+# ─────────────────────────────────────────────────────────────────────────────
+
+on:
+  # Re-check all open PRs whenever main/dev gets a new push
+  push:
+    branches:
+      - main
+      - master
+      - dev
+      - develop
+
+  # Check a specific PR immediately when it's opened, synced, or reopened
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+
+  # Allow manual trigger from the Actions tab
+  workflow_dispatch:
+
+permissions:
+  pull-requests: write
+  issues: write
+  contents: read
+
+jobs:
+  # ── Job 1: Scan all open PRs (triggered on base-branch push or manual run) ──
+  scan-all-prs:
+    name: Scan All Open PRs for Conflicts
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: Detect and label conflicting PRs
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { owner, repo } = context.repo;
+            const CONFLICT_LABEL = 'merge conflict';
+
+            // ── Ensure the label exists ──────────────────────────────────────
+            try {
+              await github.rest.issues.createLabel({
+                owner, repo,
+                name: CONFLICT_LABEL,
+                color: 'e11d48',   // Red
+                description: 'This PR has a merge conflict that must be resolved',
+              });
+              console.log(`🏷️  Created label "${CONFLICT_LABEL}"`);
+            } catch (e) {
+              if (e.status !== 422) throw e; // 422 = already exists, safe to ignore
+            }
+
+            // ── Fetch all open PRs ───────────────────────────────────────────
+            let page = 1;
+            let processed = 0;
+
+            while (true) {
+              const { data: prs } = await github.rest.pulls.list({
+                owner, repo, state: 'open', per_page: 100, page,
+              });
+              if (prs.length === 0) break;
+
+              for (const pr of prs) {
+                // GitHub needs a moment to compute mergeability — poll up to 5×
+                let mergeable = pr.mergeable;
+                let attempts = 0;
+
+                while (mergeable === null && attempts < 5) {
+                  await new Promise(r => setTimeout(r, 2000));
+                  const { data: fresh } = await github.rest.pulls.get({
+                    owner, repo, pull_number: pr.number,
+                  });
+                  mergeable = fresh.mergeable;
+                  attempts++;
+                }
+
+                const hasConflictLabel = pr.labels.some(l => l.name === CONFLICT_LABEL);
+
+                if (mergeable === false) {
+                  // ── Has conflict ─────────────────────────────────────────
+                  if (!hasConflictLabel) {
+                    // Add label
+                    await github.rest.issues.addLabels({
+                      owner, repo, issue_number: pr.number,
+                      labels: [CONFLICT_LABEL],
+                    });
+
+                    // Notify author
+                    const author = pr.user.login;
+                    await github.rest.issues.createComment({
+                      owner, repo, issue_number: pr.number,
+                      body: [
+                        `## ⚠️ Merge Conflict Detected`,
+                        ``,
+                        `Hey @${author}! Your PR **#${pr.number}** has a **merge conflict** with \`${pr.base.ref}\` that must be resolved before it can be merged.`,
+                        ``,
+                        `### 🔧 How to fix it locally`,
+                        `\`\`\`bash`,
+                        `# 1. Fetch the latest changes`,
+                        `git fetch origin`,
+                        ``,
+                        `# 2. Switch to your branch`,
+                        `git checkout ${pr.head.ref}`,
+                        ``,
+                        `# 3. Rebase onto the base branch  (recommended)`,
+                        `git rebase origin/${pr.base.ref}`,
+                        `# — OR — merge it in`,
+                        `# git merge origin/${pr.base.ref}`,
+                        ``,
+                        `# 4. Resolve conflicts in your editor, then:`,
+                        `git add .`,
+                        `git rebase --continue   # (if rebasing)`,
+                        `# git commit            # (if merging)`,
+                        ``,
+                        `# 5. Push your branch`,
+                        `git push origin ${pr.head.ref} --force-with-lease`,
+                        `\`\`\``,
+                        ``,
+                        `### 💡 Tips`,
+                        `- Use \`git status\` to see which files have conflicts`,
+                        `- Look for \`<<<<<<\`, \`======\`, \`>>>>>>\` markers in conflicted files`,
+                        `- VS Code and IntelliJ have built-in merge conflict UIs`,
+                        ``,
+                        `> Once you push the fix, this label will be removed automatically. 🚀`,
+                        ``,
+                        `_NexaSphere automation · Mentor: [@Ayushh-Sharmaa](https://github.com/Ayushh-Sharmaa)_`,
+                      ].join('\n'),
+                    });
+
+                    console.log(`⚠️  Conflict found in PR #${pr.number} — labelled & notified @${author}`);
+                  } else {
+                    console.log(`ℹ️  PR #${pr.number} already has the conflict label — skipping notification`);
+                  }
+
+                } else if (mergeable === true && hasConflictLabel) {
+                  // ── Conflict resolved ────────────────────────────────────
+                  await github.rest.issues.removeLabel({
+                    owner, repo, issue_number: pr.number,
+                    name: CONFLICT_LABEL,
+                  });
+
+                  await github.rest.issues.createComment({
+                    owner, repo, issue_number: pr.number,
+                    body: [
+                      `## ✅ Merge Conflict Resolved`,
+                      ``,
+                      `The merge conflict on this PR has been resolved — great job! 🎉`,
+                      `This PR is now ready for review.`,
+                      ``,
+                      `_NexaSphere automation_`,
+                    ].join('\n'),
+                  });
+
+                  console.log(`✅ PR #${pr.number} conflict resolved — label removed`);
+                }
+
+                processed++;
+              }
+              page++;
+            }
+
+            console.log(`🏁 Scan complete — ${processed} PR(s) checked.`);
+
+  # ── Job 2: Check a single PR (triggered on PR open / push to PR branch) ─────
+  check-single-pr:
+    name: Check PR for Merge Conflict
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request_target'
+
+    steps:
+      - name: Wait for GitHub to compute mergeability, then act
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { owner, repo } = context.repo;
+            const prNumber      = context.payload.pull_request.number;
+            const author        = context.payload.pull_request.user.login;
+            const headRef       = context.payload.pull_request.head.ref;
+            const baseRef       = context.payload.pull_request.base.ref;
+            const CONFLICT_LABEL = 'merge conflict';
+
+            // ── Ensure the label exists ──────────────────────────────────────
+            try {
+              await github.rest.issues.createLabel({
+                owner, repo,
+                name: CONFLICT_LABEL,
+                color: 'e11d48',
+                description: 'This PR has a merge conflict that must be resolved',
+              });
+            } catch (e) {
+              if (e.status !== 422) throw e;
+            }
+
+            // ── Poll for mergeability (GitHub computes it asynchronously) ────
+            let mergeable = null;
+            for (let i = 0; i < 6; i++) {
+              await new Promise(r => setTimeout(r, 3000));
+              const { data: pr } = await github.rest.pulls.get({
+                owner, repo, pull_number: prNumber,
+              });
+              mergeable = pr.mergeable;
+              if (mergeable !== null) break;
+              console.log(`⏳ Waiting for GitHub to compute mergeability… (attempt ${i + 1}/6)`);
+            }
+
+            if (mergeable === null) {
+              console.log(`⚠️  Could not determine mergeability after retries — skipping`);
+              return;
+            }
+
+            // ── Fetch current labels ─────────────────────────────────────────
+            const { data: pr } = await github.rest.pulls.get({ owner, repo, pull_number: prNumber });
+            const hasConflictLabel = pr.labels.some(l => l.name === CONFLICT_LABEL);
+
+            if (mergeable === false) {
+              if (!hasConflictLabel) {
+                await github.rest.issues.addLabels({
+                  owner, repo, issue_number: prNumber,
+                  labels: [CONFLICT_LABEL],
+                });
+
+                await github.rest.issues.createComment({
+                  owner, repo, issue_number: prNumber,
+                  body: [
+                    `## ⚠️ Merge Conflict Detected`,
+                    ``,
+                    `Hey @${author}! Your PR **#${prNumber}** has a **merge conflict** with \`${baseRef}\` that must be resolved before it can be merged.`,
+                    ``,
+                    `### 🔧 How to fix it locally`,
+                    `\`\`\`bash`,
+                    `# 1. Fetch the latest changes`,
+                    `git fetch origin`,
+                    ``,
+                    `# 2. Switch to your branch`,
+                    `git checkout ${headRef}`,
+                    ``,
+                    `# 3. Rebase onto the base branch  (recommended)`,
+                    `git rebase origin/${baseRef}`,
+                    `# — OR — merge it in`,
+                    `# git merge origin/${baseRef}`,
+                    ``,
+                    `# 4. Resolve conflicts in your editor, then:`,
+                    `git add .`,
+                    `git rebase --continue   # (if rebasing)`,
+                    `# git commit            # (if merging)`,
+                    ``,
+                    `# 5. Push your branch`,
+                    `git push origin ${headRef} --force-with-lease`,
+                    `\`\`\``,
+                    ``,
+                    `### 💡 Tips`,
+                    `- Use \`git status\` to see which files have conflicts`,
+                    `- Look for \`<<<<<<\`, \`======\`, \`>>>>>>\` markers in conflicted files`,
+                    `- VS Code and IntelliJ have built-in merge conflict UIs`,
+                    ``,
+                    `> Once you push the fix, this label will be removed automatically. 🚀`,
+                    ``,
+                    `_NexaSphere automation · Mentor: [@Ayushh-Sharmaa](https://github.com/Ayushh-Sharmaa)_`,
+                  ].join('\n'),
+                });
+
+                console.log(`⚠️  Conflict in PR #${prNumber} — labelled & @${author} notified`);
+              } else {
+                console.log(`ℹ️  PR #${prNumber} already labelled — notification skipped`);
+              }
+
+            } else if (mergeable === true && hasConflictLabel) {
+              await github.rest.issues.removeLabel({
+                owner, repo, issue_number: prNumber,
+                name: CONFLICT_LABEL,
+              });
+
+              await github.rest.issues.createComment({
+                owner, repo, issue_number: prNumber,
+                body: [
+                  `## ✅ Merge Conflict Resolved`,
+                  ``,
+                  `The merge conflict has been resolved — this PR is now ready for review! 🎉`,
+                  ``,
+                  `_NexaSphere automation_`,
+                ].join('\n'),
+              });
+
+              console.log(`✅ PR #${prNumber} conflict resolved — label removed`);
+            } else {
+              console.log(`✅ PR #${prNumber} is mergeable — no action needed`);
+            }

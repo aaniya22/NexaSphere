@@ -259,9 +259,13 @@ export default function PortfolioBuilder() {
   };
 
   const handleCopyLink = () => {
-    navigator.clipboard.writeText(getPortfolioUrl());
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    navigator.clipboard
+      .writeText(getPortfolioUrl())
+      .then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      })
+      .catch(() => {});
   };
 
   return (

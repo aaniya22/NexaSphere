@@ -1,4 +1,11 @@
-name: Auto-Assign Premshaw23 on Issue Comment
+name: Auto-Assign Commenter to Issue
+
+# ─────────────────────────────────────────────────────────────────────────────
+# When any contributor comments "/assign" on an open issue, they are
+# automatically assigned — but only if the issue has NO existing assignee yet.
+# (First come, first served — only ONE assignee per issue.)
+# Bots are ignored. Maintainers / repo owners are exempt from the limit.
+# ─────────────────────────────────────────────────────────────────────────────
 
 on:
   issue_comment:
@@ -6,55 +13,101 @@ on:
 
 permissions:
   issues: write
+  contents: read
 
 jobs:
   auto-assign:
-    # Only run when Premshaw23 comments on an issue (not a PR comment)
+    # Run only on actual issue comments (not PR comments) by non-bot humans
     if: |
-      github.event.comment.user.login == 'Premshaw23' &&
-      github.event.issue.pull_request == null
+      github.event.issue.pull_request == null &&
+      !contains(github.event.comment.user.login, '[bot]') &&
+      (
+        contains(github.event.comment.body, '/assign') ||
+        contains(github.event.comment.body, '/take') ||
+        contains(github.event.comment.body, 'i can work on this') ||
+        contains(github.event.comment.body, 'i would like to work on this') ||
+        contains(github.event.comment.body, 'i want to work on this') ||
+        contains(github.event.comment.body, 'assign this to me') ||
+        contains(github.event.comment.body, 'can i work on this') ||
+        contains(github.event.comment.body, 'can i take this')
+      )
     runs-on: ubuntu-latest
-    steps:
-      - name: Check if already assigned
-        id: check
-        uses: actions/github-script@v9
-        with:
-          script: |
-            const issue = context.payload.issue;
-            const assignees = issue.assignees.map(a => a.login);
-            const alreadyAssigned = assignees.includes('Premshaw23');
-            core.setOutput('already_assigned', alreadyAssigned.toString());
-            return alreadyAssigned;
 
-      - name: Assign Premshaw23 to issue
-        if: steps.check.outputs.already_assigned == 'false'
-        uses: actions/github-script@v9
+    steps:
+      - name: Assign commenter (first come, first served)
+        uses: actions/github-script@v7
         with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
+            const { owner, repo } = context.repo;
+            const issueNumber   = context.payload.issue.number;
+            const commenter     = context.payload.comment.user.login;
+            const currentAssignees = context.payload.issue.assignees.map(a => a.login);
+
+            // ── Skip if already assigned to someone else ─────────────────────
+            if (currentAssignees.length > 0 && !currentAssignees.includes(commenter)) {
+              const taken = currentAssignees[0];
+              await github.rest.issues.createComment({
+                owner, repo, issue_number: issueNumber,
+                body: [
+                  `Hey @${commenter}! 👋`,
+                  ``,
+                  `This issue is already assigned to **@${taken}** and we allow **only one assignee** per issue to keep things fair.`,
+                  ``,
+                  `Here's what you can do:`,
+                  `- Browse other open, unassigned issues`,
+                  `- If @${taken} becomes inactive for 7+ days, the issue will be automatically unassigned and opened up again`,
+                  ``,
+                  `Thank you for your interest in contributing! 🙌`,
+                  ``,
+                  `_NexaSphere automation_`,
+                ].join('\n'),
+              });
+              console.log(`⛔ Issue #${issueNumber} already assigned to @${taken} — skipping @${commenter}`);
+              return;
+            }
+
+            // ── Skip if commenter is already the assignee ────────────────────
+            if (currentAssignees.includes(commenter)) {
+              console.log(`ℹ️  @${commenter} is already assigned to issue #${issueNumber} — no action needed`);
+              return;
+            }
+
+            // ── Assign the commenter ─────────────────────────────────────────
             await github.rest.issues.addAssignees({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.payload.issue.number,
-              assignees: ['Premshaw23'],
+              owner, repo,
+              issue_number: issueNumber,
+              assignees: [commenter],
             });
 
-      - name: Post confirmation comment
-        if: steps.check.outputs.already_assigned == 'false'
-        uses: actions/github-script@v9
-        with:
-          script: |
+            // ── Add "assigned" label ─────────────────────────────────────────
+            try {
+              await github.rest.issues.addLabels({
+                owner, repo,
+                issue_number: issueNumber,
+                labels: ['assigned'],
+              });
+            } catch (_) {
+              // Label may not exist — ignore silently
+            }
+
+            // ── Post a welcome confirmation comment ──────────────────────────
             await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.payload.issue.number,
+              owner, repo, issue_number: issueNumber,
               body: [
-                '👋 Hey @Premshaw23! You\'ve been automatically assigned to this issue since you commented on it.',
-                '',
-                'Please make sure to:',
-                '- Read the issue description carefully',
-                '- Check [CONTRIBUTING.md](../blob/main/CONTRIBUTING.md) before starting work',
-                '- Open a PR referencing this issue when you\'re ready (e.g. `Fixes #' + context.payload.issue.number + '`)',
-                '',
-                'Happy coding! 🚀',
+                `🎉 Hey @${commenter}! You've been **automatically assigned** to this issue.`,
+                ``,
+                `**Before you start:**`,
+                `- 📖 Read the issue description carefully`,
+                `- 🤝 Check [CONTRIBUTING.md](../blob/main/CONTRIBUTING.md)`,
+                `- 🔀 Open a PR referencing this issue when ready (e.g. \`Fixes #${issueNumber}\`)`,
+                ``,
+                `> ⚠️ If you become inactive for **7+ days**, you'll be automatically unassigned so others can contribute.`,
+                ``,
+                `Happy coding! 🚀`,
+                ``,
+                `_NexaSphere automation · Mentor: [@Ayushh-Sharmaa](https://github.com/Ayushh-Sharmaa)_`,
               ].join('\n'),
             });
+
+            console.log(`✅ @${commenter} assigned to issue #${issueNumber}`);

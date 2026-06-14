@@ -47,6 +47,11 @@ class CappedMemoryStore {
 // Determine available Redis URL
 const redisUrl = process.env.REDIS_URL || process.env.UPSTASH_REDIS_REST_URL;
 
+if (process.env.UPSTASH_REDIS_REST_URL && !process.env.REDIS_URL) {
+  throw new Error(
+    'Configuration Error: ioredis does not support Upstash REST URLs. Please use a TCP connection string under REDIS_URL instead.'
+  );
+}
 if (redisUrl) {
   try {
     redisClient = new Redis(redisUrl, {

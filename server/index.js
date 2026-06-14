@@ -26,6 +26,7 @@ import formsRouter from './routes/forms.js';
 import portfolioRouter from './routes/portfolio.js';
 import notificationsRouter from './routes/notifications.js';
 import adminRouter from './routes/admin.js';
+import { validateEnvironment } from './utils/envValidator.js';
 import { performanceMonitor } from './middleware/performanceMonitor.js';
 import { tracingMiddleware } from './middleware/tracingMiddleware.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
@@ -79,17 +80,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const CONTENT_FILE = path.join(__dirname, 'data', 'content.json');
 
-const REQUIRED_ENV_VARS = ['CORS_ORIGIN', 'ADMIN_EVENT_PASSWORD'];
 
-function validateEnvironment() {
-  const missing = REQUIRED_ENV_VARS.filter((env) => !process.env[env]);
-
-  if (missing.length > 0) {
-    throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
-  }
-
-  console.log('Environment validation passed');
-}
 
 validateEnvironment();
 
@@ -291,6 +282,7 @@ app.use(performanceMonitor);
 app.use(cookieParser());
 
 // Global API rate limiter — protects all /api routes from request flooding
+app.use('/api', apiRateLimiter);
 app.use('/api', tierRateLimiter());
 
 function requestLogger(req, res, next) {
@@ -331,7 +323,7 @@ app.use('/api', notificationsRouter);
 app.use('/api/admin', adminRouter);
 app.use('/', syncRouter);
 
-const adminAuth = adminAuthMiddleware.requireAdmin;
+const adminAuth = [apiRateLimiter, adminAuthMiddleware.requireAdmin];
 
 const defaultContent = {
   events: [

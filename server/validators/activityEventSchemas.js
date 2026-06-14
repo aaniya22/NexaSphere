@@ -5,7 +5,7 @@ export const activityEventSchema = z
   .object({
     id: z.string().trim().min(1).optional(),
     name: z.string().trim().min(1).max(120),
-    date: z.string().trim().min(1).max(80),
+    date: z.string().datetime({ message: "Invalid ISO 8601 date-time format" }),
     tagline: z.string().trim().max(240).optional().default(''),
     description: z.string().trim().min(1).max(1200),
     status: z.enum(['upcoming', 'completed']).optional().default('completed'),
@@ -16,16 +16,11 @@ export const activityEventSchema = z
         phone: z.string().trim().max(30).optional().default(''),
       })
       .optional()
-      .default(undefined),
+      .default({}),
   })
   .transform((data) => {
-    const id = data.id || generatePrefixedId('manual');
-
     return {
       ...data,
-      id,
-      status: data.status === 'upcoming' ? 'upcoming' : 'completed',
-      tagline: data.tagline || '',
-      createdBy: data.createdBy,
+      id: data.id || generatePrefixedId('manual'),
     };
   });
