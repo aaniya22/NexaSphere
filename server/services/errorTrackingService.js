@@ -1,3 +1,11 @@
+
+import 'dotenv/config';
+import { validateEnvironment } from './utils/envValidator.js';
+
+validateEnvironment();
+
+import helmet from 'helmet';
+import express from 'express';
 /**
  * Error Tracking Service
  * Manages error logging, tracking, and analysis

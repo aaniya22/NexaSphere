@@ -6,6 +6,8 @@ export default function ResumeUploader({ onUpload }) {
   const [error, setError] = useState('');
   const inputRef = useRef();
 
+  const MAX_SIZE_BYTES = 5 * 1024 * 1024;
+
   const handleFile = (f) => {
     if (!f) return;
     const allowed = [
@@ -15,6 +17,10 @@ export default function ResumeUploader({ onUpload }) {
     ];
     if (!allowed.includes(f.type)) {
       setError('Please upload a PDF or DOC/DOCX file.');
+      return;
+    }
+    if (f.size > MAX_SIZE_BYTES) {
+      setError('File exceeds the 5 MB size limit. Please upload a smaller file.');
       return;
     }
     setError('');

@@ -1,5 +1,5 @@
 import fs from 'fs';
-import { exec } from 'child_process';
+import { exec, execFile } from 'child_process';
 
 // Paths to SSL certificate
 const certPath = process.env.SSL_CERT_PATH || 'gateway/certs/localhost.crt';
@@ -20,7 +20,7 @@ async function checkSslExpiry() {
 
   try {
     // Parse using openssl command
-    exec(`openssl x509 -enddate -noout -in ${certPath}`, (error, stdout, stderr) => {
+    execFile('openssl', ['x509', '-enddate', '-noout', '-in', certPath], (error, stdout, stderr) => {
       if (error) {
         console.error('Failed to parse certificate end date with openssl:', stderr);
         // Fallback to cert file modification time as a mock age check

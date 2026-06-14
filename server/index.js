@@ -282,6 +282,7 @@ app.use(performanceMonitor);
 app.use(cookieParser());
 
 // Global API rate limiter — protects all /api routes from request flooding
+app.use('/api', apiRateLimiter);
 app.use('/api', tierRateLimiter());
 
 function requestLogger(req, res, next) {
@@ -322,7 +323,7 @@ app.use('/api', notificationsRouter);
 app.use('/api/admin', adminRouter);
 app.use('/', syncRouter);
 
-const adminAuth = adminAuthMiddleware.requireAdmin;
+const adminAuth = [apiRateLimiter, adminAuthMiddleware.requireAdmin];
 
 const defaultContent = {
   events: [

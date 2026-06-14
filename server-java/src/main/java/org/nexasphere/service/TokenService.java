@@ -6,31 +6,60 @@ import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.nexasphere.model.SessionInfo;
 import org.nexasphere.model.TokenSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
+/**
+ * Manages administrative session tokens using a shared Redis store.
+ *
+ * <p>Sessions are persisted under the key namespace {@code session:admin:{tokenHash}}
+ * with an 8-hour TTL. This enables both the Java backend and the Node.js backend
+ * to validate tokens independently — without cross-service HTTP calls.</p>
+ *
+ * <p>Raw tokens are never stored; only their SHA-256 hashes are used as Redis keys.
+ * Redis TTL handles automatic expiry, eliminating the need for scheduled cleanup.</p>
+ */
 @Service
 public class TokenService {
 
     private static final Logger log = LoggerFactory.getLogger(TokenService.class);
 
-    private static final Duration SESSION_TTL = Duration.ofHours(8);
+    static final Duration SESSION_TTL = Duration.ofHours(8);
+    static final String KEY_PREFIX = "session:admin:";
 
-    private final ConcurrentHashMap<String, SessionInfo> sessions = new ConcurrentHashMap<>();
+    private final RedisTemplate<String, String> redisTemplate;
+    private final ObjectMapper objectMapper;
     private final SecureRandom secureRandom = new SecureRandom();
+
+    public TokenService(RedisTemplate<String, String> redisTemplate, ObjectMapper objectMapper) {
+        this.redisTemplate = redisTemplate;
+        this.objectMapper = objectMapper;
+    }
 
     public TokenSession createSession(String email) {
         Instant now = Instant.now();
         String token = generateToken();
         String tokenHash = hashToken(token);
         SessionInfo sessionInfo = new SessionInfo(tokenHash, email, now, now.plus(SESSION_TTL));
-        sessions.put(tokenHash, sessionInfo);
+
+        String key = KEY_PREFIX + tokenHash;
+        try {
+            String json = objectMapper.writeValueAsString(sessionInfo);
+            redisTemplate.opsForValue().set(key, json, SESSION_TTL);
+            log.debug("Created admin session for {} (key={})", email, key);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Failed to serialize session info", e);
+        }
+
         return new TokenSession(token, sessionInfo);
     }
 
@@ -40,47 +69,47 @@ public class TokenService {
         }
 
         String tokenHash = hashToken(token);
-        Instant now = Instant.now();
-        SessionInfo info = sessions.get(tokenHash);
-        if (info == null) {
+        String key = KEY_PREFIX + tokenHash;
+        String json = redisTemplate.opsForValue().get(key);
+
+        if (json == null) {
             return Optional.empty();
         }
 
-        if (info.isExpired(now)) {
-            sessions.remove(tokenHash);
+        try {
+            JsonNode node = objectMapper.readTree(json);
+            Instant expiresAt = Instant.parse(node.get("expiresAt").asText());
+
+            if (expiresAt.isBefore(Instant.now())) {
+                // Expired session still lingering — delete it
+                redisTemplate.delete(key);
+                return Optional.empty();
+            }
+
+            SessionInfo info = new SessionInfo(
+                    node.get("token").asText(),
+                    node.get("email").asText(),
+                    Instant.parse(node.get("createdAt").asText()),
+                    expiresAt
+            );
+            return Optional.of(info);
+        } catch (JsonProcessingException e) {
+            log.error("Failed to deserialize session from Redis (key={})", key, e);
             return Optional.empty();
         }
-
-        return Optional.of(info);
     }
 
     public void revoke(String token) {
         if (token == null || token.isBlank()) {
             return;
         }
-        sessions.remove(hashToken(token));
+        String key = KEY_PREFIX + hashToken(token);
+        redisTemplate.delete(key);
+        log.debug("Revoked admin session (key={})", key);
     }
 
-    @Scheduled(fixedRate = 30 * 60 * 1000) // 30 minutes
-    public void scheduledCleanup() {
-        int removed = cleanupExpired();
-        if (removed > 0) {
-            log.info("Scheduled cleanup removed {} expired sessions", removed);
-        }
-    }
-
-    public int cleanupExpired() {
-        Instant now = Instant.now();
-        int before = sessions.size();
-        sessions.entrySet().removeIf(entry -> entry.getValue().isExpired(now));
-        int removed = before - sessions.size();
-        if (removed > 0) {
-            log.debug("Removed {} expired sessions", removed);
-        }
-        return removed;
-    }
-
-    private static String hashToken(String token) {
+    // lgtm[java/weak-cryptographic-algorithm]
+    static String hashToken(String token) {
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-256");
             byte[] hash = md.digest(token.getBytes());

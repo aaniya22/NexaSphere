@@ -11,6 +11,17 @@ process.env.CORS_ORIGIN = 'http://localhost:3000';
 process.env.JWT_SECRET = 'secret_super_long_secret_key_that_is_safe_and_long_enough_for_256bit';
 process.env.PORT = '0';
 
+const { adminAuthMiddleware } = await import('../middleware/adminAuthMiddleware.js');
+
+// Mock requireAdmin to bypass Redis during tests
+adminAuthMiddleware.requireAdmin = (req, res, next) => {
+  if (req.headers.authorization === 'Bearer mock-token') {
+    req.adminSession = { username: 'admin' };
+    return next();
+  }
+  return res.status(401).json({ error: 'Unauthorized' });
+};
+
 test('Push Subscription Validation and Memory Safety', async (t) => {
   setWithDbOverride(async (fn) => {
     const mockClient = {
@@ -56,7 +67,11 @@ test('Push Subscription Validation and Memory Safety', async (t) => {
       const req = http.request(options, (res) => {
         let data = '';
         res.on('data', (chunk) => (data += chunk));
-        res.on('end', () => resolve({ status: res.statusCode, body: JSON.parse(data || '{}') }));
+        res.on('end', () => {
+          const body = JSON.parse(data || '{}');
+          if (res.statusCode === 500) console.error('500 ERROR:', body);
+          resolve({ status: res.statusCode, body });
+        });
       });
 
       req.write(JSON.stringify(body));
