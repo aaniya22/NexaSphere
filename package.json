@@ -66,9 +66,6 @@
     "@rollup/rollup-linux-x64-musl": "4.60.0",
     "lru-cache": "^11.5.1",
     "next-intl": "^4.13.0",
-    "@prisma/client": "^5.12.1",
-    "react": "^19.2.7",
-    "react-dom": "^19.2.7",
-    "react-is": "^19.0.0"
+    "@prisma/client": "^5.12.1"
   }
 }

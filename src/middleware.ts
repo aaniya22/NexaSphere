@@ -130,12 +130,17 @@ async function fetchTenantAccess(
   workspaceId: string,
   origin: string
 ): Promise<boolean> {
+  const internalSecret = process.env.INTERNAL_AUTH_SECRET;
+  if (!internalSecret) {
+    console.error('[Middleware] INTERNAL_AUTH_SECRET not configured');
+    return false;
+  }
   try {
     const res = await fetch(
       `${origin}/api/auth/verify-tenant?userId=${userId}&workspaceId=${workspaceId}`,
       {
         headers: {
-          'x-internal-secret': process.env.INTERNAL_AUTH_SECRET || 'fallback-secret',
+          'x-internal-secret': internalSecret,
         },
       }
     );
@@ -153,8 +158,5 @@ async function fetchTenantAccess(
 }
 
 export const config = {
-  matcher: [
-    '/((?!api|_next|_vercel|.*\\..*).*)',
-    '/api/w/:workspaceId*/:path*',
-  ],
+  matcher: ['/((?!api|_next|_vercel|.*\\..*).*)', '/api/w/:workspaceId*/:path*'],
 };
