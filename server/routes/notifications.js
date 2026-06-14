@@ -176,7 +176,7 @@ router.post('/api/notifications', adminAuth, notificationRateLimiter, async (req
  * GET /api/notifications — Retrieve notifications for the authenticated user.
  * Requires a valid student token; query userId must match the token subject.
  */
-router.get('/api/notifications', requireStudentAuth, async (req, res) => {
+router.get('/api/notifications', requireStudentAuth, notificationRateLimiter, async (req, res) => {
   try {
     const authenticatedUserId = req.studentUser?.sub || req.studentUser?.id;
     const requestedUserId = req.query.userId || 'global';
