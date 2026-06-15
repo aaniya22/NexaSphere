@@ -5,9 +5,10 @@
 
 import { Router } from 'express';
 import { adminAuthMiddleware } from '../middleware/adminAuthMiddleware.js';
+import { apiRateLimiter } from '../middleware/rateLimiter.js';
 
 const router = Router();
-const adminAuth = adminAuthMiddleware.requireAdmin;
+const adminAuth = [apiRateLimiter, adminAuthMiddleware.requireAdmin];
 
 /**
  * GET /api/admin/membership — Fetch membership responses from

@@ -13,8 +13,9 @@ import {
   Loader,
 } from 'lucide-react';
 import { mentors as fallbackMentors, mentorDomains } from '../../data/mentorshipData.js';
+import './MentorsPage.css';
 
-const API_BASE = process.env.REACT_APP_API_URL || '';
+const API_BASE = import.meta.env.VITE_API_URL || '';
 
 async function apiFetch(path, options = {}) {
   const res = await fetch(`${API_BASE}${path}`, {
@@ -152,131 +153,152 @@ function MentorsPage() {
             <p className="text-xl">No mentors found matching your criteria.</p>
           </div>
         ) : (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {mentors.map((mentor) => (
-              <div
-                key={mentor.id}
-                className="bg-gray-800 rounded-xl border border-gray-700 p-6 hover:border-purple-500/50 transition-all"
-              >
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-lg font-bold">
-                      {mentor.name.charAt(0)}
-                    </div>
-                    <div>
-                      <h3 className="font-semibold">{mentor.name}</h3>
-                      <div className="flex items-center gap-1 text-sm text-gray-400">
-                        <Award className="w-3.5 h-3.5" />
-                        <span>{mentor.experience || 'N/A'}</span>
+          <div className="mentor-grid">
+            {mentors.map((mentor) => {
+              const gradientClasses = [
+                'mentor-avatar-purple',
+                'mentor-avatar-blue',
+                'mentor-avatar-green',
+                'mentor-avatar-orange',
+                'mentor-avatar-indigo',
+                'mentor-avatar-pink',
+              ];
+              const gradientClass =
+                gradientClasses[(mentor.name?.charCodeAt(0) || 0) % gradientClasses.length];
+              const initials =
+                mentor.name
+                  ?.split(' ')
+                  .map((n) => n[0])
+                  .join('')
+                  .toUpperCase()
+                  .slice(0, 2) || '?';
+
+              return (
+                <div key={mentor.id} className="mentor-card">
+                  {/* Header */}
+                  <div className="mentor-card-header">
+                    <div className="mentor-card-header-left">
+                      <div className="mentor-avatar-wrapper">
+                        <div className={`mentor-avatar ${gradientClass}`}>{initials}</div>
+                        {mentor.isAvailable && <div className="mentor-status-dot"></div>}
+                      </div>
+                      <div className="mentor-info">
+                        <h3 className="mentor-name">{mentor.name}</h3>
+                        <div className="mentor-experience">
+                          <Award />
+                          <span>{mentor.experience || 'N/A'}</span>
+                        </div>
                       </div>
                     </div>
+                    {mentor.isAvailable ? (
+                      <span className="mentor-badge mentor-badge-available">
+                        <CheckCircle style={{ width: 12, height: 12 }} />
+                        Available
+                      </span>
+                    ) : (
+                      <span className="mentor-badge mentor-badge-busy">
+                        <Clock style={{ width: 12, height: 12 }} />
+                        Busy
+                      </span>
+                    )}
                   </div>
-                  {mentor.isAvailable ? (
-                    <span className="flex items-center gap-1 text-xs text-green-400 bg-green-400/10 px-2 py-1 rounded-full">
-                      <CheckCircle className="w-3 h-3" /> Available
-                    </span>
-                  ) : (
-                    <span className="flex items-center gap-1 text-xs text-gray-500 bg-gray-700 px-2 py-1 rounded-full">
-                      <Clock className="w-3 h-3" /> Unavailable
-                    </span>
+
+                  {/* Bio */}
+                  <p className="mentor-bio">{mentor.bio}</p>
+
+                  {/* Tags */}
+                  <div className="mentor-tags">
+                    {mentor.domains?.slice(0, 4).map((domain) => (
+                      <span key={domain} className="mentor-tag">
+                        {domain}
+                      </span>
+                    ))}
+                  </div>
+
+                  {/* Meta */}
+                  <div className="mentor-meta">
+                    {mentor.availability && (
+                      <div className="mentor-meta-item">
+                        <Clock />
+                        <span>{mentor.availability}</span>
+                      </div>
+                    )}
+                    <div className="mentor-meta-item">
+                      <Users />
+                      <span>{mentor.menteeCount || 0} mentees</span>
+                    </div>
+                  </div>
+
+                  {/* Action Button */}
+                  <button
+                    onClick={() =>
+                      setShowRequestForm(showRequestForm === mentor.id ? null : mentor.id)
+                    }
+                    disabled={!mentor.isAvailable}
+                    className={`mentor-action-button ${showRequestForm === mentor.id ? 'active' : ''}`}
+                  >
+                    <Send />
+                    {showRequestForm === mentor.id ? 'Cancel' : 'Request Mentorship'}
+                  </button>
+
+                  {/* Request Form */}
+                  {showRequestForm === mentor.id && (
+                    <div className="mentor-request-form">
+                      <input
+                        placeholder="Your Name *"
+                        value={requestForm.mentee_name}
+                        onChange={(e) =>
+                          setRequestForm((p) => ({ ...p, mentee_name: e.target.value }))
+                        }
+                      />
+                      <input
+                        placeholder="Your Email *"
+                        type="email"
+                        value={requestForm.mentee_email}
+                        onChange={(e) =>
+                          setRequestForm((p) => ({ ...p, mentee_email: e.target.value }))
+                        }
+                      />
+                      <input
+                        placeholder="Domain (optional)"
+                        value={requestForm.mentee_domain}
+                        onChange={(e) =>
+                          setRequestForm((p) => ({ ...p, mentee_domain: e.target.value }))
+                        }
+                      />
+                      <textarea
+                        placeholder="Your goals (optional)"
+                        rows={2}
+                        value={requestForm.mentee_goals}
+                        onChange={(e) =>
+                          setRequestForm((p) => ({ ...p, mentee_goals: e.target.value }))
+                        }
+                      />
+                      <textarea
+                        placeholder="Message to mentor (optional)"
+                        rows={2}
+                        value={requestForm.message}
+                        onChange={(e) => setRequestForm((p) => ({ ...p, message: e.target.value }))}
+                      />
+                      <button
+                        onClick={() => handleRequest(mentor.id)}
+                        disabled={
+                          submitting || !requestForm.mentee_name || !requestForm.mentee_email
+                        }
+                        className="mentor-submit-button"
+                      >
+                        {submitting ? (
+                          <Loader style={{ width: 16, height: 16 }} className="animate-spin" />
+                        ) : (
+                          <Send style={{ width: 16, height: 16 }} />
+                        )}
+                        {submitting ? 'Sending...' : 'Send Request'}
+                      </button>
+                    </div>
                   )}
                 </div>
-
-                <p className="text-sm text-gray-400 mb-4 line-clamp-2">{mentor.bio}</p>
-
-                <div className="flex flex-wrap gap-1.5 mb-4">
-                  {mentor.domains.map((d) => (
-                    <span
-                      key={d}
-                      className="text-xs bg-purple-500/10 text-purple-300 px-2 py-0.5 rounded-full"
-                    >
-                      {d}
-                    </span>
-                  ))}
-                </div>
-
-                {mentor.availability && (
-                  <div className="flex items-center gap-1.5 text-xs text-gray-500 mb-4">
-                    <Clock className="w-3 h-3" />
-                    <span>{mentor.availability}</span>
-                  </div>
-                )}
-
-                <div className="flex items-center gap-4 text-sm text-gray-400 mb-4">
-                  <span className="flex items-center gap-1">
-                    <Users className="w-3.5 h-3.5" /> {mentor.menteeCount || 0} mentees
-                  </span>
-                </div>
-
-                <button
-                  onClick={() =>
-                    setShowRequestForm(showRequestForm === mentor.id ? null : mentor.id)
-                  }
-                  disabled={!mentor.isAvailable}
-                  className="w-full px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg text-sm font-medium hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {showRequestForm === mentor.id ? 'Cancel' : 'Request Mentorship'}
-                </button>
-
-                {showRequestForm === mentor.id && (
-                  <div className="mt-4 border-t border-gray-700 pt-4 space-y-3">
-                    <input
-                      placeholder="Your Name *"
-                      value={requestForm.mentee_name}
-                      onChange={(e) =>
-                        setRequestForm((p) => ({ ...p, mentee_name: e.target.value }))
-                      }
-                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-                    />
-                    <input
-                      placeholder="Your Email *"
-                      type="email"
-                      value={requestForm.mentee_email}
-                      onChange={(e) =>
-                        setRequestForm((p) => ({ ...p, mentee_email: e.target.value }))
-                      }
-                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-                    />
-                    <input
-                      placeholder="Domain (optional)"
-                      value={requestForm.mentee_domain}
-                      onChange={(e) =>
-                        setRequestForm((p) => ({ ...p, mentee_domain: e.target.value }))
-                      }
-                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-                    />
-                    <textarea
-                      placeholder="Your goals (optional)"
-                      rows={2}
-                      value={requestForm.mentee_goals}
-                      onChange={(e) =>
-                        setRequestForm((p) => ({ ...p, mentee_goals: e.target.value }))
-                      }
-                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
-                    />
-                    <textarea
-                      placeholder="Message to mentor (optional)"
-                      rows={2}
-                      value={requestForm.message}
-                      onChange={(e) => setRequestForm((p) => ({ ...p, message: e.target.value }))}
-                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
-                    />
-                    <button
-                      onClick={() => handleRequest(mentor.id)}
-                      disabled={submitting || !requestForm.mentee_name || !requestForm.mentee_email}
-                      className="w-full px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 rounded-lg text-sm font-medium hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                    >
-                      {submitting ? (
-                        <Loader className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <Send className="w-4 h-4" />
-                      )}
-                      {submitting ? 'Sending...' : 'Send Request'}
-                    </button>
-                  </div>
-                )}
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

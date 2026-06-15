@@ -6,6 +6,7 @@
 import logger from '../utils/logger.js';
 import { captureException } from '../utils/sentry.js';
 import { sendSlackAlert } from '../utils/slack.js';
+import { trackError } from '../utils/errorTracker.js';
 import { logError } from '../services/errorTrackingService.js';
 
 function resolveUserId(req) {
@@ -23,6 +24,8 @@ const errorHandler = (err, req, res, next) => {
   // Determine error status code
   const status = err.statusCode || err.status || 500;
   const message = err.message || 'Internal Server Error';
+  const trackedError = trackError(err);
+  logger.error('Tracked Error', trackedError);
 
   // Log error details
   const errorLog = {

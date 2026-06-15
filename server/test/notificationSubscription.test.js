@@ -11,6 +11,7 @@ process.env.JWT_SECRET = 'secret_super_long_secret_key_that_is_safe_and_long_eno
 process.env.PORT = '0';
 
 import { setWithDbOverride } from '../repositories/db.js';
+const { adminAuthMiddleware } = await import('../middleware/adminAuthMiddleware.js');
 
 const mockClient = {
   query: async (sql, params) => {
@@ -39,6 +40,14 @@ setWithDbOverride(async (fn) => {
   return await fn(mockClient);
 });
 
+// Mock requireAdmin to bypass Redis during tests
+adminAuthMiddleware.requireAdmin = (req, res, next) => {
+  if (req.headers.authorization === 'Bearer mock-token') {
+    req.adminSession = { username: 'admin' };
+    return next();
+  }
+  return res.status(401).json({ error: 'Unauthorized' });
+};
 test('Push Subscription Validation and Memory Safety', async (t) => {
   setWithDbOverride(async (fn) => {
     const mockClient = {
@@ -85,11 +94,15 @@ test('Push Subscription Validation and Memory Safety', async (t) => {
       const req = http.request(options, (res) => {
         let data = '';
         res.on('data', (chunk) => (data += chunk));
-        res.on('end', () => resolve({
-          status: res.statusCode,
-          headers: res.headers,
-          body: JSON.parse(data || '{}')
-        }));
+        res.on('end', () => {
+          const body = JSON.parse(data || '{}');
+          if (res.statusCode === 500) console.error('500 ERROR:', body);
+          resolve({
+            status: res.statusCode,
+            headers: res.headers,
+            body
+          });
+        });
       });
 
       req.write(JSON.stringify(body));

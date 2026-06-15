@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { gamificationService } from '../../services/gamification/gamificationService';
 import { DynamicIcon } from '../../shared/Icons';
 
@@ -7,6 +7,7 @@ export default function GamificationDashboard() {
   const [leaderboard, setLeaderboard] = useState([]);
   const [activeTab, setActiveTab] = useState('overview');
   const [toasts, setToasts] = useState([]);
+  const toastTimerIds = useRef([]);
 
   const loadData = async () => {
     setUserStats(gamificationService.getUserStats());
@@ -16,6 +17,10 @@ export default function GamificationDashboard() {
 
   useEffect(() => {
     loadData();
+    return () => {
+      toastTimerIds.current.forEach(clearTimeout);
+      toastTimerIds.current = [];
+    };
   }, []);
 
   const handleAction = (action) => {
@@ -30,9 +35,10 @@ export default function GamificationDashboard() {
       }));
       setToasts((prev) => [...prev, ...newToasts]);
       newToasts.forEach((t) => {
-        setTimeout(() => {
+        const timerId = setTimeout(() => {
           setToasts((prev) => prev.filter((x) => x.id !== t.id));
         }, 4000);
+        toastTimerIds.current.push(timerId);
       });
     }
   };

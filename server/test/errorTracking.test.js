@@ -1,13 +1,16 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {
+process.env.CORS_ORIGIN = 'http://localhost:3000';
+process.env.ADMIN_EVENT_PASSWORD = 'StrongEventPassword123!';
+
+const {
   logError,
   getErrorStats,
   getRecentErrors,
   getEndpointErrors,
   getUserErrors,
   clearErrors,
-} from '../services/errorTrackingService.js';
+} = await import('../services/errorTrackingService.js');
 
 test.beforeEach(() => {
   clearErrors();

@@ -18,6 +18,7 @@
 - [🚢 Deployment](#-deployment)
 - [🤝 Contributing](#-contributing)
 - [📚 Documentation](#-documentation)
+- [👥 Contributors](#-contributors)
 - [📄 License](#-license)
 
 ---
@@ -367,6 +368,14 @@ Deep-dive references live in the [`/docs`](docs/) directory:
 | [docs/deployment.md](docs/deployment.md)                   | Full deployment guide (Vercel / Render / Docker) |
 | [docs/database-backups.md](docs/database-backups.md)       | Database backup & restore procedures             |
 | [docs/DATABASE_MIGRATIONS.md](docs/DATABASE_MIGRATIONS.md) | Running & writing DB migrations                  |
+
+---
+
+## 👥 Contributors
+
+Thanks to all contributors ❤️
+
+[![Contributors](https://contrib.rocks/image?repo=Ayushh-Sharmaa/NexaSphere)](https://github.com/Ayushh-Sharmaa/NexaSphere/graphs/contributors)
 
 ---
 

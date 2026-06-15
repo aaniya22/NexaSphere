@@ -122,8 +122,20 @@ export async function withDb(fn) {
     
     const handleStats = (err) => {
       const duration = Date.now() - start;
-      import('../middleware/performanceMonitor.js').then(({ recordDbQueryMetric }) => {
+      const sqlText = typeof config === 'string' ? config : (config?.text || 'unknown');
+      Promise.all([
+        import('../middleware/performanceMonitor.js'),
+        import('../config/appContext.js')
+      ]).then(([{ recordDbQueryMetric }, { appContext }]) => {
         recordDbQueryMetric(config, duration, err);
+        const store = appContext.getStore();
+        if (store?.traceEntry) {
+          store.traceEntry.queries.push({
+            sql: sqlText.trim().replace(/\s+/g, ' ').slice(0, 100),
+            durationMs: duration,
+            success: !err
+          });
+        }
       }).catch(() => {});
     };
 

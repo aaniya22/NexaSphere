@@ -41,7 +41,7 @@ test.after(() => {
 test('activityEventsService.addActivityEvent rejects unauthorized requests', async () => {
   const unauthorizedInput = {
     name: 'Hackathon Event',
-    date: '2026-06-01',
+    date: '2026-06-01T00:00:00Z',
     description: 'A test event description',
     password: 'wrongpassword', // Incorrect password
     coreTeamName: 'John Doe',
@@ -63,7 +63,7 @@ test('activityEventsService.addActivityEvent rejects unauthorized requests', asy
 test('activityEventsService.addActivityEvent accepts authorized requests', async () => {
   const authorizedInput = {
     name: 'Hackathon Event',
-    date: '2026-06-01',
+    date: '2026-06-01T00:00:00Z',
     description: 'A test event description',
     password: 'TestPassword123', // Matches process.env.ADMIN_EVENT_PASSWORD
     // Matching the fictional TEST_MEMBER returned by the mocked coreTeamService.listMembers

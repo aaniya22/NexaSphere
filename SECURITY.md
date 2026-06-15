@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD013 -->
 # Security Policy
 
 ## Supported Versions
@@ -85,3 +86,89 @@ When contributing code, please keep these in mind:
 - **Keep dependencies updated** — run `npm audit` and address high/critical advisories
 - **Follow least-privilege** — request only the permissions your code needs
 - **Use parameterised queries** — never concatenate user input into SQL strings
+
+---
+
+## Admin Session Architecture
+
+NexaSphere uses a **shared Redis session store** to manage administrative
+authentication across multiple backend services (Java Spring Boot and Node.js
+Express). This eliminates the need for cross-service HTTP calls and enables
+horizontal scaling.
+
+### How It Works
+
+```text
+┌──────────────────┐     ┌──────────────────┐
+│  Java Backend    │     │  Node.js Backend  │
+│  (Spring Boot)   │     │  (Express)        │
+│                  │     │                   │
+│  TokenService    │     │  adminAuthMiddle- │
+│  .createSession()│────▶│  ware.requireAdmin│
+│  .validate()     │     │  ()               │
+│  .revoke()       │     │                   │
+└────────┬─────────┘     └────────┬──────────┘
+         │                        │
+         │   ┌──────────────┐     │
+         └──▶│  Shared      │◀────┘
+             │  Redis       │
+             │  Instance    │
+             └──────────────┘
+```
+
+### Session Key Namespace
+
+Sessions are stored under the Redis key pattern:
+
+```text
+session:admin:{sha256_hash_of_token}
+```
+
+- **Raw tokens are never stored in Redis.** Only the SHA-256 hash of the bearer
+  token is used as the key, preventing token exposure even if the Redis instance
+  is compromised.
+- The value is a JSON string containing the session metadata:
+
+```json
+{
+  "token": "<sha256_hash>",
+  "email": "admin@example.com",
+  "createdAt": "2025-01-01T00:00:00Z",
+  "expiresAt": "2025-01-01T08:00:00Z"
+}
+```
+
+### Session Lifecycle
+
+| Event | Action |
+| --- | --- |
+| **Login** | A new key is written to Redis with an 8-hour TTL. Node.js backend also writes to PostgreSQL for audit. |
+| **Validation** | Both services compute `SHA-256(token)` and perform a Redis `GET`. No cross-service HTTP calls. |
+| **Logout** | The Redis key is deleted immediately (`DEL`), revoking the session. PostgreSQL is updated for audit. |
+| **Expiry** | Redis TTL automatically evicts expired keys. No scheduled cleanup tasks are required. |
+
+### Configuration
+
+The following environment variables configure the Redis connection:
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `REDIS_HOST` | `localhost` | Redis server hostname |
+| `REDIS_PORT` | `6379` | Redis server port |
+| `REDIS_PASSWORD` | *(empty)* | Redis AUTH password |
+| `REDIS_URL` | `redis://localhost:6379` | Full Redis connection URL (Node.js) |
+
+### Security Considerations
+
+- **Token hashing**: All tokens are SHA-256 hashed before being used as Redis
+  keys. Raw bearer tokens never persist on disk or in Redis.
+- **TTL enforcement**: Sessions auto-expire after 8 hours via Redis TTL, even
+  if explicit logout is not performed.
+- **Immediate revocation**: Admin logout deletes the Redis key synchronously,
+  ensuring the session is revoked across all services immediately.
+- **Dual storage**: PostgreSQL retains a full audit trail of admin sessions
+  (creation, last-seen, revocation timestamps). Redis serves only as the
+  fast-path validation layer.
+- **Graceful degradation**: If Redis is unreachable during login, the
+  PostgreSQL session is still created. Validation will fail gracefully with a
+  500 status until Redis connectivity is restored.
