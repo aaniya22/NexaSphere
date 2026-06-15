@@ -36,6 +36,13 @@ import {
   getHistoricalUptime,
   getSubscriberNotifications,
 } from '../utils/serviceStatus.js';
+import {
+  runConsistencyCheck,
+  getSynchronizationStatus,
+  detectConflicts,
+  generateIntegrityReport,
+  getConsistencyAlerts,
+} from '../utils/consistencyVerifier.js';
 
 const router = Router();
 const adminAuth = [apiRateLimiter, adminAuthMiddleware.requireAdmin];
@@ -164,6 +171,26 @@ router.get('/api/admin/uptime-report', adminAuth, (req, res) => {
 
 router.get('/api/admin/status-subscribers', adminAuth, (req, res) => {
   res.json(getSubscriberNotifications());
+});
+
+router.get('/api/admin/consistency-check', adminAuth, (req, res) => {
+  res.json(runConsistencyCheck());
+});
+
+router.get('/api/admin/sync-status', adminAuth, (req, res) => {
+  res.json(getSynchronizationStatus());
+});
+
+router.get('/api/admin/conflicts', adminAuth, (req, res) => {
+  res.json(detectConflicts());
+});
+
+router.get('/api/admin/integrity-report', adminAuth, (req, res) => {
+  res.json(generateIntegrityReport());
+});
+
+router.get('/api/admin/consistency-alerts', adminAuth, (req, res) => {
+  res.json(getConsistencyAlerts());
 });
 
 export default router;
