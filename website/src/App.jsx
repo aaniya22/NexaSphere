@@ -110,6 +110,7 @@ const MentorsPage = lazy(() => import('./pages/mentorship/MentorsPage'));
 const MentorshipDashboard = lazy(() => import('./pages/mentorship/MentorshipDashboard'));
 const StatusPage = lazy(() => import('./pages/StatusPage'));
 const LiveStreamPage = lazy(() => import('./pages/streaming/LiveStreamPage'));
+const SponsorsPage = lazy(() => import('./pages/sponsors/SponsorsPage'));
 
 const MNH = 88,
   DNH = 64;
@@ -615,6 +616,7 @@ function MainRouter({
       '/mentorship': 'Mentorship',
       '/mentorship/mentors': 'Mentorship',
       '/mentorship/dashboard': 'Mentorship',
+      '/sponsors': 'Sponsors',
     };
     const tab = pathMap[location.pathname] || 'Home';
     setActiveTab(tab);
@@ -685,6 +687,7 @@ function MainRouter({
         Contact: '/contact',
         Forum: '/forum',
         Mentorship: '/mentorship',
+        Sponsors: '/sponsors',
       };
       const targetPath = routeMap[tab];
       if (targetPath) {
@@ -999,6 +1002,16 @@ function MainRouter({
               element={
                 <PageIn k="forum-thread">
                   <ForumThreadPage onBack={() => nav('/forum')} />
+                </PageIn>
+              }
+            />
+
+            {/* ── Sponsors ── */}
+            <Route
+              path="/sponsors"
+              element={
+                <PageIn k="sponsors">
+                  <SponsorsPage />
                 </PageIn>
               }
             />

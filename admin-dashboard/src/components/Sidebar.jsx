@@ -107,6 +107,12 @@ const links = [
     label: 'Circuit Breaker',
     icon: 'Activity',
   },
+  {
+    to: '/dashboard/sponsorships',
+    label: 'Sponsorships',
+    icon: 'Handshake',
+    requiredScope: 'events:read',
+  },
 ];
 
 export function Sidebar() {
