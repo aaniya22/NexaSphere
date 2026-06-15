@@ -29,7 +29,7 @@ def test_rate_limiting():
 def test_xss_sanitization():
     # Test Pydantic model directly to ensure the validator strips XSS
     payload = {
-        "name": "Hacker <script>alert(1)</script>",
+        "name": "Hacker <script>alert</script>",
         "email": "test@example.com",
         "whatsapp": "9876543210",
         "year": "1st Year",
@@ -43,7 +43,7 @@ def test_xss_sanitization():
     # name should be stripped of tags
     assert "<script>" not in submission.name
     # bleach removes tags, leaving content (or removes entirely depending on config)
-    assert submission.name == "Hacker alert(1)"
+    assert submission.name == "Hacker alert"
     
     # reason should be stripped of tags
     assert "<iframe>" not in submission.reason

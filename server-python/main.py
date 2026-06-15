@@ -5,6 +5,8 @@ import uuid
 import contextvars
 
 import google.generativeai as genai
+import asyncio
+from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -17,6 +19,7 @@ from observability.metrics import collect_celery_queue_depth
 from observability.tracing import init_tracing
 from prompts.system_prompt import SYSTEM_PROMPT
 from routers import certificates, forms, health, notifications, portfolio, recommend
+from services.sync_worker import periodic_sync_worker
 from utils.security import limiter
 
 load_dotenv()
@@ -78,7 +81,20 @@ else:
     genai.configure(api_key=API_KEY)
     model = genai.GenerativeModel(model_name="gemini-3.1-flash-lite-preview")
 
-app = FastAPI(title="NexaSphere AI Core")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Start the periodic background worker task
+    worker_task = asyncio.create_task(periodic_sync_worker(interval_seconds=60))
+    yield
+    # Clean up the background worker task on shutdown
+    worker_task.cancel()
+    try:
+        await worker_task
+    except asyncio.CancelledError:
+        pass
+
+
+app = FastAPI(title="NexaSphere AI Core", lifespan=lifespan)
 
 init_tracing(app)
 
@@ -140,7 +156,7 @@ class ChatRequest(BaseModel):
 
 @app.post("/ai/chat")
 @limiter.limit("20/minute")
-async def chat_with_ai(http_request: Request, chat_req: ChatRequest):
+async def chat_with_ai(request: Request, chat_req: ChatRequest):
     try:
         if not model:
             return {"reply": "Nexa-AI Core is offline. (GEMINI_API_KEY missing)"}

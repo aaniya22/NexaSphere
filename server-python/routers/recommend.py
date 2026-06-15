@@ -65,7 +65,8 @@ async def trending_events(limit: int = Query(10, ge=1, le=30)):
                 return json.loads(cached)
     except Exception:
         pass
-    elif redis_key in LOCAL_CACHE:
+
+    if redis_key in LOCAL_CACHE:
         entry = LOCAL_CACHE[redis_key]
         if time.time() < entry["expires"]:
             return entry["data"]
