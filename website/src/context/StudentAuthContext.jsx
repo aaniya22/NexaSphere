@@ -37,7 +37,11 @@ export function StudentAuthProvider({ children }) {
     const params = new URLSearchParams(window.location.search);
     const urlToken = params.get('token');
     if (urlToken) {
-      const cleanUrl = window.location.pathname + window.location.hash;
+      params.delete('token');
+      const cleanUrl =
+        window.location.pathname +
+        (params.toString() ? '?' + params.toString() : '') +
+        window.location.hash;
       window.history.replaceState({}, '', cleanUrl);
       fetchMe(urlToken);
       setLoading(false);
