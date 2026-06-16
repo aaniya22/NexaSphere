@@ -75,6 +75,8 @@ import compression from 'compression';
 import syncRouter from './routes/sync.js';
 import multer from 'multer';
 import * as resourcesController from './controllers/resourcesController.js';
+import scheduledTasksRouter from './routes/scheduledTasks.js';
+import { schedulerService } from './services/schedulerService.js';
 
 validateLimiters();
 
@@ -1028,6 +1030,7 @@ function clearActivityAuthAttempts(ip) {
 // Admin Analytics & Metrics (mounted with admin auth)
 app.use('/api/admin/analytics', adminAuth, analyticsRouter);
 app.use('/api/admin/metrics', adminAuth, adminStreamRouter);
+app.use('/api/admin/scheduled-tasks', adminAuth, scheduledTasksRouter);
 
 // OAuth / SSO Student Auth Endpoints
 app.get('/api/auth/google', studentAuthController.googleAuth);
@@ -1748,12 +1751,14 @@ if (process.env.NODE_ENV !== 'test') {
     boot.then(() => {
       server = app.listen(port, () => {
         console.log(`NexaSphere server listening on http://localhost:${port}`);
+        schedulerService.init();
       });
     });
   } else {
     loadPersistedPushSubscriptions();
     server = app.listen(port, () => {
       console.log(`NexaSphere server listening on http://localhost:${port}`);
+      schedulerService.init();
     });
     initializeSocketIO(server);
   }
