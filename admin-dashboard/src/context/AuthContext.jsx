@@ -55,7 +55,7 @@ export function AuthProvider({ children }) {
   // Cross-tab logout sync
   useEffect(() => {
     const handleStorageChange = (event) => {
-      if (event.key === LOGOUT_EVENT_KEY || (event.key === 'token' && !event.newValue)) {
+      if (event.key === LOGOUT_EVENT_KEY || (event.key === 'admin_token' && !event.newValue)) {
         clearAutoLogoutTimer();
         setIsAuthenticated(false);
 
