@@ -41,7 +41,7 @@ This implementation adds a **Prompt History & Workspace system** to NexaSphere's
   pinned: boolean,               // Pinned status
   queries: [string]              // For search indexing
 }
-```
+```text
 
 ### Workspace Service (`src/lib/workspaceService.js`)
 
@@ -122,7 +122,7 @@ Displays pinned conversations in a compact format with:
 ```javascript
 const [showSidebar, setShowSidebar] = useState(false);
 const [currentWorkspace, setCurrentWorkspace] = useState('default');
-```
+```text
 
 **Auto-Save Hook:**
 
@@ -133,7 +133,7 @@ useEffect(() => {
     savePrompt(lastUserMsg.text, lastBotMsg.text, currentWorkspace);
   }
 }, [messages, currentWorkspace]);
-```
+```text
 
 ## Styling
 
@@ -171,7 +171,7 @@ useEffect(() => {
 
 ```bash
 npm run test
-```
+```text
 
 ### Test Coverage Goals
 
@@ -204,7 +204,7 @@ await initializeDB();
 
 // Save a prompt
 await savePrompt('User question', 'AI response', 'workspace-id');
-```
+```text
 
 #### Create New Workspace
 
@@ -212,7 +212,7 @@ await savePrompt('User question', 'AI response', 'workspace-id');
 import { createWorkspace } from '../lib/workspaceService';
 
 const workspace = createWorkspace('My Project', '#6366f1');
-```
+```text
 
 #### Retrieve Prompts
 
@@ -224,7 +224,7 @@ const prompts = await getAllPrompts('workspace-id');
 
 // Search
 const results = await searchPrompts('keyword', 'workspace-id');
-```
+```text
 
 ## Browser Compatibility
 
@@ -259,7 +259,7 @@ const results = await searchPrompts('keyword', 'workspace-id');
 
 ## File Structure
 
-```
+```text
 src/
 ├── lib/
 │   ├── promptStore.js                 # Storage layer (IndexedDB)
@@ -279,7 +279,7 @@ src/
 │   └── Chatbot.jsx                    # Updated with auto-save
 └── styles/
     └── chatbot.css                    # Updated styling
-```
+```text
 
 ## Related Issues
 
@@ -303,7 +303,7 @@ When modifying this feature:
 
 ```javascript
 console.log('IndexedDB available:', !!window.indexedDB);
-```
+```text
 
 ### View Stored Data (DevTools)
 
@@ -317,7 +317,7 @@ console.log('IndexedDB available:', !!window.indexedDB);
 // Clear all prompts
 localStorage.removeItem('nexasphere_prompts');
 indexedDB.deleteDatabase('NexaSphereDB');
-```
+```text
 
 ## Support
 

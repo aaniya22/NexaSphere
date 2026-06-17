@@ -4,7 +4,7 @@ The public-facing NexaSphere web application — a React + Vite PWA for the GL B
 
 ## Structure
 
-```
+```text
 website/
 ├── src/           # All React source code
 │   ├── App.jsx
@@ -22,7 +22,7 @@ website/
 ├── vite.config.js
 ├── package.json
 └── vercel.json    # Standalone Vercel deployment config
-```
+```text
 
 ## Development
 
@@ -30,13 +30,13 @@ website/
 cd website
 npm install
 npm run dev       # Starts at http://localhost:5175
-```
+```text
 
 ## Build
 
 ```bash
 npm run build     # Outputs to website/dist/
-```
+```text
 
 ## Deployment (Vercel)
 
@@ -55,4 +55,4 @@ VITE_API_URL=https://your-api.vercel.app
 VITE_SUPABASE_URL=...
 VITE_SUPABASE_ANON_KEY=...
 SENTRY_AUTH_TOKEN=...  # Optional — only needed for sourcemap uploads
-```
+```text

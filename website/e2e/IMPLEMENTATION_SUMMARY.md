@@ -167,7 +167,7 @@ This PR implements a complete prompt history and workspace management system tha
 
 ## Architecture
 
-```
+```text
 ┌─────────────────────────────────────────┐
 │        React Components (UI)            │
 │  ├─ Chatbot.jsx (updated)              │
@@ -187,7 +187,7 @@ This PR implements a complete prompt history and workspace management system tha
 │  ├─ IndexedDB (primary)                │
 │  └─ localStorage (fallback)            │
 └─────────────────────────────────────────┘
-```
+```text
 
 ## Data Model
 
@@ -203,7 +203,7 @@ This PR implements a complete prompt history and workspace management system tha
   pinned: boolean,         // Pinned status
   queries: [string]        // Search index
 }
-```
+```text
 
 ### Workspace Entry
 
@@ -215,7 +215,7 @@ This PR implements a complete prompt history and workspace management system tha
   createdAt: number,       // Creation timestamp
   itemCount: number        // Number of prompts (for stats)
 }
-```
+```text
 
 ## Installation & Setup
 
@@ -223,13 +223,13 @@ This PR implements a complete prompt history and workspace management system tha
 
 ```bash
 npm install
-```
+```text
 
 ### 2. Start Development Server
 
 ```bash
 npm run dev
-```
+```text
 
 ### 3. Run Tests
 
@@ -242,13 +242,13 @@ npm run test:e2e
 
 # Watch mode
 npm run test:watch
-```
+```text
 
 ### 4. Build for Production
 
 ```bash
 npm run build
-```
+```text
 
 ## Usage Examples
 
@@ -291,7 +291,7 @@ const results = await searchPrompts('React', 'coding');
 
 // Create new workspace
 const workspace = createWorkspace('My Project', '#3b82f6');
-```
+```text
 
 ## Browser Support
 
@@ -349,7 +349,7 @@ npm run test:watch
 
 # Coverage report
 npm run test:coverage
-```
+```text
 
 ## Code Quality Checks
 
@@ -364,7 +364,7 @@ npm run format
 
 # Build and verify
 npm run build
-```
+```text
 
 ## Deployment Notes
 
@@ -412,7 +412,7 @@ console.log('IndexedDB:', window.indexedDB ? 'Available' : 'Not Available');
 // Clear and reinitialize
 localStorage.removeItem('nexasphere_prompts');
 indexedDB.deleteDatabase('NexaSphereDB');
-```
+```text
 
 ### Search Not Working
 

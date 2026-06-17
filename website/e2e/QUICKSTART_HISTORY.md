@@ -7,7 +7,7 @@
 ```bash
 npm install
 npm run dev
-```
+```text
 
 Visit `http://localhost:5173` in your browser.
 
@@ -68,18 +68,18 @@ Visit `http://localhost:5173` in your browser.
 
 ### Scenario 1: First-Time User
 
-```
+```text
 1. Click chat bubble
 2. Type "Hi"
 3. Get response
 4. Check history (should show 1 item)
 5. Close and reopen chat
 6. History still there? ✅
-```
+```text
 
 ### Scenario 2: Multiple Workspaces
 
-```
+```text
 1. Send "Python question" in default workspace
 2. Switch to "Coding" workspace
 3. Send "JavaScript question"
@@ -89,11 +89,11 @@ Visit `http://localhost:5173` in your browser.
 7. Verify each workspace has its own prompts
 8. Switch between workspaces
 9. See correct prompts for each ✅
-```
+```text
 
 ### Scenario 3: Search & Pin
 
-```
+```text
 1. Send 5 different prompts
 2. Pin 2 of them
 3. Verify pinned section shows
@@ -101,7 +101,7 @@ Visit `http://localhost:5173` in your browser.
 5. Get relevant results
 6. Click result to restore
 7. Old conversation loads ✅
-```
+```text
 
 ## Debug Commands
 
@@ -111,7 +111,7 @@ Visit `http://localhost:5173` in your browser.
 // In browser console:
 const db = await indexedDB.databases();
 console.log('Databases:', db);
-```
+```text
 
 ### View All Prompts
 
@@ -120,7 +120,7 @@ console.log('Databases:', db);
 import { getAllPrompts } from '@/lib/promptStore';
 const all = await getAllPrompts();
 console.log('Prompts:', all);
-```
+```text
 
 ### Clear All Data
 
@@ -129,14 +129,14 @@ console.log('Prompts:', all);
 localStorage.clear();
 indexedDB.deleteDatabase('NexaSphereDB');
 location.reload();
-```
+```text
 
 ### Check Storage Size
 
 ```javascript
 // In browser DevTools:
 // Go to Application → Storage → Estimate Usage
-```
+```text
 
 ## File Locations for Code Review
 
@@ -172,25 +172,25 @@ location.reload();
 
 ```bash
 npm run test
-```
+```text
 
 ### Watch Mode
 
 ```bash
 npm run test:watch
-```
+```text
 
 ### E2E Tests Only
 
 ```bash
 npm run test:e2e
-```
+```text
 
 ### Coverage Report
 
 ```bash
 npm run test:coverage
-```
+```text
 
 ## Key Things to Check
 
@@ -246,7 +246,7 @@ npm run test:coverage
 
 ## Commit Message Template
 
-```
+```text
 feat: Add prompt history & workspace system (Issue #100)
 
 - Implement IndexedDB storage layer with localStorage fallback
@@ -262,7 +262,7 @@ feat: Add prompt history & workspace system (Issue #100)
 BREAKING CHANGE: None
 CLOSES: #100
 TESTING: See IMPLEMENTATION_SUMMARY.md for test coverage
-```
+```text
 
 ## PR Checklist
 
@@ -312,7 +312,7 @@ const ws = createWorkspace('New Project', '#3b82f6');
 // Get workspaces
 import { getWorkspaces } from '@/lib/workspaceService';
 const workspaces = getWorkspaces();
-```
+```text
 
 ## Success Criteria
 
