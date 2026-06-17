@@ -1,7 +1,10 @@
 import jwt from 'jsonwebtoken';
 import { studentUsersRepository } from '../repositories/studentUsersRepository.js';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'nexasphere-jwt-dev-secret-change-in-production';
+if (!process.env.JWT_SECRET) {
+  throw new Error('JWT_SECRET environment variable must be set');
+}
+const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_EXPIRY = process.env.JWT_EXPIRY || '7d';
 
 const STUDENT_ROLES = {
