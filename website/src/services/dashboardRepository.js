@@ -50,7 +50,9 @@ export const dashboardRepository = {
         profileCompletion: this.getProfileCompletion(),
       };
     } catch (error) {
-      console.error('Failed to load dashboard data:', error);
+      if (import.meta.env.DEV) {
+        console.error('[dashboardRepository] Failed to load dashboard data:', error.message);
+      }
       return EMPTY_DATA;
     }
   },
