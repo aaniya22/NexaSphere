@@ -72,7 +72,9 @@ export default function NotificationBell() {
         }}
       >
         <motion.div
-          animate={unreadCount > 0 && !shouldReduceMotion ? { rotate: [0, -15, 15, -10, 10, 0] } : {}}
+          animate={
+            unreadCount > 0 && !shouldReduceMotion ? { rotate: [0, -15, 15, -10, 10, 0] } : {}
+          }
           transition={{ duration: 0.5, repeat: Infinity, repeatDelay: 4 }}
           style={{
             display: 'flex',
@@ -121,9 +123,17 @@ export default function NotificationBell() {
         {isOpen && (
           <motion.div
             id="notification-panel"
-            initial={{ opacity: 0, y: shouldReduceMotion ? 0 : -10, scale: shouldReduceMotion ? 1 : 0.96 }}
+            initial={{
+              opacity: 0,
+              y: shouldReduceMotion ? 0 : -10,
+              scale: shouldReduceMotion ? 1 : 0.96,
+            }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: shouldReduceMotion ? 0 : -8, scale: shouldReduceMotion ? 1 : 0.96 }}
+            exit={{
+              opacity: 0,
+              y: shouldReduceMotion ? 0 : -8,
+              scale: shouldReduceMotion ? 1 : 0.96,
+            }}
             transition={{ duration: shouldReduceMotion ? 0 : 0.2, ease: [0.22, 1, 0.36, 1] }}
             style={{
               position: 'absolute',

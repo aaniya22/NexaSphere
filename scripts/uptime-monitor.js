@@ -29,40 +29,48 @@ function saveIncidents(incidents) {
 function triggerAlert(errorMessage) {
   const message = `[Uptime Alert] NexaSphere is DOWN! Error: ${errorMessage}`;
   console.error(message);
-  
+
   // Escalation Path Mock
-  console.log('[Escalation Path] Level 1: Sending SMS alert to Primary DevOps On-Call (Twilio API)...');
-  console.log('[Escalation Path] Level 2: Triggering voice call escalation via PagerDuty (escalated)...');
+  console.log(
+    '[Escalation Path] Level 1: Sending SMS alert to Primary DevOps On-Call (Twilio API)...'
+  );
+  console.log(
+    '[Escalation Path] Level 2: Triggering voice call escalation via PagerDuty (escalated)...'
+  );
 }
 
 function checkUptime() {
   console.log(`[Uptime Monitor] Pinging health endpoint: ${HEALTH_URL}`);
-  
+
   const start = Date.now();
-  http.get(HEALTH_URL, (res) => {
-    let data = '';
-    res.on('data', (chunk) => { data += chunk; });
-    res.on('end', () => {
-      const duration = Date.now() - start;
-      if (res.statusCode === 200) {
-        console.log(`[Uptime Monitor] Healthy. Response code 200. Latency: ${duration}ms`);
-        handleServiceStatus(true, duration);
-      } else {
-        const errorMsg = `Service returned status code ${res.statusCode}`;
-        console.warn(`[Uptime Monitor] Unhealthy! ${errorMsg}`);
-        handleServiceStatus(false, 0, errorMsg);
-      }
+  http
+    .get(HEALTH_URL, (res) => {
+      let data = '';
+      res.on('data', (chunk) => {
+        data += chunk;
+      });
+      res.on('end', () => {
+        const duration = Date.now() - start;
+        if (res.statusCode === 200) {
+          console.log(`[Uptime Monitor] Healthy. Response code 200. Latency: ${duration}ms`);
+          handleServiceStatus(true, duration);
+        } else {
+          const errorMsg = `Service returned status code ${res.statusCode}`;
+          console.warn(`[Uptime Monitor] Unhealthy! ${errorMsg}`);
+          handleServiceStatus(false, 0, errorMsg);
+        }
+      });
+    })
+    .on('error', (err) => {
+      console.error(`[Uptime Monitor] Ping request failed: ${err.message}`);
+      handleServiceStatus(false, 0, err.message);
     });
-  }).on('error', (err) => {
-    console.error(`[Uptime Monitor] Ping request failed: ${err.message}`);
-    handleServiceStatus(false, 0, err.message);
-  });
 }
 
 function handleServiceStatus(isOnline, latency = 0, error = '') {
   const incidents = loadIncidents();
   const lastIncident = incidents[incidents.length - 1];
-  
+
   if (!isOnline) {
     if (!lastIncident || lastIncident.resolvedAt) {
       const newIncident = {
@@ -74,9 +82,9 @@ function handleServiceStatus(isOnline, latency = 0, error = '') {
         updates: [
           {
             timestamp: new Date().toISOString(),
-            message: `Downtime detected. Error: ${error}. Triggering DevOps escalation.`
-          }
-        ]
+            message: `Downtime detected. Error: ${error}. Triggering DevOps escalation.`,
+          },
+        ],
       };
       incidents.push(newIncident);
       saveIncidents(incidents);
@@ -88,7 +96,7 @@ function handleServiceStatus(isOnline, latency = 0, error = '') {
       lastIncident.status = 'resolved';
       lastIncident.updates.push({
         timestamp: new Date().toISOString(),
-        message: 'System recovered. Uptime monitor verified health restoration.'
+        message: 'System recovered. Uptime monitor verified health restoration.',
       });
       saveIncidents(incidents);
       console.log(`[Uptime Monitor] Resolved active incident: ${lastIncident.id}`);

@@ -17,7 +17,7 @@ export function tracingMiddleware(req, res, next) {
     url: req.originalUrl || req.url,
     startTime: Date.now(),
     queries: [],
-    duration: 0
+    duration: 0,
   };
 
   activeTraces.set(reqId, traceEntry);

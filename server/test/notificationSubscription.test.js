@@ -26,14 +26,14 @@ const mockClient = {
             created_at: new Date(),
             last_seen_at: new Date(),
             expires_at: new Date(Date.now() + 3600000),
-          }
+          },
         ],
-        rowCount: 1
+        rowCount: 1,
       };
     }
     return { rows: [], rowCount: 1 };
   },
-  release: () => {}
+  release: () => {},
 };
 
 setWithDbOverride(async (fn) => {
@@ -86,8 +86,8 @@ test('Push Subscription Validation and Memory Safety', async (t) => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer mock-token',
-          ...extraHeaders
+          Authorization: 'Bearer mock-token',
+          ...extraHeaders,
         },
       };
 
@@ -100,7 +100,7 @@ test('Push Subscription Validation and Memory Safety', async (t) => {
           resolve({
             status: res.statusCode,
             headers: res.headers,
-            body
+            body,
           });
         });
       });
@@ -125,46 +125,66 @@ test('Push Subscription Validation and Memory Safety', async (t) => {
       username: 'admin',
       password: 'StrongPassword123!',
     });
-    
+
     if (loginRes.headers && loginRes.headers['set-cookie']) {
       adminCookie = loginRes.headers['set-cookie'][0].split(';')[0];
     }
 
     await t.test('1. Valid subscription is accepted', async () => {
-      const res = await sendRequest('/api/notifications/subscribe', {
-        subscription: validSubscription,
-      }, { Cookie: adminCookie });
+      const res = await sendRequest(
+        '/api/notifications/subscribe',
+        {
+          subscription: validSubscription,
+        },
+        { Cookie: adminCookie }
+      );
       assert.equal(res.status, 200, 'Expected 200 OK');
       assert.equal(res.body.success, true);
     });
 
     await t.test('2. Missing endpoint fails validation', async () => {
-      const res = await sendRequest('/api/notifications/subscribe', {
-        subscription: { keys: validSubscription.keys },
-      }, { Cookie: adminCookie });
+      const res = await sendRequest(
+        '/api/notifications/subscribe',
+        {
+          subscription: { keys: validSubscription.keys },
+        },
+        { Cookie: adminCookie }
+      );
       assert.equal(res.status, 400, 'Expected 400 Bad Request');
       assert.ok(res.body.error.includes('Invalid subscription payload'));
     });
 
     await t.test('3. Oversized string payload is rejected', async () => {
       const massiveEndpoint = 'https://fcm.googleapis.com/' + 'a'.repeat(3000);
-      const res = await sendRequest('/api/notifications/subscribe', {
-        subscription: { endpoint: massiveEndpoint, keys: validSubscription.keys },
-      }, { Cookie: adminCookie });
+      const res = await sendRequest(
+        '/api/notifications/subscribe',
+        {
+          subscription: { endpoint: massiveEndpoint, keys: validSubscription.keys },
+        },
+        { Cookie: adminCookie }
+      );
       assert.equal(res.status, 400, 'Expected 400 Bad Request');
     });
 
     await t.test('4. Unexpected structure fails validation', async () => {
-      const res = await sendRequest('/api/notifications/subscribe', {
-        subscription: 'Not an object, just a string!',
-      }, { Cookie: adminCookie });
+      const res = await sendRequest(
+        '/api/notifications/subscribe',
+        {
+          subscription: 'Not an object, just a string!',
+        },
+        { Cookie: adminCookie }
+      );
       assert.equal(res.status, 400, 'Expected 400 Bad Request');
     });
 
     await t.test('5. Valid unsubscription is accepted', async () => {
-      const res = await sendRequest('/api/notifications/unsubscribe', {
-        subscription: validSubscription,
-      }, { Cookie: adminCookie });
+      const res = await sendRequest(
+        '/api/notifications/unsubscribe',
+        {
+          subscription: validSubscription,
+        },
+        { Cookie: adminCookie }
+      );
       assert.equal(res.status, 200, 'Expected 200 OK');
     });
   } finally {

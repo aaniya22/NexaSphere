@@ -39,9 +39,9 @@ async function dispatchToSlack(payload, alertContext) {
 
   try {
     const response = await fetch(webhookUrl, {
-      method: "POST",
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify(payload),
     });
@@ -61,8 +61,8 @@ async function dispatchToSlack(payload, alertContext) {
 
 async function sendSlackAlert(alertData) {
   const payload = formatSlackMessage(alertData);
-  const context = alertData.title ? `alert: ${alertData.title}` : "Slack alert";
-  
+  const context = alertData.title ? `alert: ${alertData.title}` : 'Slack alert';
+
   await dispatchToSlack(payload, context);
 }
 
@@ -200,37 +200,37 @@ async function sendPerformanceAlert(metrics) {
   const payload = {
     attachments: [
       {
-        color: metrics.errorRate > 5 ? "danger" : "warning",
-        title: "📊 Performance Alert",
+        color: metrics.errorRate > 5 ? 'danger' : 'warning',
+        title: '📊 Performance Alert',
         fields: [
           {
-            title: "Error Rate",
+            title: 'Error Rate',
             value: `${metrics.errorRate.toFixed(2)}%`,
             short: true,
           },
           {
-            title: "Total Requests",
+            title: 'Total Requests',
             value: metrics.totalRequests.toString(),
             short: true,
           },
           {
-            title: "Total Errors",
+            title: 'Total Errors',
             value: metrics.totalErrors.toString(),
             short: true,
           },
           {
-            title: "Threshold",
-            value: "5%",
+            title: 'Threshold',
+            value: '5%',
             short: true,
           },
         ],
-        footer: "NexaSphere Performance Monitoring",
+        footer: 'NexaSphere Performance Monitoring',
         ts: Math.floor(Date.now() / 1000),
       },
     ],
   };
 
-  await dispatchToSlack(payload, "performance alert");
+  await dispatchToSlack(payload, 'performance alert');
 }
 
 /**

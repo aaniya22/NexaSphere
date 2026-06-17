@@ -20,25 +20,29 @@ async function checkSslExpiry() {
 
   try {
     // Parse using openssl command
-    execFile('openssl', ['x509', '-enddate', '-noout', '-in', certPath], (error, stdout, stderr) => {
-      if (error) {
-        console.error('Failed to parse certificate end date with openssl:', stderr);
-        // Fallback to cert file modification time as a mock age check
-        const stats = fs.statSync(certPath);
-        const ageInDays = (Date.now() - stats.mtimeMs) / (1000 * 60 * 60 * 24);
-        const daysLeft = Math.max(0, 90 - ageInDays);
-        processDaysLeft(daysLeft);
-      } else {
-        const match = stdout.match(/notAfter=(.*)$/);
-        if (match && match[1]) {
-          const expiryDate = new Date(match[1]);
-          const daysLeft = Math.round((expiryDate - Date.now()) / (1000 * 60 * 60 * 24));
+    execFile(
+      'openssl',
+      ['x509', '-enddate', '-noout', '-in', certPath],
+      (error, stdout, stderr) => {
+        if (error) {
+          console.error('Failed to parse certificate end date with openssl:', stderr);
+          // Fallback to cert file modification time as a mock age check
+          const stats = fs.statSync(certPath);
+          const ageInDays = (Date.now() - stats.mtimeMs) / (1000 * 60 * 60 * 24);
+          const daysLeft = Math.max(0, 90 - ageInDays);
           processDaysLeft(daysLeft);
         } else {
-          console.error('Could not extract expiry date from OpenSSL output:', stdout);
+          const match = stdout.match(/notAfter=(.*)$/);
+          if (match && match[1]) {
+            const expiryDate = new Date(match[1]);
+            const daysLeft = Math.round((expiryDate - Date.now()) / (1000 * 60 * 60 * 24));
+            processDaysLeft(daysLeft);
+          } else {
+            console.error('Could not extract expiry date from OpenSSL output:', stdout);
+          }
         }
       }
-    });
+    );
   } catch (err) {
     console.error('Error reading certificate file:', err.message);
   }

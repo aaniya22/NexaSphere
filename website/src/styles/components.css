@@ -1062,7 +1062,6 @@
   .ns-mobile-brand {
     display: none;
   }
- 
 }
 
 /* Footer responsive centered column layout */
@@ -2293,7 +2292,6 @@
 }
 
 /* Mobile tabs - prevent overflow clipping */
-
 
 /* Medium desktop navbar: collapse tab row behind the menu button */
 @media (max-width: 900px) {

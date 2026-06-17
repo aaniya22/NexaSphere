@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: "Release tag to rollback to"
+        description: 'Release tag to rollback to'
         required: true
 
 jobs:

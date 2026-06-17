@@ -22,8 +22,8 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: "22"
-          cache: "npm"
+          node-version: '22'
+          cache: 'npm'
 
       - name: Install Dependencies
         run: npm install --legacy-peer-deps
@@ -82,7 +82,7 @@ jobs:
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
           vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          vercel-args: "--prod"
+          vercel-args: '--prod'
 
   smoke-test:
     name: Production Smoke Test
@@ -108,7 +108,7 @@ jobs:
           tag_name: production-${{ github.run_number }}
           name: Production Release ${{ github.run_number }}
           generate_release_notes: true
-  
+
   notify-success:
     name: Notify Slack Success
     needs: create-release

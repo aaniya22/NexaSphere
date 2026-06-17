@@ -1,4 +1,5 @@
 <!-- markdownlint-disable MD013 -->
+
 # Security Policy
 
 ## Supported Versions
@@ -140,23 +141,23 @@ session:admin:{sha256_hash_of_token}
 
 ### Session Lifecycle
 
-| Event | Action |
-| --- | --- |
-| **Login** | A new key is written to Redis with an 8-hour TTL. Node.js backend also writes to PostgreSQL for audit. |
-| **Validation** | Both services compute `SHA-256(token)` and perform a Redis `GET`. No cross-service HTTP calls. |
-| **Logout** | The Redis key is deleted immediately (`DEL`), revoking the session. PostgreSQL is updated for audit. |
-| **Expiry** | Redis TTL automatically evicts expired keys. No scheduled cleanup tasks are required. |
+| Event          | Action                                                                                                 |
+| -------------- | ------------------------------------------------------------------------------------------------------ |
+| **Login**      | A new key is written to Redis with an 8-hour TTL. Node.js backend also writes to PostgreSQL for audit. |
+| **Validation** | Both services compute `SHA-256(token)` and perform a Redis `GET`. No cross-service HTTP calls.         |
+| **Logout**     | The Redis key is deleted immediately (`DEL`), revoking the session. PostgreSQL is updated for audit.   |
+| **Expiry**     | Redis TTL automatically evicts expired keys. No scheduled cleanup tasks are required.                  |
 
 ### Configuration
 
 The following environment variables configure the Redis connection:
 
-| Variable | Default | Description |
-| --- | --- | --- |
-| `REDIS_HOST` | `localhost` | Redis server hostname |
-| `REDIS_PORT` | `6379` | Redis server port |
-| `REDIS_PASSWORD` | *(empty)* | Redis AUTH password |
-| `REDIS_URL` | `redis://localhost:6379` | Full Redis connection URL (Node.js) |
+| Variable         | Default                  | Description                         |
+| ---------------- | ------------------------ | ----------------------------------- |
+| `REDIS_HOST`     | `localhost`              | Redis server hostname               |
+| `REDIS_PORT`     | `6379`                   | Redis server port                   |
+| `REDIS_PASSWORD` | _(empty)_                | Redis AUTH password                 |
+| `REDIS_URL`      | `redis://localhost:6379` | Full Redis connection URL (Node.js) |
 
 ### Security Considerations
 
