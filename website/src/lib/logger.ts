@@ -1,10 +1,13 @@
 import pino from 'pino';
 
-const isProduction = typeof process !== 'undefined' && process.env?.NODE_ENV === 'production';
+// In a Vite browser bundle, import.meta.env is the correct way to read
+// environment variables. typeof process guards are a Node.js/CJS pattern
+// and are unnecessary here — Vite replaces import.meta.env at build time.
+const isProduction = import.meta.env.MODE === 'production';
 const isNode = typeof window === 'undefined';
 
 export const logger = pino({
-  level: typeof process !== 'undefined' && process.env?.LOG_LEVEL ? process.env.LOG_LEVEL : 'info',
+  level: import.meta.env.VITE_LOG_LEVEL ?? 'info',
   ...(isProduction || !isNode
     ? {}
     : {
