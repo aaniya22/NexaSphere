@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import { tracedFetch } from './config/appContext.js';
 import { initObservability } from './observability/index.js';
 import { setTraceIdResolver } from './utils/logContext.js';
 import { getActiveTraceId } from './observability/tracing.js';
@@ -418,7 +419,7 @@ const _rawSupabaseRequest = async function _rawSupabaseRequest(
   { method = 'GET', body } = {}
 ) {
   if (!HAS_SUPABASE) throw new Error('Supabase is not configured');
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${pathname}`, {
+  const res = await tracedFetch(`${SUPABASE_URL}/rest/v1/${pathname}`, {
     method,
     headers: {
       apikey: SUPABASE_SERVICE_KEY,
@@ -458,7 +459,7 @@ async function supabasePaginatedRequest(pathname, page, limit) {
   const offset = (page - 1) * limit;
   const separator = pathname.includes('?') ? '&' : '?';
   const url = `${SUPABASE_URL}/rest/v1/${pathname}${separator}limit=${limit}&offset=${offset}`;
-  const res = await fetch(url, {
+  const res = await tracedFetch(url, {
     method: 'GET',
     headers: {
       apikey: SUPABASE_SERVICE_KEY,
@@ -1080,7 +1081,7 @@ app.post(
 
 // Admin membership responses
 async function _rawMembershipFetch(scriptUrl, secret) {
-  const response = await fetch(scriptUrl, {
+  const response = await tracedFetch(scriptUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ action: 'getResponses', token: secret }),

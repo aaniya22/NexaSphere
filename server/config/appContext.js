@@ -4,40 +4,91 @@ import { propagation, context as otelContext } from '@opentelemetry/api';
 
 export const appContext = new AsyncLocalStorage();
 
-// Global patch for pg module to automatically append the Correlation ID to all queries
-const originalClientQuery = pg.Client.prototype.query;
-pg.Client.prototype.query = function (config, values, callback) {
-  const store = appContext.getStore();
-  if (store?.reqId) {
-    if (typeof config === 'string') {
-      config = `/* reqId: ${store.reqId} */ ${config}`;
-    } else if (config && typeof config.text === 'string') {
-      config.text = `/* reqId: ${store.reqId} */ ${config.text}`;
+// Idempotency guard — prevent double-patching if this module is re-imported
+const PG_PATCH_APPLIED = Symbol.for('appContext.pg.patched');
+
+// Strip */ and newlines from reqId before embedding in a SQL comment
+// to prevent comment-injection attacks
+function sanitizeReqId(reqId) {
+  return String(reqId)
+    .replace(/\*\//g, '')
+    .replace(/[\r\n]/g, '');
+}
+
+function isInternalUrl(url) {
+  try {
+    const { hostname } = new URL(url, 'http://localhost');
+    if (['localhost', '127.0.0.1', '::1'].includes(hostname)) return true;
+    const dev_domain = process.env.DEV_DOMAIN;
+    const prod = process.env.PROD_DOMAINS?.split(',').map((d) => d.trim()) ?? [];
+    if (dev_domain && hostname.endsWith(dev_domain)) return true;
+    if (prod.some((d) => hostname === d || hostname.endsWith('.' + d))) return true;
+    return false;
+  } catch {
+    return true; // treat unparseable / relative URLs as internal
+  }
+}
+
+function getUrlString(input) {
+  if (typeof input === 'string') return input;
+  if (input instanceof URL) return input.toString();
+  if (typeof Request !== 'undefined' && input instanceof Request) return input.url;
+  return String(input);
+}
+
+// Patch pg.Client.prototype.query to prepend /* reqId */ to every SQL query.
+// Uses ...args so all pg call signatures work correctly (query(sql, callback),
+// query(sql, values), query(sql, values, callback), query(config), etc.)
+if (!pg.Client.prototype.query[PG_PATCH_APPLIED]) {
+  const originalClientQuery = pg.Client.prototype.query;
+
+  pg.Client.prototype.query = function (...args) {
+    const store = appContext.getStore();
+
+    if (store?.reqId) {
+      const safeId = sanitizeReqId(store.reqId);
+      const firstArg = args[0];
+      const secondArgIsCallback = typeof args[1] === 'function';
+
+      if (typeof firstArg === 'string') {
+        args[0] = `/* reqId: ${safeId} */ ${firstArg}`;
+      } else if (firstArg?.text && !secondArgIsCallback) {
+        args[0] = { ...firstArg, text: `/* reqId: ${safeId} */ ${firstArg.text}` };
+      }
     }
-  }
-  return originalClientQuery.call(this, config, values, callback);
-};
 
-// Global patch for fetch to automatically append the Correlation ID header to downstream requests
-const originalFetch = global.fetch;
-global.fetch = function (url, options) {
+    return originalClientQuery.apply(this, args);
+  };
+
+  pg.Client.prototype.query[PG_PATCH_APPLIED] = true;
+}
+
+// Export a wrapped fetch for call sites to use explicitly, instead of
+// patching global.fetch. This avoids import-order races with OTel/undici
+// patching the global fetch themselves.
+// Forwards X-Request-ID whenever called inside an appContext.run(...) scope
+// (e.g. during request handling, after tracingMiddleware has populated the
+// store).
+export async function tracedFetch(url, options = {}) {
   const store = appContext.getStore();
-  options = options || {};
+  const headers = new Headers();
 
-  const headers = {};
   if (options.headers instanceof Headers) {
-    options.headers.forEach((value, key) => {
-      headers[key] = value;
-    });
+    options.headers.forEach((v, k) => headers.set(k, v));
   } else if (options.headers) {
-    Object.assign(headers, options.headers);
+    Object.entries(options.headers).forEach(([k, v]) => headers.set(k, v));
   }
 
-  if (store?.reqId) {
-    headers['X-Request-ID'] = store.reqId;
+  if (store?.reqId) headers.set('X-Request-ID', store.reqId);
+
+  const urlString = getUrlString(url);
+  if (isInternalUrl(urlString)) {
+    propagation.inject(otelContext.active(), headers, {
+      set(carrier, key, value) {
+        carrier.set(key, value);
+      },
+    });
   }
 
-  propagation.inject(otelContext.active(), headers);
-
-  return originalFetch.call(this, url, { ...options, headers });
-};
+  return globalThis.fetch(url, { ...options, headers });
+}

@@ -2,7 +2,7 @@
  * Admin Dashboard Routes
  * Provides admin-only endpoints for membership data and session info.
  */
-
+import { tracedFetch } from '../config/appContext.js';
 import { Router } from 'express';
 import { adminAuthMiddleware } from '../middleware/adminAuthMiddleware.js';
 
@@ -23,7 +23,7 @@ router.get('/api/admin/membership', adminAuth, async (req, res) => {
   }
 
   try {
-    const response = await fetch(scriptUrl, {
+    const response = await tracedFetch(scriptUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'getResponses', token: secret }),

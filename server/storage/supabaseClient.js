@@ -1,4 +1,5 @@
 import { CircuitBreaker, circuitBreakerRegistry } from '../utils/circuitBreaker.js';
+import { tracedFetch } from '../config/appContext.js';
 
 export const SUPABASE_URL = process.env.SUPABASE_URL || '';
 export const SUPABASE_SERVICE_KEY =
@@ -17,7 +18,7 @@ export function normalizePrivateKey(k) {
 
 export async function supabaseRequest(pathname, { method = 'GET', body } = {}) {
   if (!HAS_SUPABASE) throw new Error('Supabase is not configured');
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${pathname}`, {
+  const res = await tracedFetch(`${SUPABASE_URL}/rest/v1/${pathname}`, {
     method,
     headers: {
       apikey: SUPABASE_SERVICE_KEY,
