@@ -14,10 +14,14 @@ export default function PWAHandler() {
     updateServiceWorker,
   } = useRegisterSW({
     onRegistered(r) {
-      console.log('NexaSphere Service Worker registered successfully:', r);
+      if (import.meta.env.DEV) {
+        console.log('NexaSphere Service Worker registered successfully:', r);
+      }
     },
     onRegisterError(error) {
-      console.error('NexaSphere Service Worker registration failed:', error);
+      if (import.meta.env.DEV) {
+        console.error('NexaSphere Service Worker registration failed:', error.message ?? error);
+      }
     },
   });
 
