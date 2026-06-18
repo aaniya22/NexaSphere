@@ -1,7 +1,7 @@
 // src/hooks/useRecommendations.js
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { userInterestTracker } from '../services/recommendation/userInterestTracker';
-import axios from 'axios'; // Assuming axios is installed for API calls
+import { recommendationEngine } from '../services/recommendation/recommendationEngine';
 
 export function useRecommendations(events) {
   const [recommendations, setRecommendations] = useState([]);
@@ -24,18 +24,14 @@ export function useRecommendations(events) {
       // For now, using a placeholder.
       const userId = '101'; // Example user ID
 
-      // The backend recommendation engine should ideally fetch all necessary user data
-      // (interests, history, followed users, etc.) from the database based on the user_id.
-      // However, if the backend needs client-side context for dynamic weighting or other reasons,
-      // it could be passed here. For this implementation, we assume the backend fetches its own data.
-      const response = await axios.get(`${import.meta.env.VITE_API_BASE}/recommendations`, {
-        params: {
-          user_id: userId,
-          // Example: if backend needs client-side interests for cold start
-          // user_interests: JSON.stringify(userInterestTracker.getUserInterests()),
-        },
-      });
-      setRecommendations(response.data);
+      const apiBase = import.meta.env.VITE_API_BASE || '';
+      const url = `${apiBase}/recommendations?user_id=${encodeURIComponent(userId)}`;
+      const res = await fetch(url);
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+      const data = await res.json();
+      setRecommendations(data);
     } catch (error) {
       console.error('Failed to fetch recommendations from backend:', error);
       setRecommendations([]); // Fallback to empty recommendations on error
@@ -51,11 +47,11 @@ export function useRecommendations(events) {
   const trackEvent = useCallback(
     (eventId, action, metadata) => {
       userInterestTracker.trackEventInteraction(eventId, action, metadata);
-      generateRecommendations();
+      fetchRecommendationsFromBackend();
     },
-    [generateRecommendations]
+    [fetchRecommendationsFromBackend]
     // Ideally, this interaction should be sent to the backend for the ML model's feedback loop.
-    // Example: axios.post(`${import.meta.env.VITE_API_BASE}/user-interactions`, { userId: '101', eventId, action, metadata });
+    // Example: fetch(`${import.meta.env.VITE_API_BASE}/user-interactions`, { method: 'POST', body: JSON.stringify({ userId: '101', eventId, action, metadata }) });
   );
 
   const getSimilarEvents = useCallback(
@@ -65,8 +61,6 @@ export function useRecommendations(events) {
       if (similarEvents[event.id]) {
         return similarEvents[event.id];
       }
-      // Dynamically import recommendationEngine if it's still needed for client-side similar events
-      const { recommendationEngine } = require('../services/recommendation/recommendationEngine');
       const similar = recommendationEngine.getSimilarEvents(event, eventsRef.current, limit); // Still uses client-side engine for similarity
       setSimilarEvents((prev) => ({ ...prev, [event.id]: similar }));
       return similar;
@@ -81,7 +75,7 @@ export function useRecommendations(events) {
     },
     [fetchRecommendationsFromBackend]
     // Ideally, these preferences should be sent to the backend to update the user's profile for ML.
-    // Example: axios.post(`${import.meta.env.VITE_API_BASE}/user-preferences`, { userId: '101', categories, tags });
+    // Example: fetch(`${import.meta.env.VITE_API_BASE}/user-preferences`, { method: 'POST', body: JSON.stringify({ userId: '101', categories, tags }) });
   );
 
   return {

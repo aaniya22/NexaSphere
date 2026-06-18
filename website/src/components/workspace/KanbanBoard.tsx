@@ -466,44 +466,6 @@ export default function KanbanBoard({
     [socket, roomId]
   );
 
-  const TimelineView = () => (
-    <div className="flex-1 p-6 overflow-y-auto bg-[#0d0d0d]">
-      <div className="grid grid-cols-1 gap-4">
-        {state.tasks.map((task) => (
-          <div
-            key={task._id}
-            className="bg-[#1a1a1a] border border-white/10 rounded-lg p-4 flex items-center gap-6"
-          >
-            <div className="w-48 font-semibold text-sm truncate">{task.title}</div>
-            <div className="flex-1 h-2 bg-white/5 rounded-full relative">
-              {/* Visualizing task duration based on dates if available */}
-              <div
-                className="absolute h-full bg-blue-500 rounded-full"
-                style={{
-                  left: task.startDate ? '5%' : '10%',
-                  width: task.dueDate ? '60%' : '40%',
-                }}
-              ></div>
-            </div>
-            <div className="flex gap-3">
-              {task.dependencies && task.dependencies.length > 0 && (
-                <span
-                  className="text-[10px] text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded border border-amber-400/20"
-                  title="Has dependencies"
-                >
-                  Linked
-                </span>
-              )}
-            </div>
-            <div className="text-xs text-white/40">
-              <Clock size={12} className="inline mr-1" /> {task.dueDate || 'No Deadline'}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-
   const typingText = useMemo(() => {
     const names = Object.values(typingUsers);
     if (names.length === 0) return null;
@@ -785,7 +747,40 @@ export default function KanbanBoard({
           })}
         </div>
       ) : (
-        <TimelineView />
+        <div className="flex-1 p-6 overflow-y-auto bg-[#0d0d0d]">
+          <div className="grid grid-cols-1 gap-4">
+            {state.tasks.map((task) => (
+              <div
+                key={task._id}
+                className="bg-[#1a1a1a] border border-white/10 rounded-lg p-4 flex items-center gap-6"
+              >
+                <div className="w-48 font-semibold text-sm truncate">{task.title}</div>
+                <div className="flex-1 h-2 bg-white/5 rounded-full relative">
+                  <div
+                    className="absolute h-full bg-blue-500 rounded-full"
+                    style={{
+                      left: task.startDate ? '5%' : '10%',
+                      width: task.dueDate ? '60%' : '40%',
+                    }}
+                  ></div>
+                </div>
+                <div className="flex gap-3">
+                  {task.dependencies && task.dependencies.length > 0 && (
+                    <span
+                      className="text-[10px] text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded border border-amber-400/20"
+                      title="Has dependencies"
+                    >
+                      Linked
+                    </span>
+                  )}
+                </div>
+                <div className="text-xs text-white/40">
+                  <Clock size={12} className="inline mr-1" /> {task.dueDate || 'No Deadline'}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       )}
     </div>
   );
