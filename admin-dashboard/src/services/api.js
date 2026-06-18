@@ -1290,6 +1290,59 @@ export const api = {
       return result;
     },
   },
+
+  rbac: {
+    getRoles: () => fetchWithAuth('/api/admin/rbac/roles'),
+    getPermissions: () => fetchWithAuth('/api/admin/rbac/permissions'),
+    getPermissionMatrix: () => fetchWithAuth('/api/admin/rbac/matrix'),
+    createRole: async (role) => {
+      const result = await fetchWithAuth('/api/admin/rbac/roles', {
+        method: 'POST',
+        body: JSON.stringify(role),
+      });
+      eventEmitter.emit(EVENTS.NOTIFY, { type: 'success', message: 'Role created' });
+      return result;
+    },
+    updateRole: async (name, role) => {
+      const result = await fetchWithAuth(`/api/admin/rbac/roles/${name}`, {
+        method: 'PUT',
+        body: JSON.stringify(role),
+      });
+      eventEmitter.emit(EVENTS.NOTIFY, { type: 'success', message: 'Role updated' });
+      return result;
+    },
+    deleteRole: async (name) => {
+      await fetchWithAuth(`/api/admin/rbac/roles/${name}`, { method: 'DELETE' });
+      eventEmitter.emit(EVENTS.NOTIFY, { type: 'success', message: 'Role deleted' });
+    },
+    getUsersWithRoles: () => fetchWithAuth('/api/admin/rbac/users'),
+    assignRole: async (assignment) => {
+      const result = await fetchWithAuth('/api/admin/rbac/assign', {
+        method: 'POST',
+        body: JSON.stringify(assignment),
+      });
+      eventEmitter.emit(EVENTS.NOTIFY, { type: 'success', message: 'Role assigned' });
+      return result;
+    },
+    revokeRole: async (userId, roleName) => {
+      await fetchWithAuth(`/api/admin/rbac/assign/${userId}/${roleName}`, {
+        method: 'DELETE',
+      });
+      eventEmitter.emit(EVENTS.NOTIFY, { type: 'success', message: 'Role revoked' });
+    },
+    bulkAssignRoles: async (assignments) => {
+      const result = await fetchWithAuth('/api/admin/rbac/bulk-assign', {
+        method: 'POST',
+        body: JSON.stringify({ assignments }),
+      });
+      eventEmitter.emit(EVENTS.NOTIFY, { type: 'success', message: 'Roles assigned in bulk' });
+      return result;
+    },
+    getAuditLogs: (params = {}) => {
+      const query = new URLSearchParams(params).toString();
+      return fetchWithAuth(`/api/admin/rbac/audit${query ? `?${query}` : ''}`);
+    },
+  },
 };
 
 export { auth, eventEmitter, EVENTS };

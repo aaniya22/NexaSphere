@@ -94,6 +94,13 @@ export const EVENTS = {
 
   SPONSOR_DELETED: 'sponsor:deleted',
 
+  // RBAC events
+  ROLE_CREATED: 'role:created',
+  ROLE_UPDATED: 'role:updated',
+  ROLE_DELETED: 'role:deleted',
+  ROLE_ASSIGNED: 'role:assigned',
+  ROLE_REVOKED: 'role:revoked',
+
   // Offline / reconnect events
   CACHE_STALE: 'cache:stale',
 

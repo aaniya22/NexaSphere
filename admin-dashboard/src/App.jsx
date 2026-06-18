@@ -20,6 +20,7 @@ import { PortfolioManager } from './pages/PortfolioManager';
 import { StreamManager } from './pages/StreamManager';
 import { CircuitBreakerManager } from './pages/CircuitBreakerManager';
 import { SponsorshipsManager } from './pages/SponsorshipsManager';
+import { RBACManager } from './pages/RBACManager';
 import './styles/admin.css';
 
 function RequireAuth() {
@@ -76,6 +77,7 @@ export default function App() {
             <Route path="/dashboard/streams" element={<StreamManager />} />
             <Route path="/dashboard/circuit-breaker" element={<CircuitBreakerManager />} />
             <Route path="/dashboard/sponsorships" element={<SponsorshipsManager />} />
+            <Route path="/dashboard/rbac" element={<RBACManager />} />
           </Route>
         </Route>
         <Route path="*" element={<Navigate to="/login" replace />} />

@@ -66,6 +66,12 @@ const links = [
     icon: 'Clock',
     requiredScope: 'settings:admin',
   },
+  {
+    to: '/dashboard/rbac',
+    label: 'Access Control',
+    icon: 'Shield',
+    requiredScope: 'rbac:read',
+  },
 ];
 
 export function Sidebar() {

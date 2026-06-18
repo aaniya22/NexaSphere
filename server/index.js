@@ -26,6 +26,7 @@ import formsRouter from './routes/forms.js';
 import portfolioRouter from './routes/portfolio.js';
 import notificationsRouter from './routes/notifications.js';
 import adminRouter from './routes/admin.js';
+import rbacRouter from './routes/rbac.js';
 import { validateEnvironment } from './utils/envValidator.js';
 import { performanceMonitor } from './middleware/performanceMonitor.js';
 import { tracingMiddleware } from './middleware/tracingMiddleware.js';
@@ -323,6 +324,7 @@ app.use('/api', formsRouter);
 app.use('/api', portfolioRouter);
 app.use('/api', notificationsRouter);
 app.use('/api/admin', adminRouter);
+app.use('/', rbacRouter);
 app.use('/', syncRouter);
 
 const adminAuth = [apiRateLimiter, adminAuthMiddleware.requireAdmin];
