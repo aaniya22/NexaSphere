@@ -19,6 +19,8 @@ export class ErrorBoundary extends React.Component {
     if (this.state.hasError) {
       return (
         <div
+          role="alert"
+          aria-live="assertive"
           style={{
             minHeight: '400px',
             display: 'flex',
@@ -27,13 +29,13 @@ export class ErrorBoundary extends React.Component {
             justifyContent: 'center',
             textAlign: 'center',
             padding: '40px 24px',
-            background: 'var(--bg)',
+            background: 'var(--color-background)',
             borderRadius: '12px',
-            border: '1px solid rgba(255,68,68,0.2)',
+            border: '1px solid var(--color-error)',
             margin: '20px',
           }}
         >
-          <div style={{ color: '#ff4444', marginBottom: '16px' }}>
+          <div style={{ color: 'var(--color-error)', marginBottom: '16px' }} aria-hidden="true">
             <DynamicIcon name="AlertTriangle" size={48} />
           </div>
           <h2
@@ -41,7 +43,7 @@ export class ErrorBoundary extends React.Component {
               fontFamily: "'Orbitron', monospace",
               fontSize: '1.5rem',
               fontWeight: 700,
-              color: 'var(--t1)',
+              color: 'var(--color-text-primary)',
               marginBottom: '12px',
             }}
           >
@@ -49,7 +51,7 @@ export class ErrorBoundary extends React.Component {
           </h2>
           <p
             style={{
-              color: 'var(--t2)',
+              color: 'var(--color-text-secondary)',
               fontSize: '0.95rem',
               maxWidth: '420px',
               lineHeight: 1.6,

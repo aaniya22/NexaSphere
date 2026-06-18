@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { getApiBase } from '../utils/runtimeConfig';
 
 function useDebounce(value, delay = 300) {
   const [debouncedValue, setDebouncedValue] = useState(value);
@@ -29,7 +30,8 @@ export function eventMatchesQuery(event, query) {
   );
 }
 
-export function useSearch(activities, events, apiBase = '') {
+export function useSearch(activities, events) {
+  const apiBase = getApiBase();
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState('all');
   const [results, setResults] = useState([]);
@@ -120,10 +122,12 @@ export function useSearch(activities, events, apiBase = '') {
       }
 
       if (filter === 'all' || filter === 'members') {
-        const base = apiBase || '';
+        const base = getApiBase();
         try {
           const res = await fetch(`${base}/api/content/team`);
-          if (res.ok) {
+          if (!res.ok) {
+            setApiError(`Team member search unavailable (${res.status})`);
+          } else {
             const data = await res.json();
             const members = data?.members || [];
             const matched = members
@@ -143,7 +147,12 @@ export function useSearch(activities, events, apiBase = '') {
               }));
             all = [...all, ...matched];
           }
-        } catch {}
+        } catch (err) {
+          if (err.name !== 'AbortError') {
+            console.warn('[useSearch] Team member fetch failed:', err.message);
+            setApiError('Failed to search team members. Please try again.');
+          }
+        }
       }
 
       setResults(all);

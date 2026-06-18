@@ -183,10 +183,7 @@ test('addActivityEvent validates required fields', async () => {
 
 // Test 12: deleteActivityEvent with valid ID
 test('deleteActivityEvent removes event by ID', async () => {
-  const result = await activityEventsService.deleteActivityEvent(
-    'events',
-    'event-123'
-  );
+  const result = await activityEventsService.deleteActivityEvent('events', 'event-123');
 
   assert.equal(result, true, 'Should return true on success');
 });
@@ -247,9 +244,5 @@ test('listActivityEvents with same parameters returns consistent results', async
     limit: 20,
   });
 
-  assert.deepEqual(
-    result1.rows,
-    result2.rows,
-    'Same parameters should return same results'
-  );
+  assert.deepEqual(result1.rows, result2.rows, 'Same parameters should return same results');
 });

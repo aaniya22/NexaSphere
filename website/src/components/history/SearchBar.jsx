@@ -24,7 +24,9 @@ const SearchBar = ({ onSelectPrompt, workspace = 'default' }) => {
         setResults(foundPrompts);
         setShowResults(true);
       } catch (error) {
-        console.error('Search error:', error);
+        if (import.meta.env.DEV) {
+          console.error('[HistorySearchBar] Search error:', error.message);
+        }
         setResults([]);
       } finally {
         setIsSearching(false);

@@ -63,13 +63,13 @@ router.get('/status-history', async (req, res) => {
     if (fs.existsSync(incidentFile)) {
       incidents = JSON.parse(fs.readFileSync(incidentFile, 'utf8'));
     }
-    
-    const activeIncident = incidents.find(i => !i.resolvedAt);
+
+    const activeIncident = incidents.find((i) => !i.resolvedAt);
     const systemStatus = activeIncident ? 'downtime' : 'operational';
-    
+
     // Calculate simulated overall uptime
-    const downtimeEventsCount = incidents.filter(i => i.status !== 'resolved').length;
-    const uptimePercentage = downtimeEventsCount > 0 ? 99.85 : 100.00;
+    const downtimeEventsCount = incidents.filter((i) => i.status !== 'resolved').length;
+    const uptimePercentage = downtimeEventsCount > 0 ? 99.85 : 100.0;
 
     res.status(200).json({
       success: true,
@@ -350,13 +350,13 @@ router.get('/traces', requireMonitoringAuth, async (req, res) => {
       success: true,
       data: paginatedTraces,
       count: paginatedTraces.length,
-      timestamp: new Date()
+      timestamp: new Date(),
     });
   } catch (error) {
     logger.error('Error fetching traces', { error: error.message });
     res.status(500).json({
       success: false,
-      error: 'Failed to fetch traces'
+      error: 'Failed to fetch traces',
     });
   }
 });
@@ -505,7 +505,7 @@ router.get('/dependency-health', async (req, res) => {
   // return dependency status
 });
 
-router.get("/deployment-status", (req, res) => {
+router.get('/deployment-status', (req, res) => {
   res.json(deploymentStatus);
 });
 

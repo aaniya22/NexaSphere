@@ -51,13 +51,25 @@ const Events = () => {
     <div className="events-page" style={{ padding: '1rem' }}>
       <h1>Events</h1>
 
-      <input
-        type="text"
-        placeholder="Search events..."
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        style={{ marginBottom: '1rem', padding: '0.5rem', width: '100%', maxWidth: '400px' }}
-      />
+      <div style={{ marginBottom: '1rem', width: '100%', maxWidth: '400px' }}>
+        <label htmlFor="event-search" className="sr-only">
+          Search events
+        </label>
+        <input
+          id="event-search"
+          type="text"
+          placeholder="Search events..."
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          style={{
+            padding: '0.5rem',
+            width: '100%',
+            backgroundColor: 'var(--color-surface)',
+            color: 'var(--color-text-primary)',
+            border: '1px solid var(--color-border)',
+          }}
+        />
+      </div>
 
       {filteredEvents.length === 0 ? (
         <p>No events found.</p>

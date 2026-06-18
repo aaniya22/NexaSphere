@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getApiBase } from '../../utils/runtimeConfig';
+import { gamificationService } from '../../services/gamification/gamificationService';
 import {
   Calendar,
   Award,
@@ -128,6 +129,10 @@ export default function UserDashboard() {
   const [loading, setLoading] = useState(true);
   const [isDemo, setIsDemo] = useState(false);
   const [profileCompletion] = useState(65);
+  const [xpProgress, setXpProgress] = useState(0);
+  const [xpToNextLevel, setXpToNextLevel] = useState(0);
+  const [level, setLevel] = useState(1);
+  const [levelTitle, setLevelTitle] = useState('Newcomer');
   const [exportMessage, setExportMessage] = useState('');
 
   useEffect(() => {
@@ -147,10 +152,14 @@ export default function UserDashboard() {
     // hardcoded as 'user_123' so all users see identical placeholder data.
     setIsDemo(true);
 
+    const safeJson = (r: Response) => {
+      if (!r.ok) throw new Error(`Dashboard API error: ${r.status} ${r.statusText}`);
+      return r.json();
+    };
     Promise.all([
-      fetch(`${base}/api/dashboard/profile/${userId}`).then((r) => r.json()),
-      fetch(`${base}/api/dashboard/quests/${userId}`).then((r) => r.json()),
-      fetch(`${base}/api/dashboard/leaderboard`).then((r) => r.json()),
+      fetch(`${base}/api/dashboard/profile/${userId}`).then(safeJson),
+      fetch(`${base}/api/dashboard/quests/${userId}`).then(safeJson),
+      fetch(`${base}/api/dashboard/leaderboard`).then(safeJson),
     ])
       .then(([profile, quests, leaderboard]) => {
         // isDemo stays true — userId is still hardcoded as 'user_123'
@@ -164,16 +173,20 @@ export default function UserDashboard() {
             totalPoints: profile.xp ?? 0,
             currentStreak: profile.currentStreak ?? 0,
             longestStreak: profile.longestStreak ?? 0,
+            xpProgress: profile.xpProgress ?? 0,
+            xpToNextLevel: profile.xpToNextLevel ?? 0,
           });
+          setLevel(profile.level ?? 1);
+          setLevelTitle(profile.levelTitle ?? 'Newcomer');
           // Map badges → achievements
           if (Array.isArray(profile.badges) && profile.badges.length > 0) {
             setAchievements(
               profile.badges.map((b: string, i: number) => ({
-                id: String(i),
-                title: b,
-                description: '',
-                icon: '🏅',
-                points: 0,
+                id: b.id || String(i), // Use actual ID if available
+                title: b.title || b, // Use actual title if available, fallback to string
+                description: b.description || '',
+                icon: b.icon || '🏅',
+                points: b.xpReward || 0,
               }))
             );
           } else {
@@ -260,11 +273,21 @@ export default function UserDashboard() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
           <div className="bg-[#1A1A1A] rounded-xl p-5 border border-[#2A2A2A] hover:border-[#CC1111]/30 transition-all">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-sm text-gray-400">Total Points</span>
+              <span className="text-sm text-gray-400">
+                Level {level}: {levelTitle}
+              </span>
               <Award className="h-5 w-5 text-yellow-500" />
             </div>
-            <div className="text-3xl font-bold text-white">{metrics.totalPoints}</div>
-            <div className="text-xs text-green-500 mt-2">↑ 12% from last month</div>
+            <div className="text-3xl font-bold text-white">{metrics.totalPoints} XP</div>
+            {xpToNextLevel > 0 && (
+              <div className="text-xs text-gray-500 mt-2">
+                {xpToNextLevel - metrics.totalPoints} XP to next level
+              </div>
+            )}
+            <div className="w-full bg-[#2A2A2A] rounded-full h-1 mt-3">
+              {/* Calculate progress dynamically */}
+              <div className="bg-yellow-500 h-1 rounded-full" style={{ width: `${xpProgress}%` }} />
+            </div>
           </div>
 
           <div className="bg-[#1A1A1A] rounded-xl p-5 border border-[#2A2A2A] hover:border-[#CC1111]/30 transition-all">
@@ -408,9 +431,19 @@ export default function UserDashboard() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="bg-[#222222] rounded-lg p-4 hover:bg-[#2A2A2A] transition-all">
-              <h4 className="font-medium text-white">🤖 AI Workshop</h4>
-              <p className="text-sm text-gray-500 mt-1">Based on your interests</p>
-              <button className="mt-3 text-sm text-[#CC1111] font-medium flex items-center gap-1">
+              <div className="flex justify-between">
+                <h4 className="font-medium text-white">📅 Host a Workshop</h4>
+                {level < 3 && (
+                  <span className="text-[10px] text-red-400 bg-red-400/10 px-1.5 rounded">
+                    Lvl 3 Required
+                  </span>
+                )}
+              </div>
+              <p className="text-sm text-gray-500 mt-1">Earn +200 XP for organizing.</p>
+              <button
+                disabled={level < 3}
+                className={`mt-3 text-sm font-medium flex items-center gap-1 ${level < 3 ? 'text-gray-600' : 'text-[#CC1111]'}`}
+              >
                 Register <ArrowRight className="h-3 w-3" />
               </button>
             </div>

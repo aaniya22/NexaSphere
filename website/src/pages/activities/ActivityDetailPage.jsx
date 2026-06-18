@@ -71,7 +71,7 @@ function FloatingOrbs({ color }) {
     >
       {[...Array(6)].map((_, i) => (
         <div
-          key={i}
+          key={`circle-${i}`}
           style={{
             position: 'absolute',
             width: `${80 + i * 40}px`,

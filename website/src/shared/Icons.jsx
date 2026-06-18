@@ -52,6 +52,11 @@ import {
   MessageCircle,
   Clipboard,
   Loader,
+  Edit,
+  Bookmark,
+  BarChart,
+  Eye,
+  Type,
 } from 'lucide-react';
 
 function baseProps(props) {
@@ -225,6 +230,11 @@ export const ICON_MAP = {
   MessageCircle,
   Clipboard,
   Loader,
+  Edit,
+  Bookmark,
+  BarChart,
+  Eye,
+  Type,
   ShieldCheck: IconShieldCheck,
   Bolt: IconBolt,
   Spark: IconSpark,

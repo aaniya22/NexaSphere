@@ -5,6 +5,25 @@ import { useWorkspaceStore } from '../store/workspaceStore';
 
 import type { UserInfo } from '../store/workspaceStore';
 
+// ── Socket event payload types ────────────────────────────────────────
+interface DocumentChangePayload {
+  content: string;
+}
+interface UserJoinedPayload {
+  socketId: string;
+  user: UserInfo;
+}
+interface UserLeftPayload {
+  socketId: string;
+}
+interface CursorMovedPayload {
+  socketId: string;
+  cursor: { x: number; y: number };
+}
+interface TypingPayload {
+  socketId: string;
+}
+
 export function useSocketSync(roomId: string, user: UserInfo) {
   const { socket, isConnected } = useSocketContext();
   const setDocumentContent = useWorkspaceStore((state) => state.setDocumentContent);
@@ -35,27 +54,27 @@ export function useSocketSync(roomId: string, user: UserInfo) {
   });
 
   // Sync events
-  useSocket('document_change', (payload) => {
+  useSocket<[DocumentChangePayload]>('document_change', (payload) => {
     setDocumentContent(payload.content);
   });
 
-  useSocket('user_joined', (payload) => {
+  useSocket<[UserJoinedPayload]>('user_joined', (payload) => {
     addUser(payload.socketId, payload.user);
   });
 
-  useSocket('user_left', (payload) => {
+  useSocket<[UserLeftPayload]>('user_left', (payload) => {
     removeUser(payload.socketId);
   });
 
-  useSocket('cursor_moved', (payload) => {
+  useSocket<[CursorMovedPayload]>('cursor_moved', (payload) => {
     updateUserCursor(payload.socketId, payload.cursor);
   });
 
-  useSocket('typing_start', (payload) => {
+  useSocket<[TypingPayload]>('typing_start', (payload) => {
     updateUserTyping(payload.socketId, true);
   });
 
-  useSocket('typing_stop', (payload) => {
+  useSocket<[TypingPayload]>('typing_stop', (payload) => {
     updateUserTyping(payload.socketId, false);
   });
 

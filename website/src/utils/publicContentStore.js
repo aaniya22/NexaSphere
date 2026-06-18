@@ -176,7 +176,9 @@ export function initStorageSyncBridge() {
   iframe.tabIndex = -1;
 
   iframe.onload = () => {
-    console.log('[StorageSync] Bridge iframe loaded from', adminOrigin);
+    if (import.meta.env.DEV) {
+      console.log('[StorageSync] Bridge iframe loaded from', adminOrigin);
+    }
     ALLOWED_BRIDGE_KEYS.forEach((key) => {
       iframe.contentWindow?.postMessage({ type: 'ns-sync', key }, adminOrigin);
     });

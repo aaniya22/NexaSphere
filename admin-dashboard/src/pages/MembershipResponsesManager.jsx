@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { api } from '../services/api';
 import { Skeleton } from '../components/Skeleton';
 import { AdminIcon } from '../components/AdminIcon';
+import { Pagination } from '../components/Pagination';
 
 const isOfflineMode = !import.meta.env.VITE_MEMBERSHIP_SCRIPT_URL;
 
@@ -53,22 +54,42 @@ export function MembershipResponsesManager() {
   const [error, setError] = useState(null);
   const [search, setSearch] = useState('');
 
+  // Pagination
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+
   useEffect(() => {
+    setLoading(true);
+    setError(null);
     api.membership
-      .getAll()
+      .getAll({ page, limit: pageSize })
       .then((data) => {
         setResponses(data?.responses ?? []);
+        setTotal(data?.total ?? 0);
+        setTotalPages(data?.totalPages ?? 0);
         setLoading(false);
       })
       .catch((err) => {
         setError(err.message || 'Failed to load responses');
         setLoading(false);
       });
-  }, []);
+  }, [page, pageSize]);
+
+  // Reset to page 1 when search text changes
+  useEffect(() => {
+    setPage(1);
+  }, [search]);
 
   const filtered = responses.filter((r) =>
     COLUMNS.some((c) => (r[c.key] ?? '').toString().toLowerCase().includes(search.toLowerCase()))
   );
+
+  const handlePageSizeChange = (newPageSize) => {
+    setPageSize(newPageSize);
+    setPage(1);
+  };
 
   return (
     <div className="page">
@@ -158,17 +179,21 @@ export function MembershipResponsesManager() {
         </div>
       )}
 
-      {!loading && !error && filtered.length === 0 && (
+      {!loading && !error && total === 0 && (
         <EmptyState
           icon="Inbox"
-          title={search ? 'No Matching Responses' : 'No Membership Responses'}
-          description={
-            search
-              ? 'No responses match your current search query.'
-              : 'There are currently no membership responses available.'
-          }
-          actionLabel={search ? 'Clear Search' : undefined}
-          onAction={search ? () => setSearch('') : undefined}
+          title="No Membership Responses"
+          description="There are currently no membership responses available."
+        />
+      )}
+
+      {!loading && !error && total > 0 && filtered.length === 0 && (
+        <EmptyState
+          icon="Search"
+          title="No Matching Responses"
+          description="No responses match your current search query."
+          actionLabel="Clear Search"
+          onAction={() => setSearch('')}
         />
       )}
 
@@ -218,17 +243,15 @@ export function MembershipResponsesManager() {
               ))}
             </tbody>
           </table>
-          <div
-            style={{
-              padding: '10px 16px',
-              color: 'var(--text-muted)',
-              fontSize: 13,
-              borderTop: '1px solid var(--border)',
-            }}
-          >
-            Showing {filtered.length} of {responses.length} response
-            {responses.length !== 1 ? 's' : ''}
-          </div>
+          <Pagination
+            currentPage={page}
+            totalPages={totalPages}
+            total={total}
+            pageSize={pageSize}
+            onPageChange={setPage}
+            onPageSizeChange={handlePageSizeChange}
+            loading={loading}
+          />
         </div>
       )}
     </div>

@@ -4,7 +4,14 @@ import { buildUrl, getApiBase, getSocketServerUrl } from '../utils/runtimeConfig
 import { StudentAuthContext } from '../context/StudentAuthContext';
 
 function getAuthHeaders() {
-  const token = localStorage.getItem('ns_student_token') || localStorage.getItem('ns_admin_token');
+  // Wrapped in try-catch — localStorage.getItem throws SecurityError
+  // in Safari private browsing mode.
+  let token = null;
+  try {
+    token = localStorage.getItem('ns_student_token') || localStorage.getItem('ns_admin_token');
+  } catch {
+    // Storage unavailable — proceed without auth token.
+  }
   return token
     ? { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
     : { 'Content-Type': 'application/json' };
@@ -29,13 +36,20 @@ export function useNotifications() {
       try {
         let resolvedUserId = userId;
         if (!resolvedUserId) {
-          const storedUser = localStorage.getItem('ns_user');
+          let storedUser = null;
+          try {
+            storedUser = localStorage.getItem('ns_user');
+          } catch {
+            // Storage unavailable — skip stored user lookup.
+          }
           if (storedUser) {
             try {
               const u = JSON.parse(storedUser);
               resolvedUserId = u?.id || u?.userId;
             } catch (e) {
-              console.error('Error parsing stored user info', e);
+              if (import.meta.env.DEV) {
+                console.error('[useNotifications] Error parsing stored user info:', e.message);
+              }
             }
           }
         }
@@ -97,7 +111,7 @@ export function useNotifications() {
         // Note: data.id would be better if server provides it
         return [
           {
-            id: `reg-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+            id: `reg-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
             type: 'connection',
             title: 'Registration Confirmed! 🎉',
             message: data.eventName
@@ -114,7 +128,7 @@ export function useNotifications() {
     const handleWaitlist = (data) => {
       setNotifications((prev) => [
         {
-          id: `waitlist-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+          id: `waitlist-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
           type: 'mention',
           title: 'Waitlist Promotion! 🚀',
           message: data.eventName
@@ -130,7 +144,7 @@ export function useNotifications() {
     const handleReminder = (data) => {
       setNotifications((prev) => [
         {
-          id: `reminder-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+          id: `reminder-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
           type: 'system',
           title: 'Upcoming Event Reminder ⏰',
           message: data.eventName
@@ -146,7 +160,7 @@ export function useNotifications() {
     const handleAttendance = (data) => {
       setNotifications((prev) => [
         {
-          id: `attendance-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+          id: `attendance-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
           type: 'system',
           title: 'Attendance Confirmed! Check-in ✅',
           message: `Your check-in is complete! You earned ${data.points || 50} points.`,

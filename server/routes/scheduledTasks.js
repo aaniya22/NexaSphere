@@ -100,7 +100,8 @@ router.post('/:id/run', sanitizeId, async (req, res) => {
     res.json({ message: 'Task executed successfully', task });
   } catch (err) {
     if (err.message.includes('not found')) return res.status(404).json({ error: err.message });
-    if (err.message.includes('already running')) return res.status(409).json({ error: err.message });
+    if (err.message.includes('already running'))
+      return res.status(409).json({ error: err.message });
     res.status(500).json({ error: err.message });
   }
 });

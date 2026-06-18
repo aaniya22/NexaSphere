@@ -95,15 +95,15 @@ export const studentUsersRepository = {
   },
 
   async saveRecoveryCode(email, code) {
-  return {
-    email,
-    code,
-  };
-},
+    return {
+      email,
+      code,
+    };
+  },
 
-async getRecoveryCode(email) {
-  return null;
-},
+  async getRecoveryCode(email) {
+    return null;
+  },
 
   async listAll() {
     if (!HAS_SUPABASE) return [];
@@ -115,5 +115,3 @@ async getRecoveryCode(email) {
     });
   },
 };
-
-

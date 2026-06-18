@@ -9,6 +9,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '../services/api';
+import { Pagination } from '../components/Pagination';
 
 const TABS = [
   { key: 'templates', label: 'Template Builder', icon: '🎨' },
@@ -706,20 +707,33 @@ function IssuedLogs({ onNotify }) {
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
 
+  // Pagination
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+
   const loadCerts = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await api.certificates.getAll();
+      const data = await api.certificates.getAll({ page, limit: pageSize });
       setCertificates(data?.certificates || []);
+      setTotal(data?.total ?? 0);
+      setTotalPages(data?.totalPages ?? 0);
     } catch {
       /* */
     }
     setLoading(false);
-  }, []);
+  }, [page, pageSize]);
 
   useEffect(() => {
     loadCerts();
   }, [loadCerts]);
+
+  // Reset to page 1 when search text changes
+  useEffect(() => {
+    setPage(1);
+  }, [search]);
 
   const filtered = certificates.filter((c) => {
     const q = search.toLowerCase();
@@ -743,6 +757,11 @@ function IssuedLogs({ onNotify }) {
     }
   };
 
+  const handlePageSizeChange = (newPageSize) => {
+    setPageSize(newPageSize);
+    setPage(1);
+  };
+
   return (
     <div>
       <div style={{ marginBottom: '16px' }}>
@@ -756,10 +775,23 @@ function IssuedLogs({ onNotify }) {
 
       {loading ? (
         <div style={{ padding: '40px', textAlign: 'center', opacity: 0.5 }}>Loading…</div>
-      ) : filtered.length === 0 ? (
+      ) : total === 0 ? (
         <div style={{ padding: '40px', textAlign: 'center', opacity: 0.4 }}>
           No certificates found.
         </div>
+      ) : total > 0 && filtered.length === 0 ? (
+        <>
+          <div style={{ padding: '40px', textAlign: 'center', opacity: 0.4 }}>
+            No certificates match your search.
+          </div>
+          <button
+            className="btn btn-secondary"
+            style={{ marginTop: 8 }}
+            onClick={() => setSearch('')}
+          >
+            Clear search
+          </button>
+        </>
       ) : (
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
@@ -892,6 +924,15 @@ function IssuedLogs({ onNotify }) {
               ))}
             </tbody>
           </table>
+          <Pagination
+            currentPage={page}
+            totalPages={totalPages}
+            total={total}
+            pageSize={pageSize}
+            onPageChange={setPage}
+            onPageSizeChange={handlePageSizeChange}
+            loading={loading}
+          />
         </div>
       )}
     </div>

@@ -1277,7 +1277,6 @@ const validatePushSubscription = [
 
 app.post(
   '/api/notifications/subscribe',
-  adminAuth,
   notificationRateLimiter,
   validatePushSubscription,
   async (req, res) => {
@@ -1300,7 +1299,6 @@ app.post(
 
 app.post(
   '/api/notifications/unsubscribe',
-  adminAuth,
   notificationRateLimiter,
   validatePushSubscription,
   async (req, res) => {
@@ -1751,6 +1749,7 @@ if (process.env.NODE_ENV !== 'test') {
   if (!process.env.VERCEL) {
     const boot = HAS_SUPABASE ? studentUsersRepository.ensureSchema() : ensureContentFile();
     boot.then(() => {
+      loadPersistedPushSubscriptions();
       server = app.listen(port, () => {
         console.log(`NexaSphere server listening on http://localhost:${port}`);
         schedulerService.init();

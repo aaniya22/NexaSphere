@@ -47,7 +47,7 @@ export const getSubscriberNotifications = () => {
 };
 
 export const deploymentStatus = {
-  status: "healthy",
-  version: "1.0.0",
+  status: 'healthy',
+  version: '1.0.0',
   lastDeployment: null,
 };

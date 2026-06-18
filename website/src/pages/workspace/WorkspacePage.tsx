@@ -9,13 +9,36 @@ interface WorkspacePageProps {
   onBack: () => void;
 }
 
+/** Derive a stable anonymous identity persisted for the browser session.
+ *  Falls back to a new random identity if sessionStorage is unavailable.
+ */
+function getOrCreateAnonUser() {
+  const STORAGE_KEY = 'ns_workspace_anon_user';
+  try {
+    const stored = sessionStorage.getItem(STORAGE_KEY);
+    if (stored) return JSON.parse(stored);
+  } catch {
+    // sessionStorage unavailable (private browsing) — fall through to create
+  }
+  const id = Math.floor(Math.random() * 9000) + 1000;
+  const hue = Math.floor(Math.random() * 360);
+  const user = {
+    name: `User-${id}`,
+    color: `hsl(${hue}, 70%, 50%)`,
+    initials: `U${String(id).slice(-1)}`,
+  };
+  try {
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(user));
+  } catch {
+    // ignore write failure
+  }
+  return user;
+}
+
 export default function WorkspacePage({ roomId, onBack }: WorkspacePageProps) {
-  // Use a random anonymous user for now, or fetch from context if there's auth
-  const [user] = useState({
-    name: `User-${Math.floor(Math.random() * 1000)}`,
-    color: `hsl(${Math.floor(Math.random() * 360)}, 70%, 50%)`,
-    initials: 'U',
-  });
+  // Stable anonymous identity — persisted for the session so hot reloads
+  // and re-mounts do not generate a new user name and color each time.
+  const [user] = useState(getOrCreateAnonUser);
 
   const { emitDocumentChange, emitCursorMove, emitTyping } = useSocketSync(roomId, user);
   const { documentContent, users, status } = useWorkspaceStore();

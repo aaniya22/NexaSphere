@@ -123,6 +123,7 @@ jobs:
 
   notify-failure:
     name: Notify Slack Failure
+    needs: [deploy-backend, deploy-frontend, smoke-test]
     if: failure()
     runs-on: ubuntu-latest
 

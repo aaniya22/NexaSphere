@@ -15,7 +15,9 @@ export function useDashboardData() {
       setData(dashboardData);
     } catch (err) {
       setError('Failed to load dashboard data');
-      console.error(err);
+      if (import.meta.env.DEV) {
+        console.error('[useDashboardData] Failed to load dashboard data:', err.message);
+      }
     } finally {
       setLoading(false);
     }

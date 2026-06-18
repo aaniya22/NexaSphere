@@ -31,7 +31,7 @@ export default function NotFoundPage({ onGoHome }) {
           fontFamily: "'Orbitron',monospace",
           fontSize: 'clamp(1rem,3vw,1.5rem)',
           fontWeight: 700,
-          color: 'var(--t1)',
+          color: 'var(--color-text-primary)',
           marginBottom: '12px',
         }}
       >
@@ -39,7 +39,7 @@ export default function NotFoundPage({ onGoHome }) {
       </h2>
       <p
         style={{
-          color: 'var(--t2)',
+          color: 'var(--color-text-secondary)',
           fontSize: '1rem',
           maxWidth: '380px',
           lineHeight: 1.7,
@@ -48,7 +48,15 @@ export default function NotFoundPage({ onGoHome }) {
       >
         The page you&apos;re looking for doesn&apos;t exist or may have moved.
       </p>
-      <button className="btn btn-primary" onClick={onGoHome} style={{ cursor: 'pointer' }}>
+      <button
+        className="btn btn-primary"
+        onClick={onGoHome}
+        style={{
+          cursor: 'pointer',
+          backgroundColor: 'var(--color-primary)',
+          color: 'var(--color-text-on-primary)',
+        }}
+      >
         ← Go Home
       </button>
     </div>

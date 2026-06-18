@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { api } from '../services/api';
 import { AdminIcon } from '../components/AdminIcon';
 import { Skeleton } from '../components/Skeleton';
+import { Pagination } from '../components/Pagination';
 
 const STATUS_COLORS = {
   confirmed: '#22c55e',
@@ -16,6 +17,12 @@ export function EventRegistrations() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // Pagination
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+
   useEffect(() => {
     api.events
       .getAll()
@@ -25,16 +32,31 @@ export function EventRegistrations() {
       .catch(() => {});
   }, []);
 
+  // Reset to page 1 when selected event changes
+  useEffect(() => {
+    setPage(1);
+  }, [selectedEventId]);
+
   useEffect(() => {
     if (!selectedEventId) return;
     setLoading(true);
     setError('');
     api.eventRegistrations
-      .list(selectedEventId)
-      .then((data) => setRegistrations(data?.registrations || []))
+      .list(selectedEventId, { page, limit: pageSize })
+      .then((data) => {
+        setRegistrations(data?.registrations || []);
+        setTotal(data?.total ?? 0);
+        setTotalPages(data?.totalPages ?? 0);
+        setLoading(false);
+      })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
-  }, [selectedEventId]);
+  }, [selectedEventId, page, pageSize]);
+
+  const handlePageSizeChange = (newPageSize) => {
+    setPageSize(newPageSize);
+    setPage(1);
+  };
 
   const handleAttendance = async (reg) => {
     try {
@@ -80,50 +102,67 @@ export function EventRegistrations() {
       {loading && <Skeleton height={48} count={5} />}
       {error && <div className="page-error">{error}</div>}
 
-      {!loading && !error && selectedEventId && registrations.length === 0 && (
+      {!loading && !error && selectedEventId && total === 0 && (
         <div className="empty-state">No registrations for this event yet.</div>
       )}
 
+      {!loading && !error && total > 0 && registrations.length === 0 && (
+        <>
+          <div className="empty-state">No registrations match the current filter.</div>
+        </>
+      )}
+
       {registrations.length > 0 && (
-        <div className="list">
-          {registrations.map((reg) => (
-            <div key={reg.id} className="list-item">
-              <div className="list-item-left">
-                <div>
-                  <div className="item-name">{reg.full_name}</div>
-                  <div className="item-meta">
-                    {reg.email}
-                    {reg.department && ` · ${reg.department}`}
-                    {reg.year && ` · ${reg.year}`}
-                    {reg.team_name && ` · Team: ${reg.team_name}`}
+        <>
+          <div className="list">
+            {registrations.map((reg) => (
+              <div key={reg.id} className="list-item">
+                <div className="list-item-left">
+                  <div>
+                    <div className="item-name">{reg.full_name}</div>
+                    <div className="item-meta">
+                      {reg.email}
+                      {reg.department && ` · ${reg.department}`}
+                      {reg.year && ` · ${reg.year}`}
+                      {reg.team_name && ` · Team: ${reg.team_name}`}
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="list-item-right">
-                <span
-                  className="status-badge"
-                  style={{ background: STATUS_COLORS[reg.status] || '#6b7280' }}
-                >
-                  {reg.attended ? 'Attended' : reg.status}
-                </span>
-                {!reg.attended && reg.status === 'confirmed' && (
-                  <button
-                    className="btn-primary"
-                    style={{ fontSize: '0.78rem', padding: '6px 14px' }}
-                    onClick={() => handleAttendance(reg)}
+                <div className="list-item-right">
+                  <span
+                    className="status-badge"
+                    style={{ background: STATUS_COLORS[reg.status] || '#6b7280' }}
                   >
-                    Mark Present
-                  </button>
-                )}
-                <AdminIcon
-                  name={reg.attended ? 'CheckCircle' : 'Circle'}
-                  size={16}
-                  style={{ color: reg.attended ? '#22c55e' : 'var(--admin-text-muted, #666)' }}
-                />
+                    {reg.attended ? 'Attended' : reg.status}
+                  </span>
+                  {!reg.attended && reg.status === 'confirmed' && (
+                    <button
+                      className="btn-primary"
+                      style={{ fontSize: '0.78rem', padding: '6px 14px' }}
+                      onClick={() => handleAttendance(reg)}
+                    >
+                      Mark Present
+                    </button>
+                  )}
+                  <AdminIcon
+                    name={reg.attended ? 'CheckCircle' : 'Circle'}
+                    size={16}
+                    style={{ color: reg.attended ? '#22c55e' : 'var(--admin-text-muted, #666)' }}
+                  />
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+          <Pagination
+            currentPage={page}
+            totalPages={totalPages}
+            total={total}
+            pageSize={pageSize}
+            onPageChange={setPage}
+            onPageSizeChange={handlePageSizeChange}
+            loading={loading}
+          />
+        </>
       )}
     </div>
   );

@@ -118,6 +118,11 @@ export default function ResourcesPage({ onBack }) {
           const next = new Set(prev);
           if (hasVoted) next.add(id);
           else next.delete(id);
+          try {
+            localStorage.setItem('ns_resource_voted_ids', JSON.stringify([...next]));
+          } catch {
+            // Ignore QuotaExceededError
+          }
           return next;
         });
       });

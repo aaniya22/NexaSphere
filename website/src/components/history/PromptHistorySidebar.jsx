@@ -19,7 +19,9 @@ const PromptHistorySidebar = ({ isOpen, onSelectPrompt, currentWorkspace = 'defa
       const promptList = await getAllPrompts(selectedWorkspace);
       setPrompts(promptList);
     } catch (error) {
-      console.error('Error loading history:', error);
+      if (import.meta.env.DEV) {
+        console.error('[PromptHistorySidebar] Error loading history:', error.message);
+      }
     } finally {
       setLoading(false);
     }

@@ -12,19 +12,19 @@ logger = logging.getLogger(__name__)
 
 # Mock Data for testing
 MOCK_EVENTS = [
-    {"id": "evt_1", "name": "AI Hackathon", "tags": ["AI", "machine learning", "hackathon"]},
-    {"id": "evt_2", "name": "Web Dev Bootcamp", "tags": ["web", "react", "javascript"]},
-    {"id": "evt_3", "name": "Cybersecurity Workshop", "tags": ["security", "networking", "workshop"]},
-    {"id": "evt_4", "name": "Robotics Fest", "tags": ["robotics", "hardware", "iot"]},
-    {"id": "evt_5", "name": "Data Science Summit", "tags": ["data", "AI", "python", "analytics"]},
-    {"id": "evt_6", "name": "UI/UX Design Masterclass", "tags": ["design", "figma", "uiux"]}
+    {"id": "evt_1", "name": "AI Hackathon", "tags": ["AI", "machine learning", "hackathon"], "date": "2026-07-01T10:00:00Z", "registered_count": 80, "status": "upcoming"},
+    {"id": "evt_2", "name": "Web Dev Bootcamp", "tags": ["web", "react", "javascript"], "date": "2026-06-20T09:00:00Z", "registered_count": 120, "status": "upcoming"},
+    {"id": "evt_3", "name": "Cybersecurity Workshop", "tags": ["security", "networking", "workshop"], "date": "2026-08-15T14:00:00Z", "registered_count": 50, "status": "upcoming"},
+    {"id": "evt_4", "name": "Robotics Fest", "tags": ["robotics", "hardware", "iot"], "date": "2026-07-10T11:00:00Z", "registered_count": 60, "status": "upcoming"},
+    {"id": "evt_5", "name": "Data Science Summit", "tags": ["data", "AI", "python", "analytics"], "date": "2026-09-01T09:00:00Z", "registered_count": 150, "status": "upcoming"},
+    {"id": "evt_6", "name": "UI/UX Design Masterclass", "tags": ["design", "figma", "uiux"], "date": "2026-06-25T13:00:00Z", "registered_count": 90, "status": "upcoming"}
 ]
 
 MOCK_USERS = [
-    {"id": "user_1", "interests": ["AI", "python", "machine learning", "data"]},
-    {"id": "user_2", "interests": ["web", "design", "figma"]},
-    {"id": "user_3", "interests": ["AI", "python", "robotics"]},
-    {"id": "101", "interests": ["web", "react"]}
+    {"id": "user_1", "interests": ["AI", "python", "machine learning", "data"], "followed_users": ["user_3"]},
+    {"id": "user_2", "interests": ["web", "design", "figma"], "followed_users": ["user_1"]},
+    {"id": "user_3", "interests": ["AI", "python", "robotics"], "followed_users": ["user_2"]},
+    {"id": "101", "interests": ["web", "react"], "followed_users": []}
 ]
 
 MOCK_PARTICIPATIONS = [
@@ -32,7 +32,9 @@ MOCK_PARTICIPATIONS = [
     {"user_id": "user_3", "event_id": "evt_4"},
     {"user_id": "user_2", "event_id": "evt_6"}
 ]
-
+ 
+# Helper functions for scoring components
+# These could be moved to a separate utility file if they grow
 def get_db_engine():
     db_url = os.getenv("DATABASE_URL")
     if not db_url:
@@ -53,21 +55,32 @@ def fetch_data_with_sqlalchemy(user_id):
     
     if engine:
         try:
+            # Note: Assumes 'events' table has 'date' (timestamp/datetime) and 'registered_count' (integer) columns.
+            # Assumes 'profiles' table has 'followed_users' (JSONB array of user IDs) column.
+            # If these columns don't exist, a schema migration would be needed.
             with engine.connect() as conn:
                 # 1. Fetch Events
-                events_result = conn.execute(text("SELECT id, name, tags FROM events WHERE status != 'completed'"))
-                events = [{"id": row.id, "name": row.name, "tags": row.tags} for row in events_result]
+                events_result = conn.execute(text("SELECT id, name, tags, date, registered_count FROM events WHERE status != 'completed'"))
+                events = [{"id": row.id, "name": row.name, "tags": row.tags, "date": row.date, "registered_count": row.registered_count} for row in events_result]
                 
                 # 2. Fetch all User Profiles
-                users_result = conn.execute(text("SELECT id, interests FROM profiles"))
+                users_result = conn.execute(text("SELECT id, interests, followed_users FROM profiles"))
                 for row in users_result:
                     user_interests = row.interests
                     if isinstance(user_interests, str):
                         try:
                             user_interests = json.loads(user_interests)
                         except json.JSONDecodeError:
-                            user_interests = [user_interests]
-                    all_users.append({"id": str(row.id), "interests": user_interests})
+                            user_interests = [user_interests] # Fallback if not valid JSON
+                    
+                    followed_users = row.followed_users
+                    if isinstance(followed_users, str):
+                        try:
+                            followed_users = json.loads(followed_users)
+                        except json.JSONDecodeError:
+                            followed_users = [] # Default to empty list if parsing fails
+
+                    all_users.append({"id": str(row.id), "interests": user_interests, "followed_users": followed_users})
                 
                 # 3. Fetch Event Participations
                 parts_result = conn.execute(text("SELECT user_id, event_id FROM event_participants"))
@@ -75,12 +88,48 @@ def fetch_data_with_sqlalchemy(user_id):
                 
                 if events and all_users:
                     return events, all_users, participations
+                else:
+                    logger.warning("No events or users found in DB, falling back to mock data.")
         except Exception as e:
             logger.warning(f"Database fetch failed, falling back to mock data. Error: {e}")
             
     # Fallback to dummy data
     logger.info("Using mock data for recommendation logic.")
     return MOCK_EVENTS, MOCK_USERS, MOCK_PARTICIPATIONS
+
+def calculate_popularity_score(event, max_registered_count):
+    if not max_registered_count or max_registered_count == 0:
+        return 0.0
+    return event.get('registered_count', 0) / max_registered_count
+
+def calculate_recency_score(event):
+    event_date_str = event.get('date')
+    if not event_date_str:
+        return 0.0 # Cannot calculate recency without a date
+
+    try:
+        event_date = pd.to_datetime(event_date_str, utc=True)
+        now = pd.to_datetime('now', utc=True)
+        time_diff_days = (event_date - now).total_seconds() / (60 * 60 * 24)
+
+        if time_diff_days < 0: return 0.0 # Past event
+        if time_diff_days <= 7: return 1.0 # Within a week
+        if time_diff_days <= 30: return 0.7 # Within a month
+        if time_diff_days <= 90: return 0.3 # Within 3 months
+        return 0.1 # Far future events
+    except Exception as e:
+        logger.warning(f"Error calculating recency for event {event.get('id')}: {e}")
+        return 0.0
+
+def calculate_social_influence_score(event, target_user_followed_users, participations):
+    score = 0.0
+    if not target_user_followed_users:
+        return 0.0
+
+    for followed_user_id in target_user_followed_users:
+        if any(p['user_id'] == followed_user_id and p['event_id'] == event['id'] for p in participations):
+            score += 0.5 # Simple boost if a followed user attended
+    return min(score, 1.0) # Cap at 1.0
 
 def get_recommendations(user_id, num_recommendations=5):
     """
@@ -99,16 +148,26 @@ def get_recommendations(user_id, num_recommendations=5):
     # Find target user
     target_user = next((u for u in all_users if u["id"] == user_id), None)
     if not target_user:
-        # Default fallback interests
-        target_user = {"id": user_id, "interests": ["AI", "hackathon"]}
+        # Default fallback interests and no followed users for new/unknown user
+        target_user = {"id": user_id, "interests": ["AI", "hackathon"], "followed_users": []}
         all_users.append(target_user)
         
     target_interest_str = " ".join(target_user["interests"])
     
-    # ---------------- 1. Content-Based Filtering ----------------
-    vectorizer = TfidfVectorizer(stop_words='english')
-    all_content_text = [target_interest_str] + events_df['tags_str'].tolist()
+    # Determine user history length for dynamic weighting (cold start)
+    user_participations_count = sum(1 for p in participations if p['user_id'] == user_id)
     
+    # Dynamic weighting: more content-based for cold start, more collaborative as history grows
+    content_base_weight = 0.7
+    collab_base_weight = 0.3
+    if user_participations_count < 3: # Cold start threshold
+        content_base_weight = 0.9
+        collab_base_weight = 0.1
+    elif user_participations_count > 10: # Established user
+        content_base_weight = 0.5
+        collab_base_weight = 0.5
+
+    # ---------------- 1. Content-Based Filtering ----------------
     try:
         content_matrix = vectorizer.fit_transform(all_content_text)
         user_content_vector = content_matrix[0]
@@ -122,14 +181,13 @@ def get_recommendations(user_id, num_recommendations=5):
     # ---------------- 2. Collaborative Filtering ----------------
     collab_scores = [0.0] * len(events_df)
     
-    # We only compute collaborative if we have multiple users
-    if len(all_users) > 1:
+    # We only compute collaborative if we have multiple users and some history for the target user
+    if len(all_users) > 1 and user_participations_count > 0:
         users_df = pd.DataFrame(all_users)
         users_df['interests_str'] = users_df['interests'].apply(lambda x: " ".join(x) if isinstance(x, list) else str(x))
         
-        # We need the target user's index in the dataframe
-        target_idx = users_df.index[users_df['id'] == user_id].tolist()[0]
-        
+        target_idx_list = users_df.index[users_df['id'] == user_id].tolist()
+        if target_idx_list: # Ensure target user is in the dataframe
         try:
             user_matrix = vectorizer.fit_transform(users_df['interests_str'].tolist())
             target_user_vector = user_matrix[target_idx]

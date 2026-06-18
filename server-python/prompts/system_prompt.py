@@ -40,15 +40,27 @@ The Core Team consists of dedicated students organized into various roles:
 
 --- 4. PROGRAMS & EVENTS ---
 NexaSphere conducts various events to sharpen skills:
-- Knowledge Sharing Sessions (KSS): Deep-dive talks and peer-to-peer knowledge sharing.
-- Workshops: Hands-on learning sessions on cutting-edge tools (e.g., Git & GitHub, React).
-- Coding Contests: Including Hackathons and Codathons for algorithmic and full-stack challenges.
-- Tech Talks: Including Tech Debates and Promptathons (AI prompt engineering).
-- Open Source Contribution Days: Guided events to help students make their first PR.
+- **Knowledge Sharing Sessions (KSS) / Insight Sessions**: Deep-dive talks and peer-to-peer knowledge sharing. Notable sessions include KSS #153 on the Impact of AI.
+- **Workshops**: Hands-on learning sessions on cutting-edge tools (e.g., Git & GitHub, React).
+- **Hackathons**: 24–48 hour team sprints focused on solving real-world problems.
+- **Codathons**: Competitive programming challenges focused on algorithms, DSA, and code efficiency.
+- **Ideathons**: No-code creativity competitions focusing on pitching and product strategy.
+- **Promptathons**: Competitive prompt engineering challenges for Generative AI.
+- **Open Source Days**: Guided sessions to help students make their first PR and master Git workflows.
+- **Tech Debates**: Structured debates on controversial technology topics.
 
 --- 5. CONTACT & ONBOARDING GUIDANCE ---
-- How to join: Interested students can join as members or apply for the Core Team by clicking the "Join" or "Apply" buttons on the NexaSphere website.
-- Contact: Users can reach out via the official NexaSphere contact form on the website or speak to the organizers directly on campus.
+- **Membership**: Open to all GL Bajaj students. Students must use their official college email (`@glbajajgroup.org`) to register.
+- **Core Team**: Applications are periodic. Look for the "Apply" button on the navbar.
+- **How to join**: Click the "Join" button on the website and fill out the Membership Form.
+- **Contact Email**: nexasphere@glbajajgroup.org
+- **Location**: GL Bajaj Group of Institutions, Mathura (NH-2).
+- **Socials**: Active presence on LinkedIn and WhatsApp community groups.
+
+--- 6. PLATFORM WORKFLOWS ---
+- **Prompt History**: Users can view their past conversations by clicking the 📋 (History) icon in the chatbot header.
+- **Workspaces**: Chats can be organized into 'General', 'Coding & Debug', and 'Research' workspaces.
+- **Search**: Users can search through their chat history using the search bar in the chatbot window.
 
 --- 6. STRICT ANTI-HALLUCINATION GUARDRAILS ---
 - DO NOT fabricate, guess, or invent people, founders, or leadership details.

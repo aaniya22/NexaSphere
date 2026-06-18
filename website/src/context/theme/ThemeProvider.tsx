@@ -14,9 +14,15 @@ export const ThemeContext = createContext<ThemeContextType | undefined>(undefine
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [theme, setThemeState] = useState<Theme | null>(() => {
-    // Check if user has explicitly set a preference
-    const stored = localStorage.getItem('ns-theme') as Theme | null;
-    return stored || null;
+    // Check if user has explicitly set a preference.
+    // Wrapped in try-catch — localStorage.getItem throws SecurityError
+    // in Safari private browsing mode.
+    try {
+      const stored = localStorage.getItem('ns-theme') as Theme | null;
+      return stored || null;
+    } catch {
+      return null;
+    }
   });
 
   const [systemTheme, setSystemTheme] = useState<Theme>(() => {
@@ -60,7 +66,13 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const setTheme = (newTheme: Theme) => {
     setThemeState(newTheme);
-    localStorage.setItem('ns-theme', newTheme);
+    // Wrapped in try-catch — localStorage.setItem throws SecurityError
+    // in Safari private browsing or QuotaExceededError when storage is full.
+    try {
+      localStorage.setItem('ns-theme', newTheme);
+    } catch {
+      // Storage unavailable — theme applies for the session only.
+    }
   };
 
   const toggleTheme = () => {

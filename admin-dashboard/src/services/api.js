@@ -275,6 +275,48 @@ const getDb = (key, defaultVal) => {
       setDb(key, initialAnnouncements);
       return initialAnnouncements;
     }
+    if (key === 'sponsors') {
+      const initialSponsors = [
+        {
+          id: '1',
+          companyName: 'TechCorp India',
+          logoUrl: '',
+          description: 'Leading technology solutions provider supporting innovation in education.',
+          websiteUrl: 'https://example.com/techcorp',
+          contactPerson: 'Rahul Sharma',
+          contactEmail: 'rahul@techcorp.com',
+          tier: 'platinum',
+          agreementStart: '2026-01-01',
+          agreementEnd: '2026-12-31',
+          amount: 500000,
+          benefits: ['Logo on homepage', 'Event co-branding', 'Speaking slot', 'Premium placement'],
+          status: 'active',
+          isFeatured: true,
+          sortOrder: 1,
+          createdAt: '2026-06-01T10:00:00.000Z',
+        },
+        {
+          id: '2',
+          companyName: 'DevSolve Labs',
+          logoUrl: '',
+          description: 'Software development consultancy fostering campus tech communities.',
+          websiteUrl: 'https://example.com/devsolve',
+          contactPerson: 'Priya Patel',
+          contactEmail: 'priya@devsolve.com',
+          tier: 'gold',
+          agreementStart: '2026-03-01',
+          agreementEnd: '2026-08-31',
+          amount: 250000,
+          benefits: ['Logo on events', 'Newsletter mention', 'Booth at events'],
+          status: 'active',
+          isFeatured: false,
+          sortOrder: 2,
+          createdAt: '2026-06-05T08:00:00.000Z',
+        },
+      ];
+      setDb(key, initialSponsors);
+      return initialSponsors;
+    }
 
     return defaultVal;
   } catch {
@@ -341,7 +383,94 @@ async function fetchWithAuth(url, options = {}) {
       const method = options.method || 'GET';
       const body = options.body ? JSON.parse(options.body) : null;
 
-      // /api/admin/events
+      // Pagination helper for offline mock
+      const getPageParams = () => {
+        const qs = url.split('?')[1] || '';
+        const params = new URLSearchParams(qs);
+        return {
+          page: parseInt(params.get('page'), 10) || 1,
+          limit: parseInt(params.get('limit'), 10) || 25,
+        };
+      };
+      const paginate = (arr) => {
+        const { page, limit } = getPageParams();
+        const total = arr.length;
+        const start = (page - 1) * limit;
+        const end = start + limit;
+        return {
+          rows: arr.slice(start, end),
+          total,
+          page,
+          limit,
+        };
+      };
+
+      // ── Event sub-paths (must come before generic /api/admin/events) ──
+
+      // /api/admin/events/:eventId/registrations
+      if (url.match(/\/api\/admin\/events\/[^\/]+\/registrations$/)) {
+        const eventId = url.split('/')[4];
+        let regDb = getDb('event_registrations', {});
+        let regs = regDb[eventId] || [];
+        if (method === 'GET') {
+          const { rows, total } = paginate(regs);
+          resolve({ registrations: rows, total });
+        }
+        if (method === 'POST') {
+          const newReg = {
+            ...body,
+            id: Date.now().toString(),
+            created_at: new Date().toISOString(),
+          };
+          regs = [newReg, ...regs];
+          regDb[eventId] = regs;
+          setDb('event_registrations', regDb);
+          resolve(newReg);
+        }
+        return;
+      }
+
+      // /api/admin/events/:eventId/attendance
+      if (url.match(/\/api\/admin\/events\/[^\/]+\/attendance$/)) {
+        const eventId = url.split('/')[4];
+        let regDb = getDb('event_registrations', {});
+        let regs = regDb[eventId] || [];
+        if (method === 'POST' && body) {
+          const idx = regs.findIndex(
+            (r) => r.email === body.email || r.ticket_token === body.token
+          );
+          if (idx >= 0) {
+            regs[idx] = { ...regs[idx], attended: true, attended_at: new Date().toISOString() };
+            regDb[eventId] = regs;
+            setDb('event_registrations', regDb);
+            resolve({ ...regs[idx], already_attended: false });
+          } else {
+            resolve({ error: 'Registration not found' });
+          }
+        }
+        return;
+      }
+
+      // /api/admin/events/:eventId/analytics
+      if (url.match(/\/api\/admin\/events\/[^\/]+\/analytics$/)) {
+        const eventId = url.split('/')[4];
+        let regDb = getDb('event_registrations', {});
+        let regs = regDb[eventId] || [];
+        const total = regs.length;
+        const confirmed = regs.filter((r) => r.status === 'confirmed').length;
+        const attended = regs.filter((r) => r.attended).length;
+        resolve({
+          eventId,
+          stats: { total, confirmed, waitlisted: total - confirmed, attended },
+          attendanceRate: confirmed > 0 ? Math.round((attended / confirmed) * 100) : 0,
+          departmentBreakdown: [],
+          yearBreakdown: [],
+          waitlist: [],
+        });
+        return;
+      }
+
+      // /api/admin/events (base CRUD — must come after sub-path handlers)
       if (url.startsWith('/api/admin/events')) {
         let events = getDb('events', []);
         if (method === 'GET') resolve({ events });
@@ -362,6 +491,149 @@ async function fetchWithAuth(url, options = {}) {
           events = events.filter((e) => e.id !== id);
           setDb('events', events);
           resolve({ success: true });
+        }
+      }
+
+      // /api/admin/submissions/recruitment
+      else if (url.startsWith('/api/admin/submissions/recruitment')) {
+        const seedRecruitments = [
+          {
+            id: '1',
+            fullName: 'Priya Sharma',
+            collegeEmail: 'priya@glbajaj.org',
+            year: '2nd',
+            branch: 'CSE',
+            role: 'Web Developer',
+            interests: 'React, Node.js',
+            status: 'applied',
+            submittedAt: '2026-05-20T10:30:00Z',
+          },
+          {
+            id: '2',
+            fullName: 'Arjun Singh',
+            collegeEmail: 'arjun@glbajaj.org',
+            year: '3rd',
+            branch: 'CSE (AI&ML)',
+            role: 'AI Engineer',
+            interests: 'Python, TensorFlow',
+            status: 'shortlisted',
+            submittedAt: '2026-05-19T14:00:00Z',
+          },
+          {
+            id: '3',
+            fullName: 'Neha Gupta',
+            collegeEmail: 'neha@glbajaj.org',
+            year: '1st',
+            branch: 'IT',
+            role: 'UI/UX Designer',
+            interests: 'Figma, Design Systems',
+            status: 'applied',
+            submittedAt: '2026-05-18T09:15:00Z',
+          },
+          {
+            id: '4',
+            fullName: 'Rahul Verma',
+            collegeEmail: 'rahul@glbajaj.org',
+            year: '2nd',
+            branch: 'ECE',
+            role: 'Backend Developer',
+            interests: 'Java, Spring Boot',
+            status: 'rejected',
+            submittedAt: '2026-05-17T16:45:00Z',
+          },
+          {
+            id: '5',
+            fullName: 'Sneha Patel',
+            collegeEmail: 'sneha@glbajaj.org',
+            year: '3rd',
+            branch: 'CSE',
+            role: 'DevOps Engineer',
+            interests: 'Docker, Kubernetes',
+            status: 'applied',
+            submittedAt: '2026-05-16T11:20:00Z',
+          },
+        ];
+        if (method === 'GET') {
+          const { rows, total } = paginate(seedRecruitments);
+          resolve({ submissions: rows, total });
+        }
+      }
+
+      // /api/admin/membership
+      else if (url.startsWith('/api/admin/membership')) {
+        const seedMembership = Array.from({ length: 53 }, (_, i) => ({
+          id: `mem-${i + 1}`,
+          timestamp: new Date(Date.now() - i * 86400000).toISOString(),
+          fullName: `Student ${i + 1}`,
+          collegeEmail: `student${i + 1}@glbajaj.org`,
+          rollNumber: `${21000 + i}`,
+          course: 'B.Tech',
+          branch: ['CSE', 'CSE (AI&ML)', 'IT', 'ECE', 'ME'][i % 5],
+          groupsSelected: ['Web, AI', 'AI, ML', 'Web', 'Cloud, DevOps', 'UI/UX'][i % 5],
+          submittedAt: new Date(Date.now() - i * 86400000).toISOString(),
+        }));
+        if (method === 'GET') {
+          const { rows, total } = paginate(seedMembership);
+          resolve({ responses: rows, total });
+        }
+      }
+
+      // /api/admin/certificates
+      else if (url.startsWith('/api/admin/certificates')) {
+        // Template operations
+        if (url.includes('/templates')) {
+          let templates = getDb('cert_templates', []);
+          if (method === 'GET') resolve({ templates });
+          if (method === 'POST') {
+            const t = { ...body, id: Date.now().toString() };
+            templates = [...templates, t];
+            setDb('cert_templates', templates);
+            resolve(t);
+          }
+          if (method === 'PUT') {
+            const id = url.split('/').pop();
+            templates = templates.map((t) => (t.id === id ? { ...body, id } : t));
+            setDb('cert_templates', templates);
+            resolve({ ...body, id });
+          }
+          if (method === 'DELETE') {
+            const id = url.split('/').pop();
+            templates = templates.filter((t) => t.id !== id);
+            setDb('cert_templates', templates);
+            resolve({ success: true });
+          }
+          return;
+        }
+        // Participant operations
+        if (url.includes('/participants')) {
+          resolve({ participants: [] });
+          return;
+        }
+        // Certificate generation
+        if (url.includes('/generate')) {
+          resolve({ generated: 0, skipped: 0, certificates: [] });
+          return;
+        }
+        // Revoke by ID
+        if (url.match(/\/api\/admin\/certificates\/[^\/]+\/revoke$/)) {
+          resolve({ success: true });
+          return;
+        }
+        // GET /api/admin/certificates (issued logs)
+        const seedCerts = Array.from({ length: 47 }, (_, i) => ({
+          certificateId: `NS-CERT-${String(100000 + i).slice(0, 6)}${String.fromCharCode(65 + (i % 26))}${String.fromCharCode(65 + ((i + 1) % 26))}`,
+          studentName: `Student ${i + 1}`,
+          studentEmail: `student${i + 1}@glbajaj.org`,
+          studentRollNumber: `${21000 + i}`,
+          eventName: ['KSS #153', 'Git Workshop', 'AI Summit', 'Hackathon 2026', 'Webinar: Cloud'][
+            i % 5
+          ],
+          issuedAt: new Date(Date.now() - i * 86400000 * 3).toISOString(),
+          revoked: i > 40,
+        }));
+        if (method === 'GET') {
+          const { rows, total } = paginate(seedCerts);
+          resolve({ certificates: rows, total });
         }
       }
 
@@ -411,24 +683,6 @@ async function fetchWithAuth(url, options = {}) {
         }
       }
 
-      // /api/admin/membership
-      else if (url.startsWith('/api/admin/membership')) {
-        resolve({
-          responses: [
-            {
-              timestamp: new Date().toISOString(),
-              fullName: 'Test User',
-              collegeEmail: 'test@glbajaj.org',
-              rollNumber: '21001',
-              course: 'B.Tech',
-              branch: 'CSE',
-              groupsSelected: 'Web, AI',
-              submittedAt: new Date().toISOString(),
-            },
-          ],
-        });
-      }
-
       // /api/admin/portfolios
       else if (url.startsWith('/api/admin/portfolios')) {
         let portfolios = getDb('portfolios', []);
@@ -455,46 +709,27 @@ async function fetchWithAuth(url, options = {}) {
         }
       }
 
-      // /api/admin/resources
-      else if (url.startsWith('/api/admin/resources')) {
-        let resources = getDb('resources', []);
-        const parts = url.split('/');
-        const id = parts[4];
-        const action = parts[5];
-
-        if (method === 'GET') {
-          const queryParams = new URLSearchParams(url.split('?')[1] || '');
-          const status = queryParams.get('status');
-          const q = queryParams.get('q');
-          let filtered = [...resources];
-          if (status) filtered = filtered.filter((r) => r.status === status);
-          if (q) {
-            const lower = q.toLowerCase();
-            filtered = filtered.filter(
-              (r) =>
-                r.title?.toLowerCase().includes(lower) ||
-                (r.description || '').toLowerCase().includes(lower)
-            );
-          }
-          resolve({ resources: filtered });
+      // /api/admin/sponsors
+      else if (url.startsWith('/api/admin/sponsors')) {
+        let sponsors = getDb('sponsors', []);
+        if (method === 'GET') resolve({ sponsors });
+        if (method === 'POST') {
+          const newSponsor = { ...body, id: Date.now().toString() };
+          sponsors = [newSponsor, ...sponsors];
+          setDb('sponsors', sponsors);
+          resolve(newSponsor);
         }
-        if (method === 'PUT' && id && !action) {
-          resources = resources.map((r) => (r.id === id ? { ...body, id } : r));
-          setDb('resources', resources);
+        if (method === 'PUT') {
+          const id = url.split('/').pop();
+          sponsors = sponsors.map((s) => (s.id === id ? { ...body, id } : s));
+          setDb('sponsors', sponsors);
           resolve({ ...body, id });
         }
-        if (method === 'DELETE' && id) {
-          resources = resources.filter((r) => r.id !== id);
-          setDb('resources', resources);
+        if (method === 'DELETE') {
+          const id = url.split('/').pop();
+          sponsors = sponsors.filter((s) => s.id !== id);
+          setDb('sponsors', sponsors);
           resolve({ success: true });
-        }
-        if (method === 'PATCH' && action === 'moderate' && id) {
-          const status = body?.status;
-          resources = resources.map((r) =>
-            r.id === id ? { ...r, status, updatedAt: new Date().toISOString() } : r
-          );
-          setDb('resources', resources);
-          resolve({ success: true, id, status });
         }
       }
 
@@ -526,63 +761,6 @@ async function fetchWithAuth(url, options = {}) {
           setDb('announcements', announcements);
           resolve({ success: true });
         }
-      }
-
-      // /api/admin/events/:eventId/registrations
-      else if (url.match(/\/api\/admin\/events\/[^\/]+\/registrations/)) {
-        const eventId = url.split('/')[4];
-        let regDb = getDb('event_registrations', {});
-        let regs = regDb[eventId] || [];
-        if (method === 'GET') resolve({ registrations: regs });
-        if (method === 'POST') {
-          const newReg = {
-            ...body,
-            id: Date.now().toString(),
-            created_at: new Date().toISOString(),
-          };
-          regs = [newReg, ...regs];
-          regDb[eventId] = regs;
-          setDb('event_registrations', regDb);
-          resolve(newReg);
-        }
-      }
-
-      // /api/admin/events/:eventId/attendance
-      else if (url.match(/\/api\/admin\/events\/[^\/]+\/attendance/)) {
-        const eventId = url.split('/')[4];
-        let regDb = getDb('event_registrations', {});
-        let regs = regDb[eventId] || [];
-        if (method === 'POST' && body) {
-          const idx = regs.findIndex(
-            (r) => r.email === body.email || r.ticket_token === body.token
-          );
-          if (idx >= 0) {
-            regs[idx] = { ...regs[idx], attended: true, attended_at: new Date().toISOString() };
-            regDb[eventId] = regs;
-            setDb('event_registrations', regDb);
-            resolve({ ...regs[idx], already_attended: false });
-          } else {
-            resolve({ error: 'Registration not found' });
-          }
-        }
-      }
-
-      // /api/admin/events/:eventId/analytics
-      else if (url.match(/\/api\/admin\/events\/[^\/]+\/analytics/)) {
-        const eventId = url.split('/')[4];
-        let regDb = getDb('event_registrations', {});
-        let regs = regDb[eventId] || [];
-        const total = regs.length;
-        const confirmed = regs.filter((r) => r.status === 'confirmed').length;
-        const attended = regs.filter((r) => r.attended).length;
-        resolve({
-          eventId,
-          stats: { total, confirmed, waitlisted: total - confirmed, attended },
-          attendanceRate: confirmed > 0 ? Math.round((attended / confirmed) * 100) : 0,
-          departmentBreakdown: [],
-          yearBreakdown: [],
-          waitlist: [],
-        });
       }
     }, 300); // simulate slight network delay
   });
@@ -640,7 +818,10 @@ export const api = {
     },
   },
   eventRegistrations: {
-    list: (eventId) => fetchWithAuth(`/api/admin/events/${eventId}/registrations`),
+    list: (eventId, params = {}) => {
+      const query = new URLSearchParams(params).toString();
+      return fetchWithAuth(`/api/admin/events/${eventId}/registrations${query ? `?${query}` : ''}`);
+    },
     markAttendance: (eventId, payload) =>
       fetchWithAuth(`/api/admin/events/${eventId}/attendance`, {
         method: 'POST',
@@ -835,11 +1016,17 @@ export const api = {
   },
 
   membership: {
-    getAll: () => fetchWithAuth('/api/admin/membership'),
+    getAll: (params = {}) => {
+      const query = new URLSearchParams(params).toString();
+      return fetchWithAuth(`/api/admin/membership${query ? `?${query}` : ''}`);
+    },
   },
 
   recruitment: {
-    getAll: () => fetchWithAuth('/api/admin/submissions/recruitment'),
+    getAll: (params = {}) => {
+      const query = new URLSearchParams(params).toString();
+      return fetchWithAuth(`/api/admin/submissions/recruitment${query ? `?${query}` : ''}`);
+    },
     updateStatus: async (id, status) => {
       const result = await fetchWithAuth(`/api/admin/submissions/recruitment/${id}/status`, {
         method: 'PATCH',
@@ -899,7 +1086,10 @@ export const api = {
       });
       return result;
     },
-    getAll: () => fetchWithAuth('/api/admin/certificates'),
+    getAll: (params = {}) => {
+      const query = new URLSearchParams(params).toString();
+      return fetchWithAuth(`/api/admin/certificates${query ? `?${query}` : ''}`);
+    },
     revoke: async (id) => {
       const result = await fetchWithAuth(`/api/admin/certificates/${id}/revoke`, {
         method: 'PATCH',
@@ -1013,6 +1203,63 @@ export const api = {
       fetchWithAuth(`/api/admin/circuit-breaker/retry/${encodeURIComponent(name)}`, {
         method: 'POST',
       }),
+  },
+
+  sponsorships: {
+    getAll: () => fetchWithAuth('/api/admin/sponsors'),
+    create: async (sponsor) => {
+      if (auth.isOfflineMode()) {
+        eventEmitter.emit(EVENTS.NOTIFY, {
+          type: 'warning',
+          message: 'Offline — changes not saved to server',
+        });
+      }
+      const result = await fetchWithAuth('/api/admin/sponsors', {
+        method: 'POST',
+        body: JSON.stringify(sponsor),
+      });
+      eventEmitter.emit(EVENTS.SPONSOR_CREATED, result);
+      eventEmitter.emit(EVENTS.NOTIFY, {
+        type: 'success',
+        message: 'Sponsor added',
+      });
+      broadcastContentUpdate('sponsors');
+      return result;
+    },
+    update: async (id, sponsor) => {
+      if (auth.isOfflineMode()) {
+        eventEmitter.emit(EVENTS.NOTIFY, {
+          type: 'warning',
+          message: 'Offline — changes not saved to server',
+        });
+      }
+      const result = await fetchWithAuth(`/api/admin/sponsors/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(sponsor),
+      });
+      eventEmitter.emit(EVENTS.SPONSOR_UPDATED, result);
+      eventEmitter.emit(EVENTS.NOTIFY, {
+        type: 'success',
+        message: 'Sponsor updated',
+      });
+      broadcastContentUpdate('sponsors');
+      return result;
+    },
+    delete: async (id) => {
+      if (auth.isOfflineMode()) {
+        eventEmitter.emit(EVENTS.NOTIFY, {
+          type: 'warning',
+          message: 'Offline — changes not saved to server',
+        });
+      }
+      await fetchWithAuth(`/api/admin/sponsors/${id}`, { method: 'DELETE' });
+      eventEmitter.emit(EVENTS.SPONSOR_DELETED, { id });
+      eventEmitter.emit(EVENTS.NOTIFY, {
+        type: 'success',
+        message: 'Sponsor deleted',
+      });
+      broadcastContentUpdate('sponsors');
+    },
   },
 
   forum: {

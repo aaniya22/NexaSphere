@@ -219,7 +219,9 @@ export default function CertificateVerifyPage({ certificateId, onGoHome }) {
         setStatus(json.valid ? 'valid' : 'invalid');
       } catch (err) {
         if (err.name === 'AbortError') return;
-        setMessage('Unable to reach the verification server. Please try again later.');
+        setMessage(
+          err.message || 'Unable to reach the verification server. Please try again later.'
+        );
         setStatus('error');
       }
     }

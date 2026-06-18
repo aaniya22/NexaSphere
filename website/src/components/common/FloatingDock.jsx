@@ -123,6 +123,8 @@ export default function FloatingDock() {
             flexDirection: 'column',
             gap: '10px',
             animation: 'popIn 0.25s cubic-bezier(.22,1,.36,1) forwards',
+            // Ensure dock items are focusable when open
+            tabIndex: open ? 0 : -1,
           }}
         >
           {DOCK_ACTIONS.map((item) => (
@@ -130,7 +132,8 @@ export default function FloatingDock() {
               key={item.id}
               onClick={() => handleAction(item)}
               title={item.label}
-              aria-label={item.label}
+              aria-label={item.label} // Explicit label for screen readers
+              role="menuitem" // Indicate this is an item in a menu
               style={{
                 width: '44px',
                 height: '44px',
@@ -167,6 +170,8 @@ export default function FloatingDock() {
         onClick={() => setOpen((o) => !o)}
         aria-label={open ? 'Close dock' : 'Open dock'}
         aria-expanded={open}
+        aria-haspopup="true" // Indicate that this button opens a popup
+        role="button" // Explicitly define role as button
         style={{
           width: '52px',
           height: '52px',

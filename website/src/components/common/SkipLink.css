@@ -1,0 +1,24 @@
+.skip-link {
+  position: absolute;
+  top: -200px;
+  left: 0;
+  background: #ef4444; /* High-contrast red for visibility */
+  color: #ffffff;
+  padding: 1rem;
+  z-index: 9999;
+  transition: top 0.2s ease-in-out;
+  text-decoration: none;
+  font-weight: bold;
+  border-radius: 0 0 4px 0;
+  /* High contrast border for better visibility in focus */
+  border: 2px solid transparent;
+}
+
+.skip-link:focus,
+.skip-link:focus-visible {
+  top: 0;
+  outline: 2px solid white;
+  outline-offset: -4px;
+  border-color: #ffffff;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}

@@ -52,10 +52,14 @@ export const useAnalyticsData = () => {
 
     const base = getApiBase();
 
+    const safeJson = (r: Response) => {
+      if (!r.ok) throw new Error(`Analytics API error: ${r.status} ${r.statusText}`);
+      return r.json();
+    };
     Promise.all([
-      fetch(`${base}/api/admin/analytics/stats`).then((r) => r.json()),
-      fetch(`${base}/api/admin/analytics/growth`).then((r) => r.json()),
-      fetch(`${base}/api/admin/analytics/events`).then((r) => r.json()),
+      fetch(`${base}/api/admin/analytics/stats`).then(safeJson),
+      fetch(`${base}/api/admin/analytics/growth`).then(safeJson),
+      fetch(`${base}/api/admin/analytics/events`).then(safeJson),
     ])
       .then(([stats, growth, events]) => {
         if (!isMounted) return;
