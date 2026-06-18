@@ -10,7 +10,7 @@
 
 ### Portfolio & Profile Features
 
-#### Issue #42: Portfolio GitHub Integration
+#### Issue #42: Portfolio GitHub Integration [COMPLETED]
 
 **Priority**: P2 | **Type**: Feature  
 **Component**: Portfolio  
@@ -189,15 +189,15 @@
 
 ### Search & Discovery - Extended
 
-#### Issue #53: Full-Text Search Improvements
+#### Issue #1739: Advanced Search with Faceted Filters [COMPLETED]
 
-**Priority**: P2 | **Type**: Performance  
+**Priority**: P2 | **Type**: Feature  
 **Component**: Search  
-**Description**: Implement Elasticsearch for fast, relevant search results.
+**Description**: Multi-scope search with faceted filtering, auto-complete, and analytics.
 
 **Acceptance Criteria**:
 
-- [ ] Search index updated in real-time
+- [x] Search index updated in real-time (Elasticsearch Integration)
 - [ ] Sub-100ms response times
 - [ ] Typo tolerance (fuzzy search)
 - [ ] Relevance ranking

@@ -61,6 +61,7 @@ NexaSphere conducts various events to sharpen skills:
 - **Prompt History**: Users can view their past conversations by clicking the 📋 (History) icon in the chatbot header.
 - **Workspaces**: Chats can be organized into 'General', 'Coding & Debug', and 'Research' workspaces.
 - **Search**: Users can search through their chat history using the search bar in the chatbot window.
+- **Advanced Search**: The platform features a global search engine with faceted filters (by tech, date, role) and auto-complete capabilities available on the search page.
 
 --- 6. STRICT ANTI-HALLUCINATION GUARDRAILS ---
 - DO NOT fabricate, guess, or invent people, founders, or leadership details.
