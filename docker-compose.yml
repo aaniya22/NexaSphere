@@ -1,7 +1,11 @@
 version: '3.9'
 
-# Local development: runs the Express API only.
+# Local development: runs the Express API + Nginx gateway + Redis.
 # Frontend is served by Vite's dev server (npm run dev:website) for HMR support.
+#
+# Start everything:  docker compose up
+# Gateway only:      docker compose up gateway
+# Generate SSL cert: cd gateway && bash generate-certs.sh
 
 services:
   # ── Express API ─────────────────────────────────────────────────────────────
@@ -22,13 +26,11 @@ services:
       METRICS_ENABLED: 'true'
       OTEL_SERVICE_NAME: nexasphere-api
       OTEL_ENABLED: 'false'
-      # Allow requests from the Vite dev servers
       CORS_ORIGIN: 'http://localhost:5175,http://localhost:5001'
     networks:
       - default
       - observability
     volumes:
-      # Mount source for hot-reload (override CMD in dev if needed)
       - ./server:/app
       - /app/node_modules
     restart: unless-stopped
@@ -44,7 +46,7 @@ services:
       start_period: 15s
       retries: 3
 
-  # ── Redis Server ────────────────────────────────────────────────────────────
+  # ── Redis ────────────────────────────────────────────────────────────────────
   redis:
     image: redis:7-alpine
     command: redis-server --save "" --appendonly no
@@ -55,7 +57,10 @@ services:
       timeout: 5s
       retries: 5
 
-  # ── API Gateway (Nginx Proxy) ───────────────────────────────────────────────
+  # ── API Gateway (Nginx) ──────────────────────────────────────────────────────
+  # Handles: SSL termination, rate limiting, request logging, routing to backend.
+  # Port 80  → HTTP (redirects to HTTPS)
+  # Port 443 → HTTPS (proxies to api:8787)
   gateway:
     image: nginx:1.25-alpine
     container_name: nexasphere-gateway
@@ -63,14 +68,25 @@ services:
       - '80:80'
       - '443:443'
     volumes:
+      # Nginx config (read-only)
       - ./gateway/nginx.conf:/etc/nginx/nginx.conf:ro
+      # SSL certificates — generate with: cd gateway && bash generate-certs.sh
       - ./gateway/certs:/etc/nginx/certs:ro
+      # Custom JSON error pages
+      - ./gateway/errors:/etc/nginx/errors:ro
+      # Persist access and error logs to the host for debugging/monitoring
+      - ./logs/nginx:/var/log/nginx
     depends_on:
       api:
         condition: service_healthy
     restart: unless-stopped
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://localhost:80/health']
+      interval: 30s
+      timeout: 5s
+      retries: 3
 
-  # ── Python AI API (optional, for observability scraping) ────────────────────
+  # ── Python AI API (optional) ─────────────────────────────────────────────────
   python-api:
     profiles: ['python', 'observability']
     build:
