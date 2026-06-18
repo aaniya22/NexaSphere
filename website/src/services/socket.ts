@@ -1,4 +1,7 @@
 import { io, Socket } from 'socket.io-client';
+
+/** Type-safe listener signature matching Socket.IO's internal contract. */
+type SocketListener = (...args: unknown[]) => void;
 import { getSocketServerUrl } from '../utils/runtimeConfig';
 
 // Keep a singleton instance
@@ -57,7 +60,7 @@ export const initializeSocket = (
     // and to prevent event names leaking into production logs.
     if (import.meta.env.DEV) {
       const originalOn = socketInstance.on.bind(socketInstance);
-      socketInstance.on = (event: string, listener: any) => {
+      socketInstance.on = (event: string, listener: SocketListener) => {
         if (event !== 'connect' && event !== 'disconnect') {
           console.log(`[Socket.IO] Listener registered for event: ${event}`);
         }
@@ -65,7 +68,7 @@ export const initializeSocket = (
       };
 
       const originalOff = socketInstance.off.bind(socketInstance);
-      socketInstance.off = (event: string, listener?: any) => {
+      socketInstance.off = (event: string, listener?: SocketListener) => {
         if (event !== 'connect' && event !== 'disconnect') {
           console.log(`[Socket.IO] Listener removed for event: ${event}`);
         }

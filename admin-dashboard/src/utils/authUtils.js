@@ -4,6 +4,7 @@
 import { jwtDecode } from 'jwt-decode';
 
 const TOKEN_KEY = 'admin_token';
+const STORE = sessionStorage;
 let _logoutTimer = null;
 
 /**
@@ -14,7 +15,7 @@ let _logoutTimer = null;
  * @param {Function} logoutFn - Your app's logout action (clears state + redirects).
  */
 export function saveTokenAndScheduleLogout(token, logoutFn) {
-  localStorage.setItem(TOKEN_KEY, token);
+  STORE.setItem(TOKEN_KEY, token);
   scheduleAutoLogout(token, logoutFn);
 }
 
@@ -57,12 +58,12 @@ export function clearAutoLogoutTimer() {
 
 /** Return the stored token, or null if absent. */
 export function getToken() {
-  return localStorage.getItem(TOKEN_KEY);
+  return STORE.getItem(TOKEN_KEY);
 }
 
 /** Wipe the token from storage (call inside your logoutFn). */
 export function removeToken() {
-  localStorage.removeItem(TOKEN_KEY);
+  STORE.removeItem(TOKEN_KEY);
 }
 
 /**

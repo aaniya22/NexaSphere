@@ -22,17 +22,17 @@ const API_BASE = import.meta.env.VITE_API_URL || '';
 const REFRESH_MS = 30_000;
 
 const CATEGORY_COLORS = {
-  email:        '#3b82f6',
-  analytics:    '#8b5cf6',
-  system:       '#6b7280',
-  reports:      '#f59e0b',
-  users:        '#10b981',
+  email: '#3b82f6',
+  analytics: '#8b5cf6',
+  system: '#6b7280',
+  reports: '#f59e0b',
+  users: '#10b981',
   certificates: '#ec4899',
 };
 
 const STATUS_COLORS = {
   success: '#22c55e',
-  failed:  '#ef4444',
+  failed: '#ef4444',
   running: '#f59e0b',
   pending: '#6b7280',
 };
@@ -85,9 +85,12 @@ function HistoryPanel({ taskId, onClose }) {
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch(`${API_BASE}/api/admin/scheduled-tasks/${taskId}/history?limit=20`, {
-          credentials: 'include',
-        });
+        const res = await fetch(
+          `${API_BASE}/api/admin/scheduled-tasks/${taskId}/history?limit=20`,
+          {
+            credentials: 'include',
+          }
+        );
         const data = await res.json();
         setHistory(data.history || []);
       } catch {
@@ -122,7 +125,18 @@ function HistoryPanel({ taskId, onClose }) {
               <thead>
                 <tr>
                   {['Started At', 'Duration', 'Status', 'Error'].map((h) => (
-                    <th key={h} style={{ textAlign: 'left', padding: '8px 10px', fontSize: 11, color: 'var(--text2)', borderBottom: '1px solid var(--border)' }}>{h}</th>
+                    <th
+                      key={h}
+                      style={{
+                        textAlign: 'left',
+                        padding: '8px 10px',
+                        fontSize: 11,
+                        color: 'var(--text2)',
+                        borderBottom: '1px solid var(--border)',
+                      }}
+                    >
+                      {h}
+                    </th>
                   ))}
                 </tr>
               </thead>
@@ -130,9 +144,21 @@ function HistoryPanel({ taskId, onClose }) {
                 {history.map((row, i) => (
                   <tr key={i} style={{ borderBottom: '1px solid var(--border)' }}>
                     <td style={{ padding: '8px 10px', fontSize: 12 }}>{fmtDate(row.startedAt)}</td>
-                    <td style={{ padding: '8px 10px', fontSize: 12 }}>{fmtDuration(row.durationMs)}</td>
+                    <td style={{ padding: '8px 10px', fontSize: 12 }}>
+                      {fmtDuration(row.durationMs)}
+                    </td>
                     <td style={{ padding: '8px 10px' }}>{statusBadge(row.status)}</td>
-                    <td style={{ padding: '8px 10px', fontSize: 12, color: 'var(--text2)', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <td
+                      style={{
+                        padding: '8px 10px',
+                        fontSize: 12,
+                        color: 'var(--text2)',
+                        maxWidth: 200,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
                       {row.error || '—'}
                     </td>
                   </tr>
@@ -192,7 +218,9 @@ function CronEditorModal({ task, onSave, onClose }) {
           {error && <div className="form-error">{error}</div>}
 
           <div className="form-actions">
-            <button className="btn-secondary" onClick={onClose} disabled={saving}>Cancel</button>
+            <button className="btn-secondary" onClick={onClose} disabled={saving}>
+              Cancel
+            </button>
             <button className="btn-primary" onClick={handleSave} disabled={saving || !cron.trim()}>
               {saving ? 'Saving…' : 'Save Schedule'}
             </button>
@@ -208,16 +236,16 @@ function CronEditorModal({ task, onSave, onClose }) {
 export function ScheduledTasksManager() {
   const { showToast } = useToast();
 
-  const [tasks, setTasks]     = useState([]);
-  const [stats, setStats]     = useState(null);
+  const [tasks, setTasks] = useState([]);
+  const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError]     = useState('');
+  const [error, setError] = useState('');
 
-  const [filter, setFilter]         = useState('all');   // all | category
-  const [searchQuery, setSearch]     = useState('');
-  const [historyTask, setHistoryTask] = useState(null);  // task id or null
-  const [editCronTask, setEditCron]  = useState(null);   // task object or null
-  const [triggering, setTriggering]  = useState({});     // taskId → bool
+  const [filter, setFilter] = useState('all'); // all | category
+  const [searchQuery, setSearch] = useState('');
+  const [historyTask, setHistoryTask] = useState(null); // task id or null
+  const [editCronTask, setEditCron] = useState(null); // task object or null
+  const [triggering, setTriggering] = useState({}); // taskId → bool
 
   const intervalRef = useRef(null);
 
@@ -316,9 +344,7 @@ export function ScheduledTasksManager() {
       <div className="page-header">
         <div className="header-info">
           <h1 className="page-title">Scheduled Tasks</h1>
-          <p className="page-subtitle">
-            Monitor, enable/disable, and trigger background jobs
-          </p>
+          <p className="page-subtitle">Monitor, enable/disable, and trigger background jobs</p>
         </div>
         <button
           className="btn-secondary"
@@ -335,23 +361,52 @@ export function ScheduledTasksManager() {
 
       {/* Stats */}
       {stats && (
-        <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(auto-fill,minmax(160px,1fr))', marginBottom: 28 }}>
-          <StatCard icon="List"       label="Total Tasks"   value={stats.totalTasks}    />
-          <StatCard icon="CheckCircle" label="Enabled"      value={stats.enabledTasks}   color="#22c55e" />
-          <StatCard icon="XCircle"    label="Disabled"      value={stats.disabledTasks}  color="#6b7280" />
-          <StatCard icon="Loader"     label="Running Now"   value={stats.runningTasks}   color="#f59e0b" />
-          <StatCard icon="BarChart"   label="Total Runs"    value={stats.totalRuns}      />
-          <StatCard icon="AlertTriangle" label="Failures"   value={stats.totalFails}     color="#ef4444" />
-          <StatCard icon="Percent"    label="Success Rate"  value={`${stats.successRate}%`} color="#22c55e" />
-          <StatCard icon="Clock"      label="Avg Duration"  value={fmtDuration(stats.avgDurationMs)} />
+        <div
+          className="stats-grid"
+          style={{ gridTemplateColumns: 'repeat(auto-fill,minmax(160px,1fr))', marginBottom: 28 }}
+        >
+          <StatCard icon="List" label="Total Tasks" value={stats.totalTasks} />
+          <StatCard icon="CheckCircle" label="Enabled" value={stats.enabledTasks} color="#22c55e" />
+          <StatCard icon="XCircle" label="Disabled" value={stats.disabledTasks} color="#6b7280" />
+          <StatCard icon="Loader" label="Running Now" value={stats.runningTasks} color="#f59e0b" />
+          <StatCard icon="BarChart" label="Total Runs" value={stats.totalRuns} />
+          <StatCard
+            icon="AlertTriangle"
+            label="Failures"
+            value={stats.totalFails}
+            color="#ef4444"
+          />
+          <StatCard
+            icon="Percent"
+            label="Success Rate"
+            value={`${stats.successRate}%`}
+            color="#22c55e"
+          />
+          <StatCard icon="Clock" label="Avg Duration" value={fmtDuration(stats.avgDurationMs)} />
         </div>
       )}
 
       {/* Filters */}
-      <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
+      <div
+        style={{
+          display: 'flex',
+          gap: 12,
+          marginBottom: 20,
+          flexWrap: 'wrap',
+          alignItems: 'center',
+        }}
+      >
         <input
           className="search-input"
-          style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', color: 'var(--text)', padding: '7px 12px', fontSize: 13, width: 220 }}
+          style={{
+            background: 'var(--surface)',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--radius)',
+            color: 'var(--text)',
+            padding: '7px 12px',
+            fontSize: 13,
+            width: 220,
+          }}
           placeholder="Search tasks…"
           value={searchQuery}
           onChange={(e) => setSearch(e.target.value)}
@@ -361,14 +416,25 @@ export function ScheduledTasksManager() {
           <button
             className={`tab${filter === 'all' ? ' active' : ''}`}
             onClick={() => setFilter('all')}
-          >All</button>
+          >
+            All
+          </button>
           {categories.map((cat) => (
             <button
               key={cat}
               className={`tab${filter === cat ? ' active' : ''}`}
               onClick={() => setFilter(cat)}
-              style={filter === cat ? { background: CATEGORY_COLORS[cat] || 'var(--red)', borderColor: CATEGORY_COLORS[cat] || 'var(--red)' } : {}}
-            >{cat}</button>
+              style={
+                filter === cat
+                  ? {
+                      background: CATEGORY_COLORS[cat] || 'var(--red)',
+                      borderColor: CATEGORY_COLORS[cat] || 'var(--red)',
+                    }
+                  : {}
+              }
+            >
+              {cat}
+            </button>
           ))}
         </div>
       </div>
@@ -394,19 +460,39 @@ export function ScheduledTasksManager() {
                 style={{ flexDirection: 'column', alignItems: 'stretch', gap: 12 }}
               >
                 {/* Top row */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 12,
+                    flexWrap: 'wrap',
+                  }}
+                >
                   <div className="list-item-left" style={{ flex: 1, minWidth: 0 }}>
                     <div className="item-icon" style={{ color: catColor }}>
                       <AdminIcon name="Clock" size={18} aria-hidden="true" />
                     </div>
                     <div style={{ minWidth: 0 }}>
-                      <div className="item-name" style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                      <div
+                        className="item-name"
+                        style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}
+                      >
                         {task.name}
                         {task.running && statusBadge('running')}
                         {!task.running && task.lastStatus && statusBadge(task.lastStatus)}
                         <span
-                          style={{ fontSize: 10, padding: '1px 7px', borderRadius: 20, background: catColor + '22', color: catColor, fontWeight: 600 }}
-                        >{task.category}</span>
+                          style={{
+                            fontSize: 10,
+                            padding: '1px 7px',
+                            borderRadius: 20,
+                            background: catColor + '22',
+                            color: catColor,
+                            fontWeight: 600,
+                          }}
+                        >
+                          {task.category}
+                        </span>
                       </div>
                       <div className="item-meta">{task.description}</div>
                     </div>
@@ -418,7 +504,8 @@ export function ScheduledTasksManager() {
                     <button
                       className={`btn-secondary`}
                       style={{
-                        fontSize: 11, padding: '4px 10px',
+                        fontSize: 11,
+                        padding: '4px 10px',
                         background: task.enabled ? 'rgba(34,197,94,0.08)' : 'transparent',
                         borderColor: task.enabled ? '#22c55e' : 'var(--border)',
                         color: task.enabled ? '#22c55e' : 'var(--text2)',
@@ -446,9 +533,11 @@ export function ScheduledTasksManager() {
                       onClick={() => triggerNow(task)}
                       style={{ color: 'var(--red)' }}
                     >
-                      {isTriggering
-                        ? <AdminIcon name="Loader" size={15} />
-                        : <AdminIcon name="Play" size={15} />}
+                      {isTriggering ? (
+                        <AdminIcon name="Loader" size={15} />
+                      ) : (
+                        <AdminIcon name="Play" size={15} />
+                      )}
                     </button>
 
                     {/* History */}
@@ -463,17 +552,41 @@ export function ScheduledTasksManager() {
                 </div>
 
                 {/* Bottom meta row */}
-                <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', fontSize: 11, color: 'var(--text2)', paddingLeft: 34 }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    gap: 24,
+                    flexWrap: 'wrap',
+                    fontSize: 11,
+                    color: 'var(--text2)',
+                    paddingLeft: 34,
+                  }}
+                >
                   <span>
                     <strong>Cron:</strong>{' '}
-                    <code style={{ fontFamily: 'monospace', background: 'var(--surface2)', padding: '1px 6px', borderRadius: 4 }}>
+                    <code
+                      style={{
+                        fontFamily: 'monospace',
+                        background: 'var(--surface2)',
+                        padding: '1px 6px',
+                        borderRadius: 4,
+                      }}
+                    >
                       {task.cron}
                     </code>
                   </span>
-                  <span><strong>Next Run:</strong> {fmtDate(task.nextRun)}</span>
-                  <span><strong>Last Run:</strong> {fmtDate(task.lastRun)}</span>
-                  <span><strong>Last Duration:</strong> {fmtDuration(task.lastDurationMs)}</span>
-                  <span><strong>History:</strong> {task.historyCount} runs recorded</span>
+                  <span>
+                    <strong>Next Run:</strong> {fmtDate(task.nextRun)}
+                  </span>
+                  <span>
+                    <strong>Last Run:</strong> {fmtDate(task.lastRun)}
+                  </span>
+                  <span>
+                    <strong>Last Duration:</strong> {fmtDuration(task.lastDurationMs)}
+                  </span>
+                  <span>
+                    <strong>History:</strong> {task.historyCount} runs recorded
+                  </span>
                 </div>
               </div>
             );
@@ -482,15 +595,9 @@ export function ScheduledTasksManager() {
       )}
 
       {/* Modals */}
-      {historyTask && (
-        <HistoryPanel taskId={historyTask} onClose={() => setHistoryTask(null)} />
-      )}
+      {historyTask && <HistoryPanel taskId={historyTask} onClose={() => setHistoryTask(null)} />}
       {editCronTask && (
-        <CronEditorModal
-          task={editCronTask}
-          onSave={saveCron}
-          onClose={() => setEditCron(null)}
-        />
+        <CronEditorModal task={editCronTask} onSave={saveCron} onClose={() => setEditCron(null)} />
       )}
     </div>
   );

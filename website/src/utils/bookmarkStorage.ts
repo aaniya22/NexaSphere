@@ -15,7 +15,12 @@ export const getBookmarks = (): BookmarkItem[] => {
     const data = localStorage.getItem(STORAGE_KEY);
     return data ? JSON.parse(data) : [];
   } catch (error) {
-    console.error('Failed to parse bookmarks from localStorage', error);
+    if (import.meta.env.DEV) {
+      console.error(
+        '[bookmarkStorage] Failed to parse bookmarks from localStorage:',
+        (error as Error).message
+      );
+    }
     return [];
   }
 };
@@ -24,6 +29,11 @@ export const saveBookmarks = (bookmarks: BookmarkItem[]): void => {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(bookmarks));
   } catch (error) {
-    console.error('Failed to save bookmarks to localStorage', error);
+    if (import.meta.env.DEV) {
+      console.error(
+        '[bookmarkStorage] Failed to save bookmarks to localStorage:',
+        (error as Error).message
+      );
+    }
   }
 };

@@ -56,11 +56,9 @@ export default function SearchBar({ open, onClose, activities, events, onNavigat
   const inputRef = useRef(null);
   const listRef = useRef(null);
   const [focusIdx, setFocusIdx] = useState(-1);
-  const apiBase = import.meta?.env?.VITE_API_BASE || '';
   const { query, setQuery, filter, setFilter, results, loading, clearSearch } = useSearch(
     activities,
-    events,
-    apiBase
+    events
   );
 
   useEffect(() => {

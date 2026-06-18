@@ -114,9 +114,9 @@ function ActivityCard({ a, idx, onNav }) {
 
       {a.features && (
         <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 16px' }}>
-          {a.features.map((f, i) => (
+          {a.features.map((f) => (
             <li
-              key={i}
+              key={f}
               style={{
                 fontSize: '.75rem',
                 color: 'var(--t2)',

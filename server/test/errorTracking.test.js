@@ -3,14 +3,8 @@ import test from 'node:test';
 process.env.CORS_ORIGIN = 'http://localhost:3000';
 process.env.ADMIN_EVENT_PASSWORD = 'StrongEventPassword123!';
 
-const {
-  logError,
-  getErrorStats,
-  getRecentErrors,
-  getEndpointErrors,
-  getUserErrors,
-  clearErrors,
-} = await import('../services/errorTrackingService.js');
+const { logError, getErrorStats, getRecentErrors, getEndpointErrors, getUserErrors, clearErrors } =
+  await import('../services/errorTrackingService.js');
 
 test.beforeEach(() => {
   clearErrors();

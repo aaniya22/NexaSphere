@@ -10,30 +10,49 @@ import { buildUrl, getAiApiBase } from '../utils/runtimeConfig';
 
 const knowledgeBase = [
   {
-    keywords: ['nexasphere', 'about', 'community'],
+    keywords: ['nexasphere', 'about', 'community', 'what is'],
     answer:
-      'NexaSphere is the official technology and developer community at GL Bajaj Group of Institutions.',
+      'NexaSphere is the official tech ecosystem at GL Bajaj Group of Institutions, Mathura, run by students for students to foster innovation and learning.',
   },
   {
-    keywords: ['hackathon'],
-    answer: 'NexaSphere hosts hackathons that encourage innovation and problem solving.',
-  },
-  {
-    keywords: ['workshop'],
-    answer: 'NexaSphere conducts workshops on emerging technologies and practical skills.',
-  },
-  {
-    keywords: ['event'],
-    answer: 'NexaSphere organizes technical events and community activities throughout the year.',
-  },
-  {
-    keywords: ['team', 'mentor', 'leader'],
+    keywords: ['hackathon', 'codathon', 'ideathon', 'promptathon'],
     answer:
-      'NexaSphere is managed by a dedicated team of mentors, organizers, and student leaders.',
+      'NexaSphere hosts various competitions: Hackathons (building apps), Codathons (DSA/Competitive Programming), Ideathons (pitching ideas), and Promptathons (AI prompting).',
   },
   {
-    keywords: ['join', 'member', 'membership'],
-    answer: 'You can join NexaSphere through the registration forms available on the website.',
+    keywords: ['workshop', 'git', 'github', 'react', 'learn'],
+    answer:
+      'We conduct hands-on workshops on Git, GitHub, React, and emerging tech. Check the "Activities" page for upcoming sessions!',
+  },
+  {
+    keywords: ['event', 'kss', 'insight', 'session'],
+    answer:
+      'NexaSphere organizes Knowledge Sharing Sessions (KSS) and Insight Sessions where peers share technical expertise and industry trends.',
+  },
+  {
+    keywords: ['team', 'mentor', 'leader', 'organizer', 'ayush', 'tanishk'],
+    answer:
+      'NexaSphere is led by Ayush Sharma and Tanishk Bansal, supported by a dedicated Core Team of developers, designers, and content creators.',
+  },
+  {
+    keywords: ['join', 'member', 'membership', 'register'],
+    answer:
+      'To join as a member, click the "Join" button on our homepage. Note: You must use your @glbajajgroup.org email address.',
+  },
+  {
+    keywords: ['apply', 'core team', 'recruitment', 'hiring'],
+    answer:
+      'Core Team applications open periodically. Keep an eye on the "Apply" button in the navigation bar or our WhatsApp community updates.',
+  },
+  {
+    keywords: ['contact', 'email', 'reach out', 'help'],
+    answer:
+      'You can reach us at nexasphere@glbajajgroup.org or via the official contact form on the website.',
+  },
+  {
+    keywords: ['history', 'save', 'workspace'],
+    answer:
+      'Your chats are automatically saved! Use the 📋 icon to toggle history, or use the workspace selector to organize your queries into General, Coding, or Research.',
   },
 ];
 
@@ -88,7 +107,9 @@ const Chatbot = () => {
         // Only save if the bot message is more recent than the last saved one
         if (lastBotIndex > lastUserIndex) {
           savePrompt(lastUserMsg.text, lastBotMsg.text, currentWorkspace).catch((err) => {
-            console.error('Error saving prompt:', err);
+            if (import.meta.env.DEV) {
+              console.error('[Chatbot] Error saving prompt:', err.message);
+            }
           });
         }
       }
@@ -135,7 +156,9 @@ const Chatbot = () => {
         { id: `msg-${Date.now()}-bot`, role: 'bot', text: data.reply },
       ]);
     } catch (e) {
-      console.error('AI chat request failed', e);
+      if (import.meta.env.DEV) {
+        console.error('[Chatbot] AI chat request failed:', e.message);
+      }
       sendFallbackResponse(currentInput);
     } finally {
       setIsSending(false);

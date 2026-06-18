@@ -3,7 +3,7 @@ import logger from '../utils/logger.js';
 
 export const getDeploymentHealth = async (req, res) => {
   res.json({
-    status: "healthy",
+    status: 'healthy',
     rollbackAvailable: true,
     trafficSwitchReady: true,
   });

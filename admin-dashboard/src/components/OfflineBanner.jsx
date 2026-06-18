@@ -2,21 +2,23 @@ import { useState, useEffect } from 'react';
 import { auth } from '../services/auth';
 
 export function OfflineBanner() {
-  const [isOffline, setIsOffline] = useState(false);
+  const isEnvOffline = auth && typeof auth.isOfflineMode === 'function' && auth.isOfflineMode();
+  const [isNetworkOffline, setIsNetworkOffline] = useState(!navigator.onLine);
 
   useEffect(() => {
-    if (!auth || typeof auth.isOfflineMode !== 'function') return;
+    const handleOffline = () => setIsNetworkOffline(true);
+    const handleOnline = () => setIsNetworkOffline(false);
 
-    setIsOffline(auth.isOfflineMode());
+    window.addEventListener('offline', handleOffline);
+    window.addEventListener('online', handleOnline);
 
-    const checkInterval = setInterval(() => {
-      if (typeof auth.isOfflineMode === 'function') {
-        setIsOffline(auth.isOfflineMode());
-      }
-    }, 2000);
-
-    return () => clearInterval(checkInterval);
+    return () => {
+      window.removeEventListener('offline', handleOffline);
+      window.removeEventListener('online', handleOnline);
+    };
   }, []);
+
+  const isOffline = isEnvOffline || isNetworkOffline;
 
   if (!isOffline) return null;
 
@@ -26,7 +28,11 @@ export function OfflineBanner() {
         &#9888;
       </span>
       <span>
-        <strong>Offline Mode</strong> — Changes are saved locally and will not sync to the server.
+        {isEnvOffline ? (
+          <><strong>Offline Mode</strong> — Changes are saved locally and will not sync to the server.</>
+        ) : (
+          <><strong>No Connection</strong> — Changes cannot be saved until connectivity is restored.</>
+        )}
       </span>
     </div>
   );

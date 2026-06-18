@@ -24,12 +24,18 @@ export default function InstallPrompt() {
   useEffect(() => {
     // Don't show if already installed (standalone mode)
     if (window.matchMedia('(display-mode: standalone)').matches) return;
-    // Don't show if dismissed
-    if (localStorage.getItem(DISMISSED_KEY) === 'true') return;
 
-    // Track open count
-    const openCount = parseInt(localStorage.getItem(OPEN_COUNT_KEY) || '0', 10) + 1;
-    localStorage.setItem(OPEN_COUNT_KEY, String(openCount));
+    // Wrap all localStorage access in try-catch — throws SecurityError in
+    // Safari private browsing or QuotaExceededError when storage is full.
+    let openCount = 1;
+    try {
+      if (localStorage.getItem(DISMISSED_KEY) === 'true') return;
+      openCount = parseInt(localStorage.getItem(OPEN_COUNT_KEY) || '0', 10) + 1;
+      localStorage.setItem(OPEN_COUNT_KEY, String(openCount));
+    } catch {
+      // Storage unavailable — proceed without persisting state.
+      // Default openCount of 1 means the prompt will show after the delay.
+    }
 
     const handleBeforeInstallPrompt = (e) => {
       e.preventDefault(); // Don't show native prompt immediately
@@ -68,7 +74,11 @@ export default function InstallPrompt() {
       await deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
       if (outcome === 'accepted') {
-        localStorage.setItem(DISMISSED_KEY, 'true');
+        try {
+          localStorage.setItem(DISMISSED_KEY, 'true');
+        } catch {
+          // Storage unavailable — dismissed state will not persist.
+        }
       }
     } catch (err) {
       console.warn('[InstallPrompt] Install failed:', err);
@@ -80,7 +90,11 @@ export default function InstallPrompt() {
 
   const handleDismiss = () => {
     setVisible(false);
-    localStorage.setItem(DISMISSED_KEY, 'true');
+    try {
+      localStorage.setItem(DISMISSED_KEY, 'true');
+    } catch {
+      // Storage unavailable — dismissed state will not persist.
+    }
     if (timerRef.current) clearTimeout(timerRef.current);
   };
 

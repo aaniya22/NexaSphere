@@ -114,29 +114,31 @@ export async function withDb(fn) {
   const originalQuery = client.query;
   client.query = function (config, values, callback) {
     const start = Date.now();
-    
+
     let cb = callback;
     if (typeof values === 'function') {
       cb = values;
     }
-    
+
     const handleStats = (err) => {
       const duration = Date.now() - start;
-      const sqlText = typeof config === 'string' ? config : (config?.text || 'unknown');
+      const sqlText = typeof config === 'string' ? config : config?.text || 'unknown';
       Promise.all([
         import('../middleware/performanceMonitor.js'),
-        import('../config/appContext.js')
-      ]).then(([{ recordDbQueryMetric }, { appContext }]) => {
-        recordDbQueryMetric(config, duration, err);
-        const store = appContext.getStore();
-        if (store?.traceEntry) {
-          store.traceEntry.queries.push({
-            sql: sqlText.trim().replace(/\s+/g, ' ').slice(0, 100),
-            durationMs: duration,
-            success: !err
-          });
-        }
-      }).catch(() => {});
+        import('../config/appContext.js'),
+      ])
+        .then(([{ recordDbQueryMetric }, { appContext }]) => {
+          recordDbQueryMetric(config, duration, err);
+          const store = appContext.getStore();
+          if (store?.traceEntry) {
+            store.traceEntry.queries.push({
+              sql: sqlText.trim().replace(/\s+/g, ' ').slice(0, 100),
+              durationMs: duration,
+              success: !err,
+            });
+          }
+        })
+        .catch(() => {});
     };
 
     if (typeof cb === 'function') {
@@ -149,13 +151,14 @@ export async function withDb(fn) {
       }
       return originalQuery.call(this, config, values, wrappedCallback);
     }
-    
-    return originalQuery.call(this, config, values, callback)
-      .then(res => {
+
+    return originalQuery
+      .call(this, config, values, callback)
+      .then((res) => {
         handleStats(null);
         return res;
       })
-      .catch(err => {
+      .catch((err) => {
         handleStats(err);
         throw err;
       });

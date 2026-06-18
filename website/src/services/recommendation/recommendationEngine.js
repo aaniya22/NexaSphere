@@ -1,5 +1,10 @@
 // src/services/recommendation/recommendationEngine.js
 
+// IMPORTANT: As per the "Smart Event Recommendation Engine with ML" issue,
+// the primary recommendation logic should be implemented in the Python backend.
+// This client-side engine should ideally be deprecated or refactored to only handle
+// client-side display logic or specific non-ML-driven features like "similar events".
+
 class RecommendationEngine {
   constructor() {
     this.weights = {

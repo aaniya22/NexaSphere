@@ -12,7 +12,9 @@ const PinnedChats = ({ onSelectPrompt, workspace = 'default' }) => {
       const pinned = await getPinnedPrompts(workspace);
       setPinnedPrompts(pinned);
     } catch (error) {
-      console.error('Error loading pinned prompts:', error);
+      if (import.meta.env.DEV) {
+        console.error('[PinnedChats] Error loading pinned prompts:', error.message);
+      }
     } finally {
       setLoading(false);
     }

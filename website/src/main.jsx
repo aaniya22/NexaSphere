@@ -33,19 +33,25 @@ let _updateSW = null;
 
 _updateSW = registerSW({
   onNeedRefresh() {
-    console.log('[PWA] New service worker available — notifying UI.');
+    if (import.meta.env.DEV) {
+      console.log('[PWA] New service worker available — notifying UI.');
+    }
     window.dispatchEvent(
       new CustomEvent('nexasphere:sw-update', { detail: { updateSW: _updateSW } })
     );
   },
 
   onOfflineReady() {
-    console.log('[PWA] App is ready to work offline.');
+    if (import.meta.env.DEV) {
+      console.log('[PWA] App is ready to work offline.');
+    }
     window.dispatchEvent(new CustomEvent('nexasphere:sw-offline-ready'));
   },
 
   onRegisterError(error) {
-    console.error('[PWA] Service worker registration failed:', error);
+    if (import.meta.env.DEV) {
+      console.error('[PWA] Service worker registration failed:', error);
+    }
     Sentry.captureException(error, { tags: { type: 'sw-register-error' } });
   },
 });
@@ -54,7 +60,9 @@ _updateSW = registerSW({
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.ready.then((registration) => {
     registration.update().catch((err) => {
-      console.warn('[PWA] Service worker update check failed on app load:', err);
+      if (import.meta.env.DEV) {
+        console.warn('[PWA] Service worker update check failed on app load:', err.message);
+      }
     });
   });
 }

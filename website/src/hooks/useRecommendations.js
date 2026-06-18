@@ -1,7 +1,7 @@
 // src/hooks/useRecommendations.js
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { userInterestTracker } from '../services/recommendation/userInterestTracker';
-import { recommendationEngine } from '../services/recommendation/recommendationEngine';
+import axios from 'axios'; // Assuming axios is installed for API calls
 
 export function useRecommendations(events) {
   const [recommendations, setRecommendations] = useState([]);
@@ -17,31 +17,36 @@ export function useRecommendations(events) {
     eventsRef.current = events;
   }, [events]);
 
-  // Plain function — not memoised with useCallback because it is never
-  // passed as a prop and memoising it with [events] caused a circular
-  // dependency: generateRecommendations → trackEvent/setUserPreferences
-  // → generateRecommendations, triggering an infinite re-render loop.
-  const generateRecommendations = useCallback(() => {
-    const currentEvents = eventsRef.current;
-    if (!currentEvents || currentEvents.length === 0) return;
+  const fetchRecommendationsFromBackend = useCallback(async () => {
+    setLoading(true);
+    try {
+      // In a real application, the user_id would come from an authentication context.
+      // For now, using a placeholder.
+      const userId = '101'; // Example user ID
 
-    const interests = userInterestTracker.getUserInterests();
-    const history = userInterestTracker.getEventHistory();
-
-    setUserInterests(interests);
-
-    const recs = recommendationEngine.getRecommendations(currentEvents, interests, history, 10);
-    setRecommendations(recs);
-    setLoading(false);
-    // Empty dependency array — reads events via eventsRef so the function
-    // reference is stable and does not cause cascading dependency updates.
-  }, []);
+      // The backend recommendation engine should ideally fetch all necessary user data
+      // (interests, history, followed users, etc.) from the database based on the user_id.
+      // However, if the backend needs client-side context for dynamic weighting or other reasons,
+      // it could be passed here. For this implementation, we assume the backend fetches its own data.
+      const response = await axios.get(`${import.meta.env.VITE_API_BASE}/recommendations`, {
+        params: {
+          user_id: userId,
+          // Example: if backend needs client-side interests for cold start
+          // user_interests: JSON.stringify(userInterestTracker.getUserInterests()),
+        },
+      });
+      setRecommendations(response.data);
+    } catch (error) {
+      console.error('Failed to fetch recommendations from backend:', error);
+      setRecommendations([]); // Fallback to empty recommendations on error
+    } finally {
+      setLoading(false);
+    }
+  }, []); // Dependencies are empty as this function is a top-level fetcher
 
   useEffect(() => {
-    if (events && events.length > 0) {
-      generateRecommendations();
-    }
-  }, [events, generateRecommendations]);
+    fetchRecommendationsFromBackend();
+  }, [fetchRecommendationsFromBackend]);
 
   const trackEvent = useCallback(
     (eventId, action, metadata) => {
@@ -49,14 +54,20 @@ export function useRecommendations(events) {
       generateRecommendations();
     },
     [generateRecommendations]
+    // Ideally, this interaction should be sent to the backend for the ML model's feedback loop.
+    // Example: axios.post(`${import.meta.env.VITE_API_BASE}/user-interactions`, { userId: '101', eventId, action, metadata });
   );
 
   const getSimilarEvents = useCallback(
     (event, limit = 3) => {
+      // This function for "similar events" could either remain client-side (if purely content-based)
+      // or be moved to a backend endpoint (e.g., /api/events/{id}/similar) for ML-driven similarity.
       if (similarEvents[event.id]) {
         return similarEvents[event.id];
       }
-      const similar = recommendationEngine.getSimilarEvents(event, eventsRef.current, limit);
+      // Dynamically import recommendationEngine if it's still needed for client-side similar events
+      const { recommendationEngine } = require('../services/recommendation/recommendationEngine');
+      const similar = recommendationEngine.getSimilarEvents(event, eventsRef.current, limit); // Still uses client-side engine for similarity
       setSimilarEvents((prev) => ({ ...prev, [event.id]: similar }));
       return similar;
     },
@@ -66,9 +77,11 @@ export function useRecommendations(events) {
   const setUserPreferences = useCallback(
     (categories, tags) => {
       userInterestTracker.setUserPreferences(categories, tags);
-      generateRecommendations();
+      fetchRecommendationsFromBackend();
     },
-    [generateRecommendations]
+    [fetchRecommendationsFromBackend]
+    // Ideally, these preferences should be sent to the backend to update the user's profile for ML.
+    // Example: axios.post(`${import.meta.env.VITE_API_BASE}/user-preferences`, { userId: '101', categories, tags });
   );
 
   return {

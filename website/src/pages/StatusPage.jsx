@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { getApiBase } from '../utils/runtimeConfig';
 import { motion } from 'framer-motion';
 import { Activity, ShieldAlert, CheckCircle, Clock, ArrowLeft } from 'lucide-react';
 
@@ -11,7 +12,12 @@ export default function StatusPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/monitoring/status-history')
+    const base = getApiBase();
+    if (!base) {
+      setLoading(false);
+      return;
+    }
+    fetch(`${base}/api/monitoring/status-history`)
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {
@@ -49,11 +55,11 @@ export default function StatusPage() {
           transition={{ duration: 0.5 }}
           className={`rounded-2xl p-8 border backdrop-blur-md flex flex-col md:flex-row items-center justify-between gap-6 shadow-2xl ${
             isOperational
-              ? 'bg-[#003810]/10 border-[#00C853]/30 shadow-[#00C853]/5'
-              : 'bg-[#3D0A0A]/10 border-[#D50000]/30 shadow-[#D50000]/5'
+              ? 'bg-[#003810]/10 border-[#00C853]/30'
+              : 'bg-[#3D0A0A]/10 border-[#D50000]/30'
           }`}
         >
-          <div className="flex items-center gap-4 text-center md:text-left">
+          <div className="flex items-center gap-4 text-center md:text-left" role="status">
             <div className="relative">
               {isOperational ? (
                 <CheckCircle className="w-12 h-12 text-[#00C853]" />
@@ -61,7 +67,7 @@ export default function StatusPage() {
                 <ShieldAlert className="w-12 h-12 text-[#D50000]" />
               )}
               {isOperational && (
-                <span className="absolute top-0 right-0 flex h-3 w-3">
+                <span className="absolute top-0 right-0 flex h-3 w-3" aria-hidden="true">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#00C853] opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-3 w-3 bg-[#00C853]"></span>
                 </span>

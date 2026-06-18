@@ -288,11 +288,19 @@ describe('api service', () => {
       expect(result.members.length).toBeGreaterThan(0);
     });
 
-    test('membership.getAll returns mock response', async () => {
+    test('membership.getAll returns paginated mock response', async () => {
       const result = await api.membership.getAll();
       expect(result.responses).toBeDefined();
-      expect(result.responses.length).toBe(1);
-      expect(result.responses[0].fullName).toBe('Test User');
+      expect(result.responses.length).toBe(25); // default page size
+      expect(result.total).toBe(53);
+      expect(result.responses[0].fullName).toBe('Student 1');
+    });
+
+    test('membership.getAll respects page and limit params', async () => {
+      const result = await api.membership.getAll({ page: 3, limit: 10 });
+      expect(result.responses.length).toBe(10);
+      expect(result.total).toBe(53);
+      expect(result.responses[0].fullName).toBe('Student 21');
     });
 
     test('offline CRUD emits offline warning via NOTIFY', async () => {

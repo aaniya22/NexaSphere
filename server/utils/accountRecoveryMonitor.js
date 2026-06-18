@@ -7,4 +7,4 @@ export function createRecoveryLog(email) {
     email,
     timestamp: new Date(),
   };
-} 
+}

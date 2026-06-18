@@ -56,11 +56,11 @@ export const apiRateLimiter = rateLimit({
 
     const riskScore = calculateRiskScore(req);
 
-if (riskScore > 80) {
-   return res.status(429).json({
-      error: "Suspicious activity detected"
-   });
-}
+    if (riskScore > 80) {
+      return res.status(429).json({
+        error: 'Suspicious activity detected',
+      });
+    }
 
     res.status(options.statusCode).json({
       error: 'Too many requests from this IP, please try again later.',

@@ -253,20 +253,15 @@ test('Authorization is enforced for both create and delete operations', async ()
   };
 
   // Both operations should check authorization
-  const createCheck = await activityEventsService.addActivityEvent(
-    'test-key',
-    validInput
-  ).catch(e => e);
+  const createCheck = await activityEventsService
+    .addActivityEvent('test-key', validInput)
+    .catch((e) => e);
 
-  const deleteCheck = await activityEventsService.deleteActivityEvent(
-    'test-key',
-    'event-id'
-  ).catch(e => e);
+  const deleteCheck = await activityEventsService
+    .deleteActivityEvent('test-key', 'event-id')
+    .catch((e) => e);
 
   // Both should succeed with valid credentials
-  assert(
-    createCheck.id || !createCheck.message,
-    'Create should succeed with valid auth'
-  );
+  assert(createCheck.id || !createCheck.message, 'Create should succeed with valid auth');
   assert.equal(deleteCheck, true, 'Delete should succeed with valid auth');
 });

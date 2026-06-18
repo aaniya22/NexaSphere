@@ -67,6 +67,10 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install ${{ matrix.browser }} --with-deps
 
+      - name: Install Accessibility Testing Tools
+        # Technical Requirement: axe-core integration for automated testing
+        run: npm install @axe-core/playwright
+
       - name: Set up test environment
         run: |
           cp .env.example .env 2>/dev/null || true

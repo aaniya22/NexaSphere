@@ -98,7 +98,9 @@ export default function JoinRequestModal({ team, onClose, onSubmit }) {
       setGithub('');
       setSuccess(true);
     } catch (err) {
-      console.error(err);
+      if (import.meta.env.DEV) {
+        console.error('[JoinRequestModal] Failed to submit join request:', err.message);
+      }
     } finally {
       setLoading(false);
     }

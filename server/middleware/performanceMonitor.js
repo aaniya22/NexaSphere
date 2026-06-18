@@ -209,7 +209,7 @@ const dbQueryMetrics = {
   totalQueries: 0,
   totalQueryTime: 0,
   slowQueriesCount: 0,
-  queries: {}
+  queries: {},
 };
 
 const recordDbQueryMetric = (queryText, durationMs, error = null) => {
@@ -219,7 +219,7 @@ const recordDbQueryMetric = (queryText, durationMs, error = null) => {
     dbQueryMetrics.slowQueriesCount += 1;
   }
 
-  const rawText = typeof queryText === 'string' ? queryText : (queryText?.text || 'unknown');
+  const rawText = typeof queryText === 'string' ? queryText : queryText?.text || 'unknown';
   const normalizedQuery = rawText.trim().replace(/\s+/g, ' ').slice(0, 100);
 
   if (!dbQueryMetrics.queries[normalizedQuery]) {
@@ -251,13 +251,16 @@ const getMetrics = () => {
     endpoints: {},
     databaseQueries: {
       totalQueries: dbQueryMetrics.totalQueries,
-      avgQueryDurationMs: dbQueryMetrics.totalQueries > 0 ? dbQueryMetrics.totalQueryTime / dbQueryMetrics.totalQueries : 0,
+      avgQueryDurationMs:
+        dbQueryMetrics.totalQueries > 0
+          ? dbQueryMetrics.totalQueryTime / dbQueryMetrics.totalQueries
+          : 0,
       slowQueriesCount: dbQueryMetrics.slowQueriesCount,
-      queries: dbQueryMetrics.queries
+      queries: dbQueryMetrics.queries,
     },
     customMetrics: {
-      registrationsPerMinute: getRegistrationsPerMinute()
-    }
+      registrationsPerMinute: getRegistrationsPerMinute(),
+    },
   };
   endpointMetrics.forEach((metrics, endpoint) => {
     result.endpoints[endpoint] = {
@@ -304,5 +307,5 @@ export {
   checkErrorRateThreshold,
   recordDbQueryMetric,
   trackRegistration,
-  getRegistrationsPerMinute
+  getRegistrationsPerMinute,
 };

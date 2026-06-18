@@ -34,7 +34,7 @@ test('Concurrent creates do not lose data due to race conditions', async () => {
   assert.equal(results.length, 10, 'All concurrent creates should succeed');
 
   // Verify no duplicates and all events unique
-  const uniqueIds = new Set(results.map(r => r.id));
+  const uniqueIds = new Set(results.map((r) => r.id));
   assert.equal(uniqueIds.size, 10, 'All created events should have unique IDs');
 });
 
@@ -49,14 +49,15 @@ test('Concurrent deletes do not cause data inconsistency', async () => {
   ]);
 
   // Simulate concurrent deletes
-  const deletePromises = created.map(e =>
-    activityEventsRepository.delete(activityKey, e.id)
-  );
+  const deletePromises = created.map((e) => activityEventsRepository.delete(activityKey, e.id));
 
   const results = await Promise.all(deletePromises);
 
   // All deletes should succeed
-  assert(results.every(r => r === true), 'All concurrent deletes should succeed');
+  assert(
+    results.every((r) => r === true),
+    'All concurrent deletes should succeed'
+  );
 });
 
 test('Interleaved create and read operations maintain consistency', async () => {
@@ -120,8 +121,11 @@ test('Large batch operations do not cause timeout or data loss', async () => {
   const results = await Promise.all(batchPromises);
 
   // Verify all created
-  assert.equal(results.filter(r => r && r.id).length, batchSize,
-    `All ${batchSize} batch events should be created successfully`);
+  assert.equal(
+    results.filter((r) => r && r.id).length,
+    batchSize,
+    `All ${batchSize} batch events should be created successfully`
+  );
 });
 
 test('Read after heavy concurrent writes shows consistent data', async () => {
@@ -143,6 +147,5 @@ test('Read after heavy concurrent writes shows consistent data', async () => {
   // Read phase - should see all writes
   const readResult = await activityEventsRepository.listByActivityKey(activityKey);
 
-  assert(readResult.rows.length >= 20,
-    'Read after concurrent writes should show all data');
+  assert(readResult.rows.length >= 20, 'Read after concurrent writes should show all data');
 });

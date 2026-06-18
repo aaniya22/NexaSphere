@@ -6,6 +6,7 @@ import { eventsRepository } from '../repositories/eventsRepository.js';
 import { emitToRole } from '../config/socket.js';
 import { broadcastSSEEvent } from '../services/sseService.js';
 import { recordEventRegistration } from '../observability/metrics.js';
+import { supabaseRequest } from '../storage/supabaseClient.js';
 
 function wrapAsync(fn) {
   return (req, res) =>
@@ -73,23 +74,41 @@ export const registerForEvent = wrapAsync(async (req, res) => {
       email: sanitizedEmail,
     });
 
-    await registrationsRepository.create({
-      eventId,
-      fullName: sanitizedFullName,
-      email: sanitizedEmail,
-      department,
-      year,
-      teamName,
-      teamSize,
-      customFields,
-      waitlist: false,
-    });
+    let localReg;
+    try {
+      localReg = await registrationsRepository.create({
+        eventId,
+        fullName: sanitizedFullName,
+        email: sanitizedEmail,
+        department,
+        year,
+        teamName,
+        teamSize,
+        customFields,
+        waitlist: false,
+      });
 
-    if (ticket.token) {
-      await registrationsRepository.updateTicketToken(
-        result.id || result.registration_id,
-        ticket.token
-      );
+      if (ticket.token && localReg?.id) {
+        await registrationsRepository.updateTicketToken(localReg.id, ticket.token);
+      }
+    } catch (pgErr) {
+      // Supabase already decremented capacity and inserted a row. Attempt a
+      // compensating delete so the slot is not permanently orphaned.
+      // A full capacity restore would require a dedicated rollback RPC on the
+      // Supabase side; this at minimum removes the ghost registration row.
+      try {
+        await supabaseRequest(
+          `event_registrations?event_id=eq.${encodeURIComponent(eventId)}&email=eq.${encodeURIComponent(sanitizedEmail)}`,
+          { method: 'DELETE' }
+        );
+      } catch (rollbackErr) {
+        console.error(
+          '[EventRegistration] Compensating delete failed — orphaned Supabase row for',
+          sanitizedEmail,
+          rollbackErr.message
+        );
+      }
+      throw pgErr;
     }
 
     try {

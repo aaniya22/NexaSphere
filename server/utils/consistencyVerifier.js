@@ -2,11 +2,7 @@ export const runConsistencyCheck = () => {
   return {
     status: 'CONSISTENT',
     checkedAt: new Date().toISOString(),
-    servicesChecked: [
-      'Authentication',
-      'Events',
-      'Notifications',
-    ],
+    servicesChecked: ['Authentication', 'Events', 'Notifications'],
   };
 };
 

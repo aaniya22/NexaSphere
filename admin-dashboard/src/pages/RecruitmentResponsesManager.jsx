@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { api } from '../services/api';
 import { Skeleton } from '../components/Skeleton';
 import { AdminIcon } from '../components/AdminIcon';
+import { Pagination } from '../components/Pagination';
 
 const COLUMNS = [
   { key: 'fullName', label: 'Full Name' },
@@ -150,23 +151,37 @@ export function RecruitmentResponsesManager() {
   const [search, setSearch] = useState('');
   const [updating, setUpdating] = useState(null);
 
+  // Pagination
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+
   const load = useCallback(() => {
     setLoading(true);
+    setError(null);
     api.recruitment
-      .getAll()
+      .getAll({ page, limit: pageSize })
       .then((data) => {
         setResponses(data?.submissions ?? []);
+        setTotal(data?.total ?? 0);
+        setTotalPages(data?.totalPages ?? 0);
         setLoading(false);
       })
       .catch((err) => {
         setError(err.message || 'Failed to load responses');
         setLoading(false);
       });
-  }, []);
+  }, [page, pageSize]);
 
   useEffect(() => {
     load();
   }, [load]);
+
+  // Reset to page 1 when search text changes
+  useEffect(() => {
+    setPage(1);
+  }, [search]);
 
   const handleStatusChange = async (id, newStatus) => {
     setUpdating(id);
@@ -185,6 +200,11 @@ export function RecruitmentResponsesManager() {
   );
 
   const pendingCount = responses.filter((r) => !r.status || r.status === 'applied').length;
+
+  const handlePageSizeChange = (newPageSize) => {
+    setPageSize(newPageSize);
+    setPage(1);
+  };
 
   return (
     <div className="page">
@@ -266,7 +286,7 @@ export function RecruitmentResponsesManager() {
         </div>
       )}
 
-      {!loading && !error && filtered.length === 0 && (
+      {!loading && !error && total === 0 && (
         <div
           style={{
             textAlign: 'center',
@@ -278,18 +298,30 @@ export function RecruitmentResponsesManager() {
           }}
         >
           <AdminIcon name="Inbox" size={40} />
-          <p style={{ marginTop: 12, fontSize: 15 }}>
-            {search ? 'No responses match your search.' : 'No recruitment applications yet.'}
-          </p>
-          {search && (
-            <button
-              className="btn btn-secondary"
-              style={{ marginTop: 8 }}
-              onClick={() => setSearch('')}
-            >
-              Clear search
-            </button>
-          )}
+          <p style={{ marginTop: 12, fontSize: 15 }}>No recruitment applications yet.</p>
+        </div>
+      )}
+
+      {!loading && !error && total > 0 && filtered.length === 0 && (
+        <div
+          style={{
+            textAlign: 'center',
+            padding: '60px 24px',
+            color: 'var(--text-muted)',
+            border: '1px dashed var(--border)',
+            borderRadius: 12,
+            marginTop: 8,
+          }}
+        >
+          <AdminIcon name="Search" size={40} />
+          <p style={{ marginTop: 12, fontSize: 15 }}>No responses match your search.</p>
+          <button
+            className="btn btn-secondary"
+            style={{ marginTop: 8 }}
+            onClick={() => setSearch('')}
+          >
+            Clear search
+          </button>
         </div>
       )}
 
@@ -368,17 +400,15 @@ export function RecruitmentResponsesManager() {
               ))}
             </tbody>
           </table>
-          <div
-            style={{
-              padding: '10px 16px',
-              color: 'var(--text-muted)',
-              fontSize: 13,
-              borderTop: '1px solid var(--border)',
-            }}
-          >
-            Showing {filtered.length} of {responses.length} application
-            {responses.length !== 1 ? 's' : ''}
-          </div>
+          <Pagination
+            currentPage={page}
+            totalPages={totalPages}
+            total={total}
+            pageSize={pageSize}
+            onPageChange={setPage}
+            onPageSizeChange={handlePageSizeChange}
+            loading={loading}
+          />
         </div>
       )}
     </div>

@@ -50,13 +50,10 @@ export const PortfolioSkeleton = () => {
           <section className="portfolio-panel">
             <Skeleton width="200px" height="2rem" style={{ marginBottom: '20px' }} />
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
-              {Array.from({ length: 6 }).map((_, i) => (
-                <Skeleton
-                  key={i}
-                  width={`${Math.floor(Math.random() * 60) + 80}px`}
-                  height="32px"
-                  style={{ borderRadius: '16px' }}
-                />
+              {/* Stable widths — avoid Math.random() in render which causes
+                  layout instability and breaks React hydration */}
+              {[96, 120, 88, 112, 100, 136].map((w, i) => (
+                <Skeleton key={i} width={`${w}px`} height="32px" style={{ borderRadius: '16px' }} />
               ))}
             </div>
           </section>

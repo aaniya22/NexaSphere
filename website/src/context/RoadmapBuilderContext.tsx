@@ -84,7 +84,12 @@ export const RoadmapBuilderProvider: React.FC<{ children: ReactNode }> = ({ chil
         setNodesState(defaultNodes);
       }
     } catch (e) {
-      console.error('Failed to load roadmap from localStorage:', e);
+      if (import.meta.env.DEV) {
+        console.error(
+          '[RoadmapBuilderContext] Failed to load roadmap from localStorage:',
+          (e as Error).message
+        );
+      }
     }
   }, []);
 
