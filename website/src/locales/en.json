@@ -466,6 +466,27 @@
     "success_title": "Thank you for filling the NexaSphere Membership Form!",
     "success_desc": "Your form has been successfully submitted. 🎉 Now request to join the NexaSphere WhatsApp group using the link below — and mention that you have already filled the NexaSphere form. Our team will verify your responses and add you to the respective NexaSphere spaces/groups.",
     "join_whatsapp": "Join NexaSphere WhatsApp Group",
-    "linkedin_updates": "📌 Also make sure to follow the official NexaSphere LinkedIn page for updates. Stay connected and keep building 🚀 — NexaSphere Team"
+    "linkedin_updates": "📌 Also make sure to follow the official NexaSphere LinkedIn page for updates. Stay connected and keep building 🚀 — NexaSphere Team",
+    "learning_paths": {
+      "title": "Learning Paths",
+      "subtitle": "Structured routes to master your favorite technologies.",
+      "enroll": "Enroll in Path",
+      "current_progress": "Current Progress",
+      "milestones": "Milestones",
+      "beginner": "Beginner",
+      "intermediate": "Intermediate",
+      "advanced": "Advanced",
+      "estimated_completion": "Estimated Completion",
+      "recommendations": "Recommended for you",
+      "quiz_title": "Skill Assessment",
+      "quiz_desc": "Take this quick quiz to see where you should start.",
+      "next_steps": "Your Next Steps",
+      "badges": {
+        "full_stack": "Full Stack Mastery",
+        "data_science": "Data Science Pro",
+        "ui_ux": "Design Visionary",
+        "devops": "Cloud Architect"
+      }
+    }
   }
 }

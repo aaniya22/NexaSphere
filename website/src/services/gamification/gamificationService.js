@@ -20,6 +20,7 @@ export const XP_VALUES = {
   BETA_TESTER: 100,
   COMMENT_POSTED: 5,
   SHARE_EVENT: 15,
+  LEARNING_PATH_COMPLETE: 1000,
 };
 
 // Achievement tiers and requirements
@@ -199,6 +200,51 @@ export const ACHIEVEMENTS = {
     xpReward: 1000,
     requirement: { type: 'special', tag: 'founder' },
   },
+  PATH_CONQUEROR: {
+    id: 'path_conqueror',
+    title: 'Path Conqueror',
+    description: 'Complete your first learning path',
+    icon: '🛤️',
+    tier: 'gold',
+    xpReward: 1000,
+    requirement: { type: 'paths_completed', count: 1 },
+  },
+  FULL_STACK_MASTER: {
+    id: 'full_stack_master',
+    title: 'Full Stack Mastery',
+    description: 'Complete the Full Stack Development path',
+    icon: '💻',
+    tier: 'platinum',
+    xpReward: 2000,
+    requirement: { type: 'specific_path_complete', path: 'Full Stack Development' },
+  },
+  DATA_SCIENCE_PRO: {
+    id: 'data_science_pro',
+    title: 'Data Science Pro',
+    description: 'Complete the Data Science path',
+    icon: '📊',
+    tier: 'platinum',
+    xpReward: 2000,
+    requirement: { type: 'specific_path_complete', path: 'Data Science' },
+  },
+  DESIGN_VISIONARY: {
+    id: 'design_visionary',
+    title: 'Design Visionary',
+    description: 'Complete the UI/UX Design path',
+    icon: '🎨',
+    tier: 'platinum',
+    xpReward: 2000,
+    requirement: { type: 'specific_path_complete', path: 'UI/UX Design' },
+  },
+  CLOUD_ARCHITECT: {
+    id: 'cloud_architect',
+    title: 'Cloud Architect',
+    description: 'Complete the DevOps path',
+    icon: '☁️',
+    tier: 'platinum',
+    xpReward: 2000,
+    requirement: { type: 'specific_path_complete', path: 'DevOps' },
+  },
 };
 
 // Level thresholds
@@ -240,6 +286,7 @@ class GamificationService {
         connections: 0,
         mentorships_given: 0,
         tech_learned: 0,
+        paths_completed: 0,
         events_organized: 0,
         hackathon_wins: 0,
         blogs: 0,
@@ -482,6 +529,13 @@ class GamificationService {
           break;
         case 'feedback':
           progress = stats.feedback;
+          break;
+        case 'paths_completed':
+          progress = stats.paths_completed;
+          break;
+        case 'specific_path_complete':
+          progress = stats.completed_path_names?.includes(achievement.requirement.path) ? 1 : 0;
+          achievement.requirement.count = 1; // Ensure count is 1 for this type
           break;
       }
 

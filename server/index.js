@@ -74,9 +74,11 @@ import { tierRateLimiter } from './middleware/tierRateLimiter.js';
 import compression from 'compression';
 import syncRouter from './routes/sync.js';
 import multer from 'multer';
+import learningPathRouter from './routes/learningPaths.js';
 import * as resourcesController from './controllers/resourcesController.js';
 import scheduledTasksRouter from './routes/scheduledTasks.js';
 import { schedulerService } from './services/schedulerService.js';
+import { learningPathService } from './services/learningPathService.js';
 
 validateLimiters();
 
@@ -323,6 +325,7 @@ app.use('/api', formsRouter);
 app.use('/api', portfolioRouter);
 app.use('/api', notificationsRouter);
 app.use('/api/admin', adminRouter);
+app.use('/api', learningPathRouter);
 app.use('/', syncRouter);
 
 const adminAuth = [apiRateLimiter, adminAuthMiddleware.requireAdmin];
@@ -1753,6 +1756,11 @@ if (process.env.NODE_ENV !== 'test') {
       server = app.listen(port, () => {
         console.log(`NexaSphere server listening on http://localhost:${port}`);
         schedulerService.init();
+        
+        // Register Learning Path Nudges (Runs daily)
+        schedulerService.schedule('0 10 * * *', async () => {
+          await learningPathService.runNudgeJob();
+        });
       });
     });
   } else {
