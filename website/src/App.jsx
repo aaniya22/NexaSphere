@@ -112,7 +112,7 @@ const MentorshipDashboard = lazy(() => import('./pages/mentorship/MentorshipDash
 const StatusPage = lazy(() => import('./pages/StatusPage'));
 const LiveStreamPage = lazy(() => import('./pages/streaming/LiveStreamPage'));
 const SponsorsPage = lazy(() => import('./pages/sponsors/SponsorsPage'));
-
+const ResourcesPage = lazy(() => import('./pages/resources/ResourcesPage'));
 const MNH = 88,
   DNH = 64;
 
