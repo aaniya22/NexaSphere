@@ -9,6 +9,7 @@ import { adminAuthMiddleware } from '../middleware/adminAuthMiddleware.js';
 import { requireStudentAuth } from '../middleware/studentAuthMiddleware.js';
 import { notificationRateLimiter } from '../middleware/rateLimiter.js';
 import notificationsService from '../services/notificationsService.js';
+import { notificationSchema } from '../validators/notificationSchemas.js';
 
 const router = Router();
 const adminAuth = adminAuthMiddleware.requireAdmin;
@@ -84,10 +85,13 @@ router.delete('/api/notifications', adminAuth, notificationRateLimiter, async (r
  */
 router.post('/api/notifications', adminAuth, notificationRateLimiter, async (req, res) => {
   try {
-    const { userId, title, message, type, link } = req.body || {};
-    if (!title || !message) {
-      return res.status(400).json({ error: 'title and message are required' });
+    const validated = notificationSchema.safeParse(req.body);
+    if (!validated.success) {
+      return res.status(400).json({ error: validated.error.errors[0].message });
     }
+
+    const { userId, title, message, type, link } = validated.data;
+
     const note = await notificationsService.addNotification(userId || 'global', {
       title,
       message,

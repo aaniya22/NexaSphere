@@ -21,3 +21,14 @@ export function normalizeSubscription(body) {
   }
   return pushSubscriptionSchema.parse(subscription);
 }
+
+export const notificationSchema = z.object({
+  userId: z.string().max(255).optional().nullable(),
+  title: z.string().min(1, 'title is required').max(200, 'title must be at most 200 characters'),
+  message: z
+    .string()
+    .min(1, 'message is required')
+    .max(2000, 'message must be at most 2000 characters'),
+  type: z.string().max(100).optional().nullable(),
+  link: z.string().url().max(500).optional().nullable().or(z.literal('')),
+});
