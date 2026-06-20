@@ -619,7 +619,7 @@ export default function ActivityDetailPage({ activity, onBack, onSelectEvent }) 
             </h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {activity.upcomingEvents.map((event, i) => (
-                <div key={i} className="pop-in">
+                <div key={event.id || i} className="pop-in">
                   <UpcomingCard event={event} color={color} />
                 </div>
               ))}
