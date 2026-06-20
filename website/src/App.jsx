@@ -115,7 +115,7 @@ const MentorsPage = lazy(() => import('./pages/mentorship/MentorsPage'));
 const MentorshipDashboard = lazy(() => import('./pages/mentorship/MentorshipDashboard'));
 const StatusPage = lazy(() => import('./pages/StatusPage'));
 const LiveStreamPage = lazy(() => import('./pages/streaming/LiveStreamPage'));
-const SubscriptionPage = lazy(() => import('./pages/subscription/SubscriptionPage'));
+const LiveQa = lazy(() => import('./pages/events/LiveQa'));
 
 const MNH = 88,
   DNH = 64;
@@ -624,7 +624,7 @@ function MainRouter({
       '/mentorship': 'Mentorship',
       '/mentorship/mentors': 'Mentorship',
       '/mentorship/dashboard': 'Mentorship',
-      '/subscription': 'Subscription',
+      '/qa-poll': 'Q&A / Polling',
     };
     const tab = pathMap[location.pathname] || 'Home';
     setActiveTab(tab);
@@ -696,7 +696,7 @@ function MainRouter({
         Contact: '/contact',
         Forum: '/forum',
         Mentorship: '/mentorship',
-        Subscription: '/subscription',
+        'Q&A / Polling': '/qa-poll',
       };
       const targetPath = routeMap[tab];
       if (targetPath) {
@@ -1185,12 +1185,20 @@ function MainRouter({
               }
             />
 
-            {/* ── Subscription ── */}
+            {/* ── Live Q&A / Polling ── */}
             <Route
-              path="/subscription"
+              path="/qa-poll"
               element={
-                <PageIn k="subscription">
-                  <SubscriptionPage onBack={onBackHome} />
+                <PageIn k="qa-poll">
+                  <LiveQa onBack={onBackHome} />
+                </PageIn>
+              }
+            />
+            <Route
+              path="/qa-poll/:eventId"
+              element={
+                <PageIn k="qa-poll-event">
+                  <LiveQa onBack={() => nav('/qa-poll')} />
                 </PageIn>
               }
             />

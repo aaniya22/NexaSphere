@@ -9,6 +9,7 @@ import { getAdminSession } from '../repositories/adminSessionsRepository.js';
 import { resolveAdminPermissions, getRoomsForPermissions } from './eventPermissions.js';
 import { createAdapter } from '@socket.io/redis-adapter';
 import { getRedisClient } from '../utils/redis.js';
+import { liveQaService } from '../services/liveQaService.js';
 
 let io = null;
 const connectedUsers = new Map();
@@ -87,6 +88,8 @@ export function initializeSocketIO(httpServer) {
   io.on('connection', (socket) => {
     _onConnection(socket);
   });
+
+  liveQaService.setIO(io);
 
   return io;
 }
@@ -351,6 +354,97 @@ export function _onConnection(socket) {
       logger.error('Admin authentication error', { error: e.message, socketId: socket.id });
       socket.emit('admin:authenticated', { success: false, error: 'Authentication failed' });
     }
+  });
+
+  // ── Live Q&A and Polling ──
+  socket.on('qa:join', ({ eventId } = {}) => {
+    if (typeof eventId !== 'string' || !eventId) return;
+    liveQaService.joinRoom(socket, eventId);
+  });
+
+  socket.on('qa:leave', ({ eventId } = {}) => {
+    if (typeof eventId !== 'string' || !eventId) return;
+    liveQaService.leaveRoom(socket, eventId);
+  });
+
+  socket.on('qa:ask', (data) => {
+    if (!data || typeof data !== 'object') return;
+    const { eventId, askedBy, email, text, isAnonymous } = data;
+    if (typeof eventId !== 'string' || typeof text !== 'string' || !text.trim()) return;
+    const result = liveQaService.askQuestion({
+      eventId,
+      askedBy: String(askedBy || 'Anonymous').slice(0, 100),
+      email: String(email || '').slice(0, 256),
+      text: String(text).trim().slice(0, 1000),
+      isAnonymous: !!isAnonymous,
+    });
+    socket.emit('qa:asked', result);
+  });
+
+  socket.on('qa:list', ({ eventId, sortBy } = {}) => {
+    if (typeof eventId !== 'string') return;
+    const result = liveQaService.listQuestions(eventId, sortBy);
+    socket.emit('qa:list', result);
+  });
+
+  socket.on('qa:upvote', ({ eventId, questionId } = {}) => {
+    if (typeof eventId !== 'string' || typeof questionId !== 'string') return;
+    const userId = socket.adminAuthenticated
+      ? `admin:${socket.adminSession?.id || 'unknown'}`
+      : socket.id;
+    const result = liveQaService.upvoteQuestion(eventId, questionId, userId);
+    socket.emit('qa:upvoted', result);
+  });
+
+  socket.on('qa:answer', ({ eventId, questionId, answer } = {}) => {
+    if (typeof eventId !== 'string' || typeof questionId !== 'string' || typeof answer !== 'string')
+      return;
+    const answeredBy = socket.adminAuthenticated
+      ? socket.adminSession?.username || 'Speaker'
+      : 'Speaker';
+    liveQaService.answerQuestion(eventId, questionId, answer, answeredBy);
+  });
+
+  socket.on('qa:moderate', ({ eventId, questionId, action } = {}) => {
+    if (typeof eventId !== 'string' || typeof questionId !== 'string' || typeof action !== 'string')
+      return;
+    liveQaService.moderateQuestion(eventId, questionId, action);
+  });
+
+  socket.on('poll:create', (data) => {
+    if (!data || typeof data !== 'object') return;
+    const { eventId, question, options, type } = data;
+    if (
+      typeof eventId !== 'string' ||
+      typeof question !== 'string' ||
+      !Array.isArray(options) ||
+      options.length < 2
+    )
+      return;
+    liveQaService.createPoll({ eventId, question, options, type });
+  });
+
+  socket.on('poll:vote', ({ eventId, pollId, optionIds } = {}) => {
+    if (typeof eventId !== 'string' || typeof pollId !== 'string' || !optionIds) return;
+    const voterId = socket.id;
+    liveQaService.votePoll(eventId, pollId, optionIds, voterId);
+  });
+
+  socket.on('poll:list', ({ eventId } = {}) => {
+    if (typeof eventId !== 'string') return;
+    const result = liveQaService.listPolls(eventId);
+    socket.emit('poll:list', result);
+  });
+
+  socket.on('poll:results', ({ eventId, pollId } = {}) => {
+    if (typeof eventId !== 'string' || typeof pollId !== 'string') return;
+    const result = liveQaService.getPollResults(eventId, pollId);
+    socket.emit('poll:results', result);
+  });
+
+  socket.on('poll:close', ({ eventId, pollId } = {}) => {
+    if (typeof eventId !== 'string' || typeof pollId !== 'string') return;
+    liveQaService.closePoll(eventId, pollId);
   });
 
   // Handle disconnection

@@ -130,14 +130,9 @@ const ICONS = {
       <path d="M11.6 16.8a3 3 0 1 1-5.8-1.6" />
     </>
   ),
-  Handshake: (
+  MessageSquare: (
     <>
-      <path d="M19 8c0 3-2 5.5-6 7" />
-      <path d="M5 8c0 3 2 5.5 6 7" />
-      <path d="M3 5c0 2 1.5 4 4 5" />
-      <path d="M21 5c0 2-1.5 4-4 5" />
-      <path d="M8.5 10 12 8l3.5 2" />
-      <path d="M7 13l2.5-1.5L12 13l2.5-1.5L17 13" />
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
     </>
   ),
   Shield: (

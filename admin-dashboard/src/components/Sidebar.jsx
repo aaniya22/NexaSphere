@@ -56,9 +56,9 @@ const links = [
     icon: 'Activity',
   },
   {
-    to: '/dashboard/subscriptions',
-    label: 'Subscriptions',
-    icon: 'Award',
+    to: '/dashboard/qa-poll',
+    label: 'Q&A / Polling',
+    icon: 'MessageSquare',
     requiredScope: 'events:read',
   },
 ];

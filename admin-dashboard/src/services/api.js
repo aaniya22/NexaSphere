@@ -854,43 +854,94 @@ async function fetchWithAuth(url, options = {}) {
         }
       }
 
-      // /api/admin/subscriptions
-      else if (url.startsWith('/api/admin/subscriptions')) {
-        let subs = getDb('subscriptions', []);
+      // /api/admin/qa/:eventId/questions
+      else if (url.match(/\/api\/admin\/qa\/[^\/]+\/questions/)) {
+        const parts = url.split('/');
+        const eventId = parts[4];
+        let qaDb = getDb('qa_questions', {});
+        let qs = qaDb[eventId] || [];
 
-        if (method === 'GET' && url === '/api/admin/subscriptions') {
-          resolve({ subscriptions: subs });
+        if (method === 'GET') {
+          const sortBy = new URL(url).searchParams.get('sortBy') || 'upvotes';
+          const sorted = [...qs];
+          if (sortBy === 'upvotes') sorted.sort((a, b) => b.upvotes - a.upvotes);
+          else if (sortBy === 'recent') sorted.sort((a, b) => b.createdAt - a.createdAt);
+          else if (sortBy === 'unanswered')
+            sorted.sort((a, b) => (a.status === 'answered' ? 1 : -1));
+          resolve({ questions: sorted });
         }
-        if (method === 'GET' && url === '/api/admin/subscriptions/stats') {
-          resolve({
-            total: subs.length,
-            premium: subs.filter((s) => s.tier === 'premium').length,
-            pro: subs.filter((s) => s.tier === 'pro').length,
-            revenue: subs.reduce((sum, s) => sum + (s.price || 0), 0),
-          });
-        }
-        if (method === 'POST' && !url.includes('/cancel') && !url.includes('/billing')) {
-          const newSub = {
-            id: Date.now().toString(),
-            userId: body.userId,
-            tier: body.tierId,
-            status: 'active',
-            price: body.tierId === 'premium' ? 499 : 999,
-            currentPeriodEnd: Date.now() + 30 * 86400000,
-            createdAt: Date.now(),
-          };
-          subs = [...subs, newSub];
-          setDb('subscriptions', subs);
-          resolve(newSub);
-        }
-        if (method === 'POST' && url.includes('/cancel')) {
-          const userId = url.split('/')[4];
-          subs = subs.map((s) => (s.userId === userId ? { ...s, status: 'cancelled' } : s));
-          setDb('subscriptions', subs);
+        if (method === 'PATCH' && parts[6] === 'moderate') {
+          const qId = parts[5];
+          const q = qs.find((q) => q.id === qId);
+          if (q) {
+            if (body.action === 'feature') q.isFeatured = true;
+            else if (body.action === 'unfeature') q.isFeatured = false;
+            else if (body.action === 'answered') q.status = 'answered';
+            else if (body.action === 'duplicate') q.status = 'duplicate';
+            else if (body.action === 'remove') {
+              qs = qs.filter((qq) => qq.id !== qId);
+            }
+          }
+          qaDb[eventId] = qs;
+          setDb('qa_questions', qaDb);
           resolve({ success: true });
         }
-        if (url.includes('/billing')) {
-          resolve({ invoices: [] });
+        if (method === 'POST' && parts[6] === 'answer') {
+          const qId = parts[5];
+          const q = qs.find((q) => q.id === qId);
+          if (q) {
+            q.answer = body.answer;
+            q.answeredBy = 'Speaker (Offline)';
+            q.status = 'answered';
+          }
+          qaDb[eventId] = qs;
+          setDb('qa_questions', qaDb);
+          resolve({ success: true });
+        }
+        if (method === 'POST' && parts[6] === 'upvote') {
+          const qId = parts[5];
+          const q = qs.find((q) => q.id === qId);
+          if (q) q.upvotes = (q.upvotes || 0) + 1;
+          qaDb[eventId] = qs;
+          setDb('qa_questions', qaDb);
+          resolve({ success: true });
+        }
+      }
+
+      // /api/admin/qa/:eventId/polls
+      else if (url.match(/\/api\/admin\/qa\/[^\/]+\/polls/)) {
+        const parts = url.split('/');
+        const eventId = parts[4];
+        let pollDb = getDb('qa_polls', {});
+        let ps = pollDb[eventId] || [];
+
+        if (method === 'GET') resolve({ polls: ps });
+        if (method === 'POST' && !parts[6]) {
+          const newPoll = {
+            ...body,
+            id: Date.now().toString(),
+            options: body.options.map((opt, i) => ({
+              id: `${Date.now()}-${i}`,
+              text: opt,
+              votes: 0,
+              voters: [],
+            })),
+            totalVotes: 0,
+            status: 'active',
+            createdAt: Date.now(),
+          };
+          ps = [newPoll, ...ps];
+          pollDb[eventId] = ps;
+          setDb('qa_polls', pollDb);
+          resolve(newPoll);
+        }
+        if (method === 'POST' && parts[6] && parts[7] === 'close') {
+          const pollId = parts[6];
+          const poll = ps.find((p) => p.id === pollId);
+          if (poll) poll.status = 'closed';
+          pollDb[eventId] = ps;
+          setDb('qa_polls', pollDb);
+          resolve({ success: true });
         }
       }
 
@@ -1355,8 +1406,57 @@ export const api = {
       }),
   },
 
-  users: {
-    getAll: () => fetchWithAuth('/api/admin/users').catch(() => ({ users: [] })),
+  qaPoll: {
+    getQuestions: (eventId, sortBy = 'upvotes') =>
+      fetchWithAuth(`/api/admin/qa/${eventId}/questions?sortBy=${sortBy}`),
+    getPolls: (eventId) => fetchWithAuth(`/api/admin/qa/${eventId}/polls`),
+    moderateQuestion: async (eventId, questionId, action) => {
+      const result = await fetchWithAuth(
+        `/api/admin/qa/${eventId}/questions/${questionId}/moderate`,
+        {
+          method: 'PATCH',
+          body: JSON.stringify({ action }),
+        }
+      );
+      eventEmitter.emit(EVENTS.QA_UPDATED, result);
+      return result;
+    },
+    answerQuestion: async (eventId, questionId, answer) => {
+      const result = await fetchWithAuth(
+        `/api/admin/qa/${eventId}/questions/${questionId}/answer`,
+        {
+          method: 'POST',
+          body: JSON.stringify({ answer }),
+        }
+      );
+      eventEmitter.emit(EVENTS.QA_UPDATED, result);
+      return result;
+    },
+    upvoteQuestion: async (eventId, questionId) => {
+      const result = await fetchWithAuth(
+        `/api/admin/qa/${eventId}/questions/${questionId}/upvote`,
+        {
+          method: 'POST',
+        }
+      );
+      eventEmitter.emit(EVENTS.QA_UPDATED, result);
+      return result;
+    },
+    createPoll: async (eventId, poll) => {
+      const result = await fetchWithAuth(`/api/admin/qa/${eventId}/polls`, {
+        method: 'POST',
+        body: JSON.stringify(poll),
+      });
+      eventEmitter.emit(EVENTS.POLL_UPDATED, result);
+      return result;
+    },
+    closePoll: async (eventId, pollId) => {
+      const result = await fetchWithAuth(`/api/admin/qa/${eventId}/polls/${pollId}/close`, {
+        method: 'POST',
+      });
+      eventEmitter.emit(EVENTS.POLL_UPDATED, result);
+      return result;
+    },
   },
 
   impersonate: {
