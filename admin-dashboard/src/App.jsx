@@ -19,7 +19,8 @@ import { AnnouncementsManager } from './pages/AnnouncementsManager';
 import { PortfolioManager } from './pages/PortfolioManager';
 import { StreamManager } from './pages/StreamManager';
 import { CircuitBreakerManager } from './pages/CircuitBreakerManager';
-import { EventPlanningManager } from './pages/EventPlanningManager';
+import { ImpersonationManager } from './pages/ImpersonationManager';
+import { ImpersonationBanner } from './components/ImpersonationBanner';
 import './styles/admin.css';
 
 function RequireAuth() {
@@ -43,6 +44,7 @@ function DashboardLayout() {
   return (
     <div className="app-layout">
       <OfflineBanner />
+      <ImpersonationBanner />
       <Sidebar />
       <main className="main-content" id="main-content">
         <ErrorBoundary>
@@ -76,7 +78,7 @@ export default function App() {
             <Route path="/dashboard/mentorship" element={<MentorshipManager />} />
             <Route path="/dashboard/streams" element={<StreamManager />} />
             <Route path="/dashboard/circuit-breaker" element={<CircuitBreakerManager />} />
-            <Route path="/dashboard/event-planning" element={<EventPlanningManager />} />
+            <Route path="/dashboard/impersonate" element={<ImpersonationManager />} />
           </Route>
         </Route>
         <Route path="*" element={<Navigate to="/login" replace />} />

@@ -872,12 +872,58 @@ async function fetchWithAuth(url, options = {}) {
         });
       }
 
-      // /api/admin/event-planning
-      else if (url.startsWith('/api/admin/event-planning')) {
-        if (method === 'GET') {
-          resolve({ plans: {} });
+      // /api/admin/users
+      else if (url.startsWith('/api/admin/users')) {
+        const mockUsers = [
+          {
+            id: '1',
+            username: 'johndoe',
+            display_name: 'John Doe',
+            email: 'john@example.com',
+            role: 'user',
+          },
+          {
+            id: '2',
+            username: 'janesmith',
+            display_name: 'Jane Smith',
+            email: 'jane@example.com',
+            role: 'user',
+          },
+          {
+            id: '3',
+            username: 'bobwilson',
+            display_name: 'Bob Wilson',
+            email: 'bob@example.com',
+            role: 'moderator',
+          },
+        ];
+        resolve({ users: mockUsers, page: 1, limit: 20 });
+      }
+
+      // /api/admin/impersonate
+      else if (url.startsWith('/api/admin/impersonate')) {
+        const key = 'ns_impersonation';
+        if (url.endsWith('/status')) {
+          const active = localStorage.getItem(key);
+          resolve(
+            active
+              ? { impersonating: true, user: JSON.parse(active) }
+              : { impersonating: false, user: null }
+          );
+        } else if (url.includes('/start/')) {
+          const mockUser = {
+            id: url.split('/').pop(),
+            username: 'mockuser',
+            display_name: 'Mock User',
+            email: 'mock@test.com',
+          };
+          localStorage.setItem(key, JSON.stringify(mockUser));
+          resolve({ impersonating: true, user: mockUser });
+        } else if (url.endsWith('/stop')) {
+          localStorage.removeItem(key);
+          resolve({ impersonating: false });
         } else {
-          resolve({ ok: true });
+          resolve({ impersonating: false });
         }
       }
     }, 300); // simulate slight network delay
@@ -1324,15 +1370,14 @@ export const api = {
       }),
   },
 
-  eventPlanning: {
-    list: () => fetchWithAuth('/api/admin/event-planning'),
-    updateBudget: (eventId, budget) =>
-      fetchWithAuth(`/api/admin/event-planning/${eventId}/budget`, {
-        method: 'PUT',
-        body: JSON.stringify(budget),
-      }),
-    seedTemplates: (eventId) =>
-      fetchWithAuth(`/api/admin/event-planning/${eventId}/templates/seed`, { method: 'POST' }),
+  users: {
+    getAll: () => fetchWithAuth('/api/admin/users').catch(() => ({ users: [] })),
+  },
+
+  impersonate: {
+    start: (userId) => fetchWithAuth(`/api/admin/impersonate/start/${userId}`, { method: 'POST' }),
+    stop: () => fetchWithAuth('/api/admin/impersonate/stop', { method: 'POST' }),
+    status: () => fetchWithAuth('/api/admin/impersonate/status'),
   },
   forum: {
     getAll: async (params = {}) => {

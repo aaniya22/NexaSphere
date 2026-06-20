@@ -56,10 +56,10 @@ const links = [
     icon: 'Activity',
   },
   {
-    to: '/dashboard/event-planning',
-    label: 'Event Plans',
-    icon: 'Calendar',
-    requiredScope: 'events:read',
+    to: '/dashboard/impersonate',
+    label: 'Impersonate',
+    icon: 'Users',
+    requiredScope: 'settings:admin',
   },
 ];
 

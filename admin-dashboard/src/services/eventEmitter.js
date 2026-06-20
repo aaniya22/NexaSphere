@@ -107,4 +107,8 @@ export const EVENTS = {
   OFFLINE_MODE: 'offline:enabled',
 
   ONLINE_RECONNECTED: 'online:reconnected',
+
+  // Impersonation events
+  IMPERSONATION_STARTED: 'impersonation:started',
+  IMPERSONATION_STOPPED: 'impersonation:stopped',
 };
