@@ -131,26 +131,15 @@ function recordLoginAttempt(ip) {
       }
     }
 
-    // 2. If still full, evict blocked IPs first to preserve legitimate user entries
-    if (loginAttemptsByIp.size >= LOGIN_MAX_TRACKED_IPS) {
-      let evictKey = null;
-      for (const [key, entry] of loginAttemptsByIp.entries()) {
-        if (entry.attempts > LOGIN_MAX_ATTEMPTS) {
-          evictKey = key;
-          break;
-        }
-      }
+    // 2. If still full, evict the oldest tracked entry (FIFO)
+if (loginAttemptsByIp.size >= LOGIN_MAX_TRACKED_IPS) {
+  const oldestKey = loginAttemptsByIp.keys().next().value;
 
-      // Fallback to oldest entry (FIFO) if no blocked IPs found
-      if (!evictKey) {
-        evictKey = loginAttemptsByIp.keys().next().value;
-      }
-
-      if (evictKey) {
-        loginAttemptsByIp.delete(evictKey);
-      }
-    }
+  if (oldestKey) {
+    loginAttemptsByIp.delete(oldestKey);
   }
+}
+}
 
   const existing = loginAttemptsByIp.get(ip);
   const attempts = existing && existing.expiresAt > now ? existing.attempts : 0;
