@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, X, ArrowRight, Calendar, Zap, Users, BookOpen } from 'lucide-react';
 import { useSearch } from '../hooks/useSearch';
@@ -79,11 +80,11 @@ export default function SearchBar({ open, onClose, activities, events, onNavigat
       if (result.type === 'activity') onNavigate('activity', result.key || result.id);
       else if (result.type === 'event')
         onEventClick(result.event || { id: result.id, name: result.title });
-      else if (result.type === 'member') window.location.href = result.url || '/team';
+      else if (result.type === 'member') navigate(result.url || '/team');
       onClose();
       clearSearch();
     },
-    [onNavigate, onEventClick, onClose, clearSearch]
+    [onNavigate, onEventClick, onClose, clearSearch, navigate]
   );
 
   useEffect(() => {
