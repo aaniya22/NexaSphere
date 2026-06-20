@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   ArrowLeft,
@@ -424,6 +425,7 @@ function SectionBlock({ icon, title, subtitle, items, renderItem, emptyText }) {
 }
 
 function EventCard({ event, detailed }) {
+  const navigate = useNavigate();
   const title = event?.title || event?.name || event?.shortName || '';
   const desc = event?.description || '';
   const tags = event?.tags || [];
@@ -450,7 +452,7 @@ function EventCard({ event, detailed }) {
       }}
       onClick={() => {
         const url = event?.url || `/events/${event?.id || ''}`;
-        window.location.href = url;
+        navigate(url);
       }}
     >
       <div
