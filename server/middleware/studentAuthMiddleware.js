@@ -1,4 +1,13 @@
 import { studentAuthService } from '../services/studentAuthService.js';
+import crypto from 'crypto';
+
+// Exporting utility specifically for standardizing timing-safe checks across modules
+export function safeCompareTokens(a, b) {
+  if (!a || !b) return false;
+  const hashA = crypto.createHash('sha256').update(String(a)).digest();
+  const hashB = crypto.createHash('sha256').update(String(b)).digest();
+  return crypto.timingSafeEqual(hashA, hashB);
+}
 
 export function requireStudentAuth(req, res, next) {
   const authHeader = req.headers.authorization;
@@ -16,6 +25,7 @@ export function requireStudentAuth(req, res, next) {
     return res.status(401).json({ error: 'Authentication required' });
   }
 
+  // Token is verified inside the service securely
   const payload = studentAuthService.verifyToken(token);
   if (!payload) {
     return res.status(401).json({ error: 'Invalid or expired token' });
