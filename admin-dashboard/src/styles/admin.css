@@ -226,7 +226,41 @@ body {
   border-color: var(--red);
   color: var(--red);
 }
+/* ── Copy Button ── */
+.copy-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 
+  min-width: 150px;
+  padding: 10px 14px;
+
+  border-radius: 10px;
+  border: 1px solid var(--border);
+
+  background: var(--surface);
+  color: var(--text);
+
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 500;
+
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.copy-btn:hover {
+  background: var(--surface2);
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.copy-btn:active {
+  transform: scale(0.98);
+}
 /* ── Login ── */
 .login-bg {
   min-height: 100vh;

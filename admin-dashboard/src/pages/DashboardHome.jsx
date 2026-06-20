@@ -1,3 +1,4 @@
+import { CopyButton } from '../components/CopyButton';
 import { DashboardCardSkeleton } from '../components/DashboardCardSkeleton';
 import { useState, useEffect } from 'react';
 import { api, auth } from '../services/api';
@@ -148,6 +149,15 @@ export function DashboardHome() {
           >
             <AdminIcon name="FileText" size={18} aria-hidden="true" /> Membership
           </a>
+        </div>
+        <div
+          style={{
+            marginTop: '20px',
+            display: 'flex',
+            justifyContent: 'flex-end',
+          }}
+        >
+          <CopyButton text={window.location.origin + '/dashboard'} label="Copy Dashboard Link" />
         </div>
       </div>
     </div>
