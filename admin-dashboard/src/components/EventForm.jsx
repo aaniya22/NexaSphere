@@ -117,9 +117,47 @@ export function EventForm({ event, onClose }) {
         ? `linear-gradient(135deg, ${form.gradientColors[0]}, ${form.gradientColors[0]}88)`
         : 'linear-gradient(135deg, #6b21a8, #7c3aed)';
 
+  const checkForDuplicates = async () => {
+    try {
+      const allEvents = await api.events.getAll();
+      const currentStart = form.startDate ? new Date(form.startDate).getTime() : null;
+
+      if (!currentStart) return false;
+
+      const duplicate = allEvents.find((e) => {
+        if (event?.id === e.id) return false;
+        
+        const existingStart = e.startDate ? new Date(e.startDate).getTime() : null;
+        if (!existingStart) return false;
+
+        const timeDiff = Math.abs(currentStart - existingStart);
+        const TWO_HOURS_MS = 2 * 60 * 60 * 1000;
+        const isSameName = e.name.trim().toLowerCase() === form.name.trim().toLowerCase();
+
+        return timeDiff < TWO_HOURS_MS && isSameName;
+      });
+
+      return !!duplicate;
+    } catch (err) {
+      console.error('Failed to check for duplicates', err);
+      return false;
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    
+    if (await checkForDuplicates()) {
+      const confirmed = window.confirm(
+        'A similar event is already scheduled within a 2-hour window. Do you want to proceed anyway?'
+      );
+      if (!confirmed) {
+        return;
+      }
+      console.log('Duplicate event override confirmed by user.');
+    }
+
     setLoading(true);
     try {
       const tags = form.tagsInput
@@ -271,7 +309,6 @@ export function EventForm({ event, onClose }) {
                     color: form.icon === iconName ? 'var(--c1)' : 'var(--t2)',
                     fontSize: 12,
                     fontWeight: 500,
-                    transition: 'all 0.15s',
                   }}
                 >
                   <AdminIcon name={iconName} size={14} />
@@ -286,160 +323,76 @@ export function EventForm({ event, onClose }) {
             <select value={form.status} onChange={(e) => set('status', e.target.value)}>
               {STATUSES.map((s) => (
                 <option key={s} value={s}>
-                  {s}
+                  {s.charAt(0).toUpperCase() + s.slice(1)}
                 </option>
               ))}
             </select>
           </div>
 
           <div className="form-row">
-            <label>
-              Tags <span style={{ fontWeight: 400, textTransform: 'none' }}>(comma separated)</span>
-            </label>
+            <label>Description</label>
+            <textarea
+              value={form.description || ''}
+              onChange={(e) => set('description', e.target.value)}
+              rows={4}
+            />
+          </div>
+
+          <div className="form-row">
+            <label>Has Detail Page</label>
+            <input
+              type="checkbox"
+              checked={form.hasDetailPage}
+              onChange={(e) => set('hasDetailPage', e.target.checked)}
+            />
+          </div>
+
+          <div className="form-row">
+            <label>Tags (comma separated)</label>
             <input
               value={form.tagsInput || ''}
               onChange={(e) => set('tagsInput', e.target.value)}
-              placeholder="AI, Learning, Community"
-            />
-          </div>
-
-          <div className="form-row" style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-            <label style={{ marginBottom: 0 }}>Has Detail Page</label>
-            <button
-              type="button"
-              onClick={() => set('hasDetailPage', !form.hasDetailPage)}
-              style={{
-                width: 42,
-                height: 24,
-                borderRadius: 12,
-                border: 'none',
-                cursor: 'pointer',
-                background: form.hasDetailPage ? 'var(--c1)' : 'var(--bdr)',
-                position: 'relative',
-                transition: 'background 0.2s',
-              }}
-              aria-label="Toggle detail page"
-            >
-              <span
-                style={{
-                  position: 'absolute',
-                  top: 2,
-                  left: form.hasDetailPage ? 22 : 2,
-                  width: 20,
-                  height: 20,
-                  borderRadius: '50%',
-                  background: 'white',
-                  transition: 'left 0.2s',
-                }}
-              />
-            </button>
-          </div>
-
-          <div className="form-row">
-            <label>Description *</label>
-            <textarea
-              value={form.description}
-              onChange={(e) => set('description', e.target.value)}
-              rows={3}
-              required
+              placeholder="e.g. react, typescript, web"
             />
           </div>
 
           <div className="form-row">
-            <label>Dynamic Gradient Colors</label>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 4 }}>
+            <label>Gradient Colors</label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {form.gradientColors.map((color, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div key={i} style={{ display: 'flex', gap: 6 }}>
                   <input
                     type="color"
                     value={color}
                     onChange={(e) => updateGradientColor(i, e.target.value)}
-                    style={{
-                      width: 36,
-                      height: 32,
-                      border: 'none',
-                      borderRadius: 6,
-                      cursor: 'pointer',
-                      padding: 0,
-                    }}
                   />
-                  <input
-                    type="text"
-                    value={color}
-                    onChange={(e) => updateGradientColor(i, e.target.value)}
-                    style={{
-                      flex: 1,
-                      padding: '6px 10px',
-                      borderRadius: 6,
-                      border: '1px solid var(--bdr)',
-                      background: 'var(--card)',
-                      color: 'var(--text)',
-                      fontSize: 13,
-                      fontFamily: 'monospace',
-                    }}
-                    placeholder="#hex"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => removeGradientColor(i)}
-                    style={{
-                      padding: '6px 8px',
-                      borderRadius: 6,
-                      border: 'none',
-                      background: 'transparent',
-                      color: 'var(--danger, #ef4444)',
-                      cursor: 'pointer',
-                    }}
-                    aria-label="Remove color"
-                  >
-                    <AdminIcon name="Trash" size={14} />
+                  <button type="button" onClick={() => removeGradientColor(i)}>
+                    Remove
                   </button>
                 </div>
               ))}
-              <button
-                type="button"
-                onClick={addGradientColor}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 6,
-                  padding: '8px 12px',
-                  borderRadius: 8,
-                  border: '1px dashed var(--bdr)',
-                  background: 'transparent',
-                  color: 'var(--t2)',
-                  cursor: 'pointer',
-                  fontSize: 13,
-                }}
-              >
-                + Add Color
+              <button type="button" onClick={addGradientColor}>
+                Add Color
               </button>
             </div>
-            {form.gradientColors.length > 0 && (
-              <div style={{ marginTop: 10 }}>
-                <div style={{ fontSize: 11, color: 'var(--t3)', marginBottom: 4 }}>Preview</div>
-                <div
-                  style={{
-                    height: 48,
-                    borderRadius: 10,
-                    background: gradientPreview,
-                    border: '1px solid var(--bdr)',
-                    boxShadow: `0 4px 20px ${form.gradientColors[0] || '#6b21a8'}33`,
-                    transition: 'all 0.3s',
-                  }}
-                />
-              </div>
-            )}
+            <div
+              style={{
+                height: 40,
+                borderRadius: 8,
+                background: gradientPreview,
+                marginTop: 10,
+              }}
+            />
           </div>
 
-          {error && <div className="form-error">{error}</div>}
+          {error && <div className="error-message">{error}</div>}
+
           <div className="form-actions">
-            <button type="button" className="btn-secondary" onClick={onClose}>
+            <button type="button" className="btn-secondary" onClick={onClose} disabled={loading}>
               Cancel
             </button>
             <button type="submit" className="btn-primary" disabled={loading}>
-              {loading ? 'Saving...' : 'Save Event'}
+              {loading ? 'Saving...' : 'Save'}
             </button>
           </div>
         </form>
