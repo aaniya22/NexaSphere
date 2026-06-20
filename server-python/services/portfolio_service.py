@@ -1,7 +1,9 @@
+import re
 import logging
 from typing import Any, Dict
 
-import httpx
+GITHUB_USERNAME_PATTERN = re.compile(r'^[a-zA-Z0-9](?:[a-zA-Z0-9]|-(?=[a-zA-Z0-9])){0,38}$')
+LEETCODE_USERNAME_PATTERN = re.compile(r'^[a-zA-Z0-9_-]{1,25}$')
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +32,9 @@ class PortfolioSyncService:
 
     async def fetch_github_metrics(self, username: str) -> Dict[str, Any]:
         """Fetch public GitHub profile stats for a given username."""
+        if not GITHUB_USERNAME_PATTERN.match(username):
+            logger.warning("Invalid GitHub username: %s", username)
+            return {}
         url = self.GITHUB_API.format(username=username)
         try:
             async with httpx.AsyncClient(timeout=15.0) as client:
@@ -52,6 +57,9 @@ class PortfolioSyncService:
 
     async def fetch_leetcode_metrics(self, username: str) -> Dict[str, Any]:
         """Fetch public LeetCode stats via the unofficial GraphQL endpoint."""
+        if not LEETCODE_USERNAME_PATTERN.match(username):
+            logger.warning("Invalid LeetCode username: %s", username)
+            return {}
         variables = {"username": username}
         payload = {"query": LEETCODE_QUERY, "variables": variables}
         try:
