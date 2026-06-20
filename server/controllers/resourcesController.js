@@ -101,18 +101,23 @@ export const moderateResource = wrapAsync(async (req, res) => {
   return res.json(updated);
 });
 
+function sanitizeFilename(name) {
+  return name.replace(/[^a-zA-Z0-9._-]/g, '_').substring(0, 200);
+}
+
 export const uploadFile = wrapAsync(async (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: 'No file uploaded' });
   }
 
   const fileUrl = `/uploads/${req.file.filename}`;
+  const displayName = sanitizeFilename(req.body.title || req.file.originalname);
 
   const input = {
-    title: req.body.title || req.file.originalname,
+    title: displayName,
     description: req.body.description || '',
     file_url: fileUrl,
-    file_type: req.file.mimetype || req.file.originalname.split('.').pop(),
+    file_type: req.file.mimetype || 'application/octet-stream',
     file_size: req.file.size,
     category: req.body.category || 'other',
     tags: req.body.tags

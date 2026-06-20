@@ -400,22 +400,39 @@ const storage = multer.diskStorage({
   },
 });
 
+const MAGIC_BYTES = {
+  'application/pdf': [[0x25, 0x50, 0x44, 0x46]],
+  'image/png': [[0x89, 0x50, 0x4e, 0x47]],
+  'image/jpeg': [[0xff, 0xd8, 0xff]],
+  'image/gif': [[0x47, 0x49, 0x46]],
+  'image/webp': [[0x52, 0x49, 0x46, 0x46]],
+  'application/zip': [[0x50, 0x4b, 0x03, 0x04], [0x50, 0x4b, 0x05, 0x06], [0x50, 0x4b, 0x07, 0x08]],
+  'application/x-zip-compressed': [[0x50, 0x4b, 0x03, 0x04]],
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': [[0x50, 0x4b, 0x03, 0x04]],
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation': [[0x50, 0x4b, 0x03, 0x04]],
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': [[0x50, 0x4b, 0x03, 0x04]],
+  'text/plain': [],
+  'text/markdown': [],
+  'application/json': [],
+};
+
+function validateMagicBytes(filepath, mimeType) {
+  const signatures = MAGIC_BYTES[mimeType];
+  if (!signatures || signatures.length === 0) return true;
+  const fd = fs.openSync(filepath, 'r');
+  const buffer = Buffer.alloc(8);
+  fs.readSync(fd, buffer, 0, 8, 0);
+  fs.closeSync(fd);
+  return signatures.some((sig) => sig.every((byte, i) => buffer[i] === byte));
+}
+
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+
 const fileFilter = (_req, file, cb) => {
-  const allowedMimes = [
-    'application/pdf',
-    'image/png',
-    'image/jpeg',
-    'image/gif',
-    'image/webp',
-    'application/zip',
-    'application/x-zip-compressed',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    'text/plain',
-    'text/markdown',
-    'application/json',
-  ];
+  if (!file.originalname || file.originalname.includes('..') || file.originalname.includes('/')) {
+    return cb(new Error('Invalid file name'), false);
+  }
+  const allowedMimes = Object.keys(MAGIC_BYTES);
   if (allowedMimes.includes(file.mimetype)) {
     cb(null, true);
   } else {
@@ -426,8 +443,24 @@ const fileFilter = (_req, file, cb) => {
 const upload = multer({
   storage,
   fileFilter,
-  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
+  limits: { fileSize: MAX_FILE_SIZE },
 });
+
+const uploadWithMagicCheck = (req, res, next) => {
+  upload.single('file')(req, res, (err) => {
+    if (err) {
+      if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(413).json({ error: 'File too large. Maximum size is 10MB.' });
+      }
+      return res.status(400).json({ error: err.message });
+    }
+    if (req.file && !validateMagicBytes(req.file.path, req.file.mimetype)) {
+      fs.unlink(req.file.path, () => {});
+      return res.status(400).json({ error: 'File content does not match its declared type.' });
+    }
+    next();
+  });
+};
 
 // Serve uploaded files statically
 app.use('/uploads', express.static(UPLOADS_DIR));
@@ -1765,7 +1798,7 @@ app.post('/api/resources/:id/download-track', resourcesController.downloadResour
 app.post(
   '/api/resources/upload',
   requireStudentAuth,
-  upload.single('file'),
+  uploadWithMagicCheck,
   resourcesController.uploadFile
 );
 
