@@ -341,8 +341,7 @@ app.use('/', healthRouter);
 app.use('/', coreTeamRouter);
 app.use('/api', formsRouter);
 app.use('/api', portfolioRouter);
-app.use('/api/portfolio-export', portfolioExportRouter);
-app.use('/api', notificationsRouter);
+app.use('/', notificationsRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api', learningPathRouter);
 app.use('/', syncRouter);
@@ -1691,7 +1690,7 @@ app.get('/api/notifications', async (req, res) => {
   try {
     const userId = req.query.userId || 'global';
 
-    if (userId !== 'global') {
+    {
       let authenticated = false;
 
       // 1. Try Student Auth
