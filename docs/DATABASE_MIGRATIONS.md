@@ -15,6 +15,7 @@ NexaSphere uses a multi-stack architecture with three database backends, each wi
 | `1705945200000_create-initial-schema.js`            | Baseline schema for admin sessions, events, core team, form submissions, and recommendation engine tables |
 | `1705945201000_seed-recommendation-data.js`         | Seed data for collaborative filtering recommendation system                                               |
 | `1705945202000_canonicalize-portfolio-usernames.js` | Canonicalize portfolio username format                                                                    |
+| `1718696400000_add-ticketing-system.js`             | Comprehensive ticketing system: types, pricing tiers, seats, orders, and individual tickets               |
 
 ### Java Server (`server-java/src/main/resources/db/migration/`)
 
