@@ -40,6 +40,15 @@ export const registrationsRepository = {
       const { rows } = await client.query(
         `INSERT INTO event_registrations (event_id, full_name, email, department, year, team_name, team_size, custom_fields, waitlist, status)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+         ON CONFLICT (event_id, email) DO UPDATE SET
+           full_name = EXCLUDED.full_name,
+           department = EXCLUDED.department,
+           year = EXCLUDED.year,
+           team_name = EXCLUDED.team_name,
+           team_size = EXCLUDED.team_size,
+           custom_fields = EXCLUDED.custom_fields,
+           waitlist = EXCLUDED.waitlist,
+           status = EXCLUDED.status
          RETURNING *`,
         [
           eventId,
