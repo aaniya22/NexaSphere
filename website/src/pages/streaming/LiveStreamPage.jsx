@@ -232,10 +232,22 @@ function LiveStreamPage() {
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('chat');
   const [toast, setToast] = useState(null);
+  const toastTimerRef = React.useRef(null);
+
+  // Clear running timers when the stream layout unmounts
+  React.useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    };
+  }, []);
 
   const showToast = useCallback((message, type) => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     setToast({ message, type });
-    setTimeout(() => setToast(null), 4000);
+    toastTimerRef.current = setTimeout(() => {
+      setToast(null);
+      toastTimerRef.current = null;
+    }, 4000);
   }, []);
 
   const fetchStream = useCallback(async () => {
